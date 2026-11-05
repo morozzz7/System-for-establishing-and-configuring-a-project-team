@@ -1,0 +1,157 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.teamopt.internal/v1/optimize-request.schema.json",
+  "title": "Optimize request (v1, Go -> ML)",
+  "description": "Input of POST /v1/optimize. Fully materialized by Go: the capacity matrix is authoritative and the ML service must not exceed it. Determinism is part of the contract: identical body + same solver version must give an identical response.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["request_id", "run_id", "seed", "time_limit_ms", "k", "min_jaccard_diversity", "horizon", "weights", "requirements", "candidates", "constraints", "options"],
+  "properties": {
+    "request_id": { "type": "string", "pattern": "^req_[A-Za-z0-9-]{6,32}$" },
+    "run_id": { "type": "string", "pattern": "^run_[A-Za-z0-9]{4,16}$" },
+    "seed": { "type": "integer", "minimum": 0, "maximum": 2147483647 },
+    "time_limit_ms": { "type": "integer", "minimum": 100, "maximum": 60000 },
+    "k": { "type": "integer", "minimum": 1, "maximum": 3 },
+    "min_jaccard_diversity": { "type": "number", "minimum": 0.1, "maximum": 1 },
+    "horizon": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_week", "end_week", "weeks"],
+      "properties": {
+        "start_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+        "end_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+        "weeks": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 104,
+          "uniqueItems": true,
+          "items": { "$ref": "common.schema.json#/$defs/WeekKey" }
+        }
+      }
+    },
+    "weights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["M1", "M2", "M3", "M5", "M6", "M7", "M8", "M9", "M10", "M11"],
+      "properties": {
+        "M1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M2": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M3": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M4": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M5": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M6": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M7": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M8": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M9": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M10": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M11": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M12": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "requirements": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 60,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["requirement_id", "role_id", "level", "criticality", "headcount", "effort"],
+        "properties": {
+          "requirement_id": { "type": "string", "maxLength": 40 },
+          "role_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,39}$" },
+          "competency_id": { "type": ["string", "null"] },
+          "level": { "$ref": "common.schema.json#/$defs/Level" },
+          "criticality": { "$ref": "common.schema.json#/$defs/Criticality" },
+          "headcount": { "type": "integer", "minimum": 1, "maximum": 20 },
+          "effort": { "$ref": "common.schema.json#/$defs/EffortRange" },
+          "earliest_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+          "latest_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+          "allows_external": { "type": "boolean" }
+        }
+      }
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 2000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["employee_id", "grade", "role_profile_id", "employment_type", "bench_flag", "cost_coefficient", "competencies", "capacity"],
+        "properties": {
+          "employee_id": { "type": "string", "pattern": "^emp_[a-z0-9]{4,12}$" },
+          "grade": { "$ref": "common.schema.json#/$defs/Grade" },
+          "role_profile_id": { "type": "string" },
+          "employment_type": { "type": "string", "enum": ["internal", "contractor", "external_partner"] },
+          "bench_flag": { "type": "boolean" },
+          "cost_coefficient": { "type": "number", "minimum": 0.5, "maximum": 5 },
+          "experience_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "competencies": {
+            "type": "array",
+            "maxItems": 200,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["competency_id", "level", "confidence"],
+              "properties": {
+                "competency_id": { "type": "string" },
+                "level": { "$ref": "common.schema.json#/$defs/Level" },
+                "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+              }
+            }
+          },
+          "capacity": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 104,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["week", "working_days", "free_hours", "unavailable"],
+              "properties": {
+                "week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+                "working_days": { "type": "integer", "minimum": 0, "maximum": 7 },
+                "free_hours": { "type": "number", "minimum": 0, "maximum": 60 },
+                "unavailable": { "type": "boolean" }
+              }
+            }
+          },
+          "current_project_ids": {
+            "type": "array",
+            "maxItems": 50,
+            "items": { "type": "string" }
+          }
+        }
+      }
+    },
+    "constraints": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_utilization_ratio", "min_jaccard_diversity"],
+      "properties": {
+        "force_include": { "type": "array", "maxItems": 50, "items": { "type": "string" } },
+        "force_exclude": { "type": "array", "maxItems": 500, "items": { "type": "string" } },
+        "max_team_size": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "min_team_size": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "budget_cap_units": { "type": "number", "minimum": 0 },
+        "deadline_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+        "forbid_external": { "type": "boolean" },
+        "min_bus_factor": { "type": "integer", "minimum": 1, "maximum": 5 },
+        "max_utilization_ratio": { "type": "number", "minimum": 0.5, "maximum": 1 },
+        "min_assignment_hours_per_week": { "type": "number", "minimum": 0, "maximum": 40 },
+        "min_jaccard_diversity": { "type": "number", "minimum": 0.1, "maximum": 1 }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "num_search_workers": { "type": "integer", "minimum": 1, "maximum": 16 },
+        "deterministic": { "type": "boolean" },
+        "allow_deficits": { "type": "boolean" },
+        "objective_preset": { "type": "string", "enum": ["fast", "economical", "balanced", "low_risk", "custom"] },
+        "log_search_progress": { "type": "boolean" }
+      }
+    }
+  }
+}

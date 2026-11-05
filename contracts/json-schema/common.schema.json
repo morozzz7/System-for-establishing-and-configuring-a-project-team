@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.teamopt.internal/v1/common.schema.json",
+  "title": "Common primitives (v1)",
+  "description": "Shared definitions for requirement / variant / optimizer schemas. Structural only: per-field ranges, patterns and cross-field invariants that must hold for both the Go core and the ML service. The canonical reason-code enum lives in contracts/openapi.yaml#/components/schemas/ReasonCode; here it is validated by pattern to avoid a third copy.",
+  "$defs": {
+    "Identifier": {
+      "type": "string",
+      "pattern": "^[a-z]{2,4}_[A-Za-z0-9]{2,32}$",
+      "description": "Prefixed pseudonym: emp_*, brf_*, req_*, run_*, var_*, prj_*, abs_*, asg_*, aud_*, exp_*, unt_*."
+    },
+    "WeekKey": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$",
+      "examples": ["2026-W07"]
+    },
+    "Level": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "Criticality": {
+      "type": "string",
+      "enum": ["must", "should", "nice"]
+    },
+    "Grade": {
+      "type": "string",
+      "enum": ["J", "M", "S", "L", "P"]
+    },
+    "ReasonCode": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{2,63}$",
+      "description": "One of the codes enumerated in contracts/openapi.yaml (UI<->Go) and contracts/ml-openapi.yaml (Go<->ML)."
+    },
+    "ReasonCodeList": {
+      "type": "array",
+      "minItems": 0,
+      "items": { "$ref": "#/$defs/ReasonCode" }
+    },
+    "EvidenceSpan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "quote"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["brief_span", "taxonomy_synonym", "project_history", "user_edit"] },
+        "char_start": { "type": "integer", "minimum": 0 },
+        "char_end": { "type": "integer", "minimum": 1 },
+        "quote": { "type": "string", "minLength": 3, "maxLength": 1000 }
+      },
+      "description": "quote is authoritative and must occur literally in the brief text; char_start/char_end are optional code-point offsets that, if present, must match the located position."
+    },
+    "EffortRange": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["min_person_days", "likely_person_days", "max_person_days", "unit"],
+      "properties": {
+        "min_person_days": { "type": "number", "minimum": 0.5, "maximum": 2000 },
+        "likely_person_days": { "type": "number", "minimum": 0.5, "maximum": 2000 },
+        "max_person_days": { "type": "number", "minimum": 0.5, "maximum": 2000 },
+        "unit": { "type": "string", "enum": ["person_days"] }
+      },
+      "description": "Three-point estimate. Ordering min <= likely <= max is required by the consumer; a single-value estimate is allowed only when accompanied by an explicit assumption."
+    }
+  }
+}

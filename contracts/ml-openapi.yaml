@@ -1,0 +1,1511 @@
+openapi: 3.1.0
+
+info:
+  title: Optimal Project Team Formation - ML Service API (Go <-> ML)
+  version: 1.0.0
+  summary: |
+    Structured-input / structured-output API of the Python ML service: brief extraction,
+    embeddings for competency normalization, and the CP-SAT team optimizer.
+  description: |
+    Service boundary (ADR-001)
+    - The ML service is **stateless**. It owns no employee data, no assignments, no audit trail.
+    - It never decides who is assignable: it receives an already-computed capacity matrix and must
+      respect it. Go re-validates every returned variant (G1-G5) and drops invalid ones.
+    - The LLM only structures brief text into requirements. It never sees candidates and never
+      chooses people.
+    - All identifiers are provided by Go and are pseudonyms. No free-form personal data is accepted
+      in any request (`extract` receives the brief text only, de-identified by Go).
+
+    Conventions
+    - Base path `/v1`. Breaking change => `/v2` (never in-place). Additive fields are allowed.
+    - `request_id` is mandatory in every request and echoed in every response and error.
+    - Errors use `Problem` with `retryable` and machine-readable `reason_codes[]`.
+    - Timeout and retry policy is owned by the Go client (ADR-004); the service advertises its own
+      limits in `/readyz` and enforces `time_limit_ms` strictly for `/v1/optimize`.
+    - Determinism: the **structural** body (variants, assignments, metrics, deficits, fingerprint) is
+      reproducible for the same request, solver version and `options`; timing fields
+      (`solver.wall_time_ms`, `diagnostics.presolve_time_ms`) are excluded by definition. Strict
+      reproducibility is achieved with `num_search_workers = 1` and a fixed node/iteration budget; a
+      wall-clock-bounded search may return `FEASIBLE` instead of `OPTIMAL`, which is reported in
+      `solver.status`.
+  contact:
+    name: Team Formation Architecture
+  license:
+    name: Proprietary
+
+servers:
+  - url: http://localhost:8000
+    description: Local docker-compose stack (ml service)
+  - url: http://ml:8000
+    description: In-network service name
+
+security: []
+
+tags:
+  - name: Extraction
+    description: Brief text -> structured requirements with evidence.
+  - name: Embeddings
+    description: Vectors for taxonomy normalization (pgvector lives in Go/Postgres).
+  - name: Optimization
+    description: CP-SAT team formation (solver proposes, Go verifies).
+  - name: Health
+    description: Liveness, readiness and model/solver inventory.
+
+paths:
+  /healthz:
+    get:
+      tags: [Health]
+      operationId: mlLiveness
+      summary: Liveness probe.
+      responses:
+        '200':
+          description: Process is alive.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+              example:
+                status: ok
+                service: ml-service
+                version: 1.0.0
+                uptime_s: 981
+  /readyz:
+    get:
+      tags: [Health]
+      operationId: mlReadiness
+      summary: Readiness - reports which capabilities can serve traffic.
+      description: |
+        A degraded dependency must never make the service answer `200` for an operation it cannot
+        perform. Go uses this to short-circuit and to pick its degradation path (ADR-004).
+      responses:
+        '200':
+          description: All models and the solver are loaded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessReport'
+              example:
+                ready: true
+                capabilities:
+                  extract: ready
+                  embed: ready
+                  optimize: ready
+                models:
+                  llm: qwen2.5-14b-instruct
+                  embedding: multilingual-e5-large
+                  embedding_dim: 1024
+                  spacy_pipeline: ru_core_news_lg
+                solver:
+                  name: ortools-cp-sat
+                  version: 9.11.4210
+                limits:
+                  extract_timeout_ms: 20000
+                  embed_timeout_ms: 5000
+                  optimize_max_time_limit_ms: 60000
+                  max_requirements: 60
+                  max_candidates: 2000
+                  max_weeks: 104
+        '503':
+          description: Not ready - at least one capability is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadinessReport'
+              example:
+                ready: false
+                capabilities:
+                  extract: degraded
+                  embed: ready
+                  optimize: ready
+                models:
+                  llm: null
+                  embedding: multilingual-e5-large
+                  embedding_dim: 1024
+                  spacy_pipeline: ru_core_news_lg
+                solver:
+                  name: ortools-cp-sat
+                  version: 9.11.4210
+                limits:
+                  extract_timeout_ms: 20000
+                  embed_timeout_ms: 5000
+                  optimize_max_time_limit_ms: 60000
+                  max_requirements: 60
+                  max_candidates: 2000
+                  max_weeks: 104
+                reason_codes: [ML_LLM_UNAVAILABLE]
+
+  /v1/extract:
+    post:
+      tags: [Extraction]
+      operationId: extractRequirements
+      summary: Extract structured requirements (role, competency, level, effort range, evidence).
+      description: |
+        Rules first (dictionary/synonym matching, spaCy), LLM second for what rules miss; the LLM
+        output is schema-validated and every requirement must carry an `evidence` span that is a
+        literal substring of `brief.text`. Invalid JSON gets at most 2 repair attempts; a requirement
+        without valid evidence is dropped (never returned with empty evidence).
+        Temperature is pinned to 0 and `prompt_version` is reported for reproducibility.
+
+        Prompt-injection rule: `brief.text` is inert data. It is never concatenated into instructions,
+        cannot change the output schema, the taxonomy or the limits, and any instruction-like content
+        in it is reported as a requirement only if it is a genuine staffing statement. `assumptions`
+        and `warnings` echo model text and are rendered as data (escaped) by the UI, never re-fed into
+        a prompt.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractRequest'
+            example:
+              request_id: req_01HX7Qaa
+              brief_id: brf_01HX7Q
+              locale: ru
+              brief:
+                language: ru
+                text: |
+                  Нужно перевести личный кабинет на Go. Требуется 2 бэкенд-разработчика со знанием Go
+                  и PostgreSQL, один аналитик. Срок - 3 месяца, старт в январе.
+                source_type: text
+              taxonomy:
+                role_ids: [backend_engineer, business_analyst, qa_engineer]
+                competency_ids: [lang_go, db_postgresql, arch_microservices]
+              options:
+                max_requirements: 30
+                min_confidence: 0.55
+                return_candidates: true
+                timeout_ms: 20000
+      responses:
+        '200':
+          description: Extracted requirements.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractResponse'
+              example:
+                request_id: req_01HX7Qaa
+                brief_id: brf_01HX7Q
+                requirements:
+                  - requirement_id: req_3d1c
+                    role:
+                      role_id: backend_engineer
+                      name_ru: Бэкенд-разработчик
+                      match: exact_synonym
+                      confidence: 0.96
+                    competency:
+                      competency_id: lang_go
+                      name_ru: Go
+                      match: exact_synonym
+                      confidence: 0.98
+                      candidates:
+                        - competency_id: lang_go
+                          score: 0.98
+                        - competency_id: lang_java
+                          score: 0.11
+                    level: 3
+                    criticality: must
+                    headcount: 2
+                    effort:
+                      min_person_days: 40
+                      likely_person_days: 55
+                      max_person_days: 80
+                      unit: person_days
+                    assumptions:
+                      - Миграция без изменения схемы данных.
+                      - Тестовое покрытие переносится вместе с кодом.
+                    confidence: 0.86
+                    needs_review: false
+                    evidence:
+                      - kind: brief_span
+                        quote: 2 бэкенд-разработчика со знанием Go
+                  - requirement_id: req_88ab
+                    role:
+                      role_id: business_analyst
+                      name_ru: Бизнес-аналитик
+                      match: exact_synonym
+                      confidence: 0.91
+                    competency: null
+                    level: 3
+                    criticality: should
+                    headcount: 1
+                    effort:
+                      min_person_days: 15
+                      likely_person_days: 22
+                      max_person_days: 35
+                      unit: person_days
+                    assumptions:
+                      - Объём требований оценивается по аналогичным проектам.
+                    confidence: 0.62
+                    needs_review: true
+                    evidence:
+                      - kind: brief_span
+                        quote: один аналитик
+                diagnostics:
+                  engine: hybrid
+                  model: qwen2.5-14b-instruct
+                  prompt_version: extract-v3
+                  temperature: 0
+                  duration_ms: 5400
+                  json_valid: true
+                  retries: 0
+                  dropped_no_evidence: 0
+                  llm_tokens_in: 1830
+                  llm_tokens_out: 940
+                warnings: []
+                reason_codes: [REQ_LOW_CONFIDENCE, REQ_NEEDS_REVIEW]
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '408':
+          $ref: '#/components/responses/Problem408'
+        '422':
+          $ref: '#/components/responses/Problem422'
+        '503':
+          $ref: '#/components/responses/Problem503'
+
+  /v1/embed:
+    post:
+      tags: [Embeddings]
+      operationId: embedTexts
+      summary: Embed texts (brief fragments, competency names, project descriptions) into one vector space.
+      description: |
+        Used by Go for pgvector similarity in taxonomy normalization and for M4 experience relevance.
+        Vectors are L2-normalized when `normalize=true`, so cosine similarity = dot product.
+        The embedding model and dimension are reported in every response and must match the
+        dimension of the `competency.embedding` column; mismatch is a hard error (Go fails closed).
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmbedRequest'
+            example:
+              request_id: req_01HX7Qab
+              model: multilingual-e5-large
+              normalize: true
+              items:
+                - item_id: q_001
+                  kind: competency_query
+                  text: опыт с гу и микросервисами
+                - item_id: p_014
+                  kind: project_description
+                  text: Миграция монолита на Go, разбиение на 6 сервисов, PostgreSQL.
+      responses:
+        '200':
+          description: Vectors in request order.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmbedResponse'
+              example:
+                request_id: req_01HX7Qab
+                model: multilingual-e5-large
+                dim: 1024
+                normalized: true
+                duration_ms: 61
+                vectors:
+                  - item_id: q_001
+                    vector: [0.0132, -0.0441, 0.0871]
+                  - item_id: p_014
+                    vector: [-0.0210, 0.0315, 0.0652]
+                reason_codes: []
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '408':
+          $ref: '#/components/responses/Problem408'
+        '422':
+          $ref: '#/components/responses/Problem422'
+        '503':
+          $ref: '#/components/responses/Problem503'
+
+  /v1/optimize:
+    post:
+      tags: [Optimization]
+      operationId: optimizeTeam
+      summary: Build up to k diverse, hard-feasible team variants with weekly assignments.
+      description: |
+        Input is fully materialized by Go: requirements with effort ranges, candidates with
+        competency levels, cost coefficients and an explicit per-week capacity matrix.
+        Output is a list of variants with weekly assignments, advisory metric values, deficits and
+        reason codes.
+
+        Hard requirements on the solver
+        - G1: never assign hours in a week where `capacity[].unavailable = true`.
+        - G2: sum of assigned hours per (employee, week) <= `capacity[].free_hours`.
+        - G3: every `criticality = must` requirement is covered at level >= required level, or is
+          reported in `deficits` with a positive `person_days` value.
+        - G4: user constraints (`force_include`, `force_exclude`, `max_team_size`, `budget_cap_units`,
+          `deadline_week`, `forbid_external`, `min_bus_factor`) are never relaxed. If they make the
+          model infeasible, return `solver.status = INFEASIBLE` with the blocking constraint ids in
+          `active_constraints` and a deficit/explanation payload - never a relaxed solution.
+        - G5: only ids present in `candidates` may appear in the output.
+
+        Limits: the numbers in `/readyz` (`max_requirements`, `max_candidates`, `max_weeks`) are the
+        service's hard ceilings. The product limits in `contracts/reference.yaml` (30 requirements,
+        500 employees, 500 candidates) are stricter and are enforced by Go before the call.
+
+        Diversity: variants must have pairwise Jaccard distance >= `min_jaccard_diversity`;
+        a variant that cannot be made diverse must be dropped rather than duplicated.
+
+        Infeasible or timed out: return `solver.status = INFEASIBLE|TIMEOUT` with `variants: []` and a
+        populated `infeasibility` block (blocking constraints plus deficits). Never return a relaxed
+        or partial plan.
+
+        The returned `metrics` are advisory estimates (the solver's own view). Go recomputes M1-M12
+        authoritatively and may reject a variant; that is a defect to track, not a normal path.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OptimizeRequest'
+            example:
+              request_id: req_01HX90aa
+              run_id: run_9b2e
+              seed: 42
+              time_limit_ms: 10000
+              k: 3
+              min_jaccard_diversity: 0.25
+              horizon:
+                start_week: '2026-W02'
+                end_week: '2026-W16'
+                weeks: ['2026-W02', '2026-W03', '2026-W04', '2026-W05', '2026-W06', '2026-W07', '2026-W08', '2026-W09', '2026-W10', '2026-W11', '2026-W12', '2026-W13', '2026-W14', '2026-W15', '2026-W16']
+              weights:
+                M1: 0.15
+                M2: 0.13
+                M3: 0.1
+                M4: 0.08
+                M5: 0.15
+                M6: 0.1
+                M7: 0.08
+                M8: 0.08
+                M9: 0.05
+                M10: 0.04
+                M11: 0.02
+                M12: 0.02
+              requirements:
+                - requirement_id: req_3d1c
+                  role_id: backend_engineer
+                  competency_id: lang_go
+                  level: 3
+                  criticality: must
+                  headcount: 2
+                  effort:
+                    min_person_days: 40
+                    likely_person_days: 55
+                    max_person_days: 80
+                  earliest_week: '2026-W02'
+                  latest_week: '2026-W14'
+              candidates:
+                - employee_id: emp_7fa2
+                  grade: S
+                  role_profile_id: backend_engineer
+                  employment_type: internal
+                  bench_flag: false
+                  cost_coefficient: 1.9
+                  experience_score: 0.78
+                  competencies:
+                    - competency_id: lang_go
+                      level: 4
+                      confidence: 0.9
+                    - competency_id: db_postgresql
+                      level: 4
+                      confidence: 0.8
+                  capacity:
+                    - week: '2026-W02'
+                      working_days: 5
+                      free_hours: 20
+                      unavailable: false
+                    - week: '2026-W03'
+                      working_days: 5
+                      free_hours: 20
+                      unavailable: false
+              constraints:
+                force_include: [emp_7fa2]
+                force_exclude: [emp_e19c]
+                max_team_size: 5
+                min_team_size: 2
+                budget_cap_units: 3000
+                deadline_week: '2026-W14'
+                forbid_external: false
+                min_bus_factor: 2
+                max_utilization_ratio: 0.95
+                min_assignment_hours_per_week: 4
+              options:
+                num_search_workers: 1
+                deterministic: true
+                allow_deficits: true
+                objective_preset: balanced
+                log_search_progress: false
+      responses:
+        '200':
+          description: |
+            Solver result. `200` is returned also for `INFEASIBLE`/`TIMEOUT` - the outcome is in
+            `solver.status`; transport-level failures use 4xx/5xx.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptimizeResponse'
+              example:
+                request_id: req_01HX90aa
+                run_id: run_9b2e
+                solver:
+                  name: ortools-cp-sat
+                  version: 9.11.4210
+                  status: FEASIBLE
+                  wall_time_ms: 6410
+                  objective_value: 0.803
+                  best_bound: 0.845
+                  optimality_gap: 0.05
+                  num_workers: 1
+                  seed: 42
+                  deterministic: true
+                variants:
+                  - variant_id: var_a1
+                    label: Balanced / fastest
+                    members:
+                      - employee_id: emp_7fa2
+                        role_id: backend_engineer
+                        allocated_hours: 480
+                        assignment_share: 0.85
+                        reason_codes: [INCLUDE_HIGH_COMPETENCE, INCLUDE_AVAILABLE_CAPACITY]
+                    assignments:
+                      - employee_id: emp_7fa2
+                        requirement_id: req_3d1c
+                        week: '2026-W02'
+                        hours: 32
+                      - employee_id: emp_7fa2
+                        requirement_id: req_3d1c
+                        week: '2026-W03'
+                        hours: 32
+                    metrics:
+                      M1: 0.93
+                      M2: 0.88
+                      M3: 0.81
+                      M5: 0.64
+                      M6: 0.71
+                      M7: 0.86
+                      M8: 0.92
+                      M9: 0.75
+                      M10: 0.9
+                      M11: 0.35
+                      score: 0.803
+                    deficits:
+                      - competency_id: lang_go
+                        requirement_ids: [req_3d1c]
+                        person_days: 12
+                        external_cooperation_flag: true
+                        reason_codes: [DEFICIT_MUST_ROLE]
+                    unscheduled_requirements: []
+                    active_constraints:
+                      - id: c_max_team_size
+                        type: max_team_size
+                        value: '5'
+                        binding: false
+                        reason_codes: [CONSTRAINT_ACTIVE_TEAM_SIZE]
+                    reason_codes: [VARIANT_FASTEST]
+                deterministic_fingerprint: sha256:6f1d0c9ab3e4d5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e
+                diagnostics:
+                  model_version: opt-v1
+                  weeks: 15
+                  requirement_count: 4
+                  candidate_count: 120
+                  variables: 8420
+                  constraints: 15310
+                  time_limit_ms: 10000
+                  presolve_time_ms: 41
+                reason_codes: [DEFICIT_MUST_ROLE]
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '408':
+          $ref: '#/components/responses/Problem408'
+        '422':
+          $ref: '#/components/responses/Problem422'
+        '503':
+          $ref: '#/components/responses/Problem503'
+
+components:
+  parameters:
+    RequestIdHeader:
+      name: X-Request-Id
+      in: header
+      required: true
+      description: Correlation id generated by Go; echoed in the response and in every error.
+      schema:
+        type: string
+        pattern: '^req_[A-Za-z0-9-]{6,32}$'
+      example: req_01HX7Qaa
+
+  headers:
+    XRequestId:
+      description: Correlation id echoed back.
+      schema:
+        type: string
+        pattern: '^req_[A-Za-z0-9-]{6,32}$'
+
+  responses:
+    Problem400:
+      description: Malformed request body or header.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://teamopt.internal/ml/problems/bad-request
+            title: Malformed request
+            status: 400
+            code: BAD_REQUEST
+            detail: request_id is missing.
+            request_id: req_01HX7Qaa
+            retryable: false
+            reason_codes: [VALIDATION_FAILED]
+    Problem408:
+      description: The service's own deadline (options.timeout_ms) was exceeded.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://teamopt.internal/ml/problems/timeout
+            title: Request timed out
+            status: 408
+            code: TIMEOUT
+            detail: The LLM did not answer within 20000 ms.
+            request_id: req_01HX7Qab
+            retryable: true
+            reason_codes: [ML_TIMEOUT]
+    Problem422:
+      description: Semantically invalid input (schema-valid JSON, impossible values).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://teamopt.internal/ml/problems/validation
+            title: Validation failed
+            status: 422
+            code: VALIDATION_FAILED
+            detail: 1 requirement has max_person_days < min_person_days.
+            request_id: req_01HX90ab
+            retryable: false
+            reason_codes: [VALIDATION_FAILED]
+            errors:
+              - field: requirements[2].effort.max_person_days
+                code: EFFORT_RANGE_INVALID
+                detail: max_person_days must be >= min_person_days
+    Problem503:
+      description: A model or solver dependency is unavailable; the caller must degrade (ADR-004).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://teamopt.internal/ml/problems/unavailable
+            title: Capability unavailable
+            status: 503
+            code: CAPABILITY_UNAVAILABLE
+            detail: LLM endpoint is unreachable; extract is unavailable.
+            request_id: req_01HX7Qac
+            retryable: true
+            reason_codes: [ML_LLM_UNAVAILABLE]
+
+  schemas:
+    # ------------------------------------------------------------------ common
+    WeekKey:
+      type: string
+      description: ISO-8601 week key, Monday-based.
+      pattern: '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
+      examples: ['2026-W07']
+    Level:
+      type: integer
+      minimum: 1
+      maximum: 5
+    Criticality:
+      type: string
+      enum: [must, should, nice]
+    ReasonCode:
+      type: string
+      description: Subset of the canonical reason-code list relevant to the ML boundary.
+      enum:
+        - INCLUDE_HIGH_COMPETENCE
+        - INCLUDE_AVAILABLE_CAPACITY
+        - INCLUDE_COST_EFFICIENT
+        - INCLUDE_REQUIRED_ROLE
+        - INCLUDE_BUS_FACTOR
+        - INCLUDE_BENCH
+        - EXCLUDE_OVERLOADED
+        - EXCLUDE_ABSENT
+        - EXCLUDE_BELOW_REQUIRED_LEVEL
+        - EXCLUDE_EXPENSIVE
+        - EXCLUDE_USER_FORCE
+        - EXCLUDE_TEAM_SIZE_LIMIT
+        - EXCLUDE_NO_FREE_CAPACITY
+        - DEFICIT_MUST_ROLE
+        - DEFICIT_EXTERNAL_CONTRACTOR
+        - DEFICIT_UPSKILL_INTERNAL
+        - DEFICIT_DEADLINE_SHIFT
+        - DEFICIT_DESCOPE
+        - CONSTRAINT_ACTIVE_TEAM_SIZE
+        - CONSTRAINT_ACTIVE_BUDGET
+        - CONSTRAINT_ACTIVE_DEADLINE
+        - CONSTRAINT_ACTIVE_FORCE_INCLUDE
+        - CONSTRAINT_ACTIVE_FORCE_EXCLUDE
+        - CONSTRAINT_ACTIVE_BUS_FACTOR
+        - CONSTRAINT_BINDING_CAPACITY
+        - VARIANT_FASTEST
+        - VARIANT_CHEAPEST
+        - VARIANT_LOWEST_RISK
+        - VARIANT_BALANCED
+        - VARIANT_DIVERSITY_TOO_LOW
+        - SOLVER_INFEASIBLE
+        - SOLVER_TIMEOUT
+        - SOLVER_UNKNOWN
+        - REQ_LOW_CONFIDENCE
+        - REQ_NEEDS_REVIEW
+        - REQ_EFFORT_WIDE_RANGE
+        - REQ_TAXONOMY_LOW_CONFIDENCE
+        - NORMALIZE_TOP1_STRONG
+        - NORMALIZE_TOP1_WEAK
+        - ML_TIMEOUT
+        - ML_LLM_UNAVAILABLE
+        - ML_SCHEMA_INVALID
+        - VALIDATION_FAILED
+    Problem:
+      type: object
+      additionalProperties: false
+      required: [type, title, status, code, detail, request_id, retryable, reason_codes]
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+          maxLength: 200
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{2,63}$'
+        detail:
+          type: string
+          maxLength: 2000
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        retryable:
+          type: boolean
+          description: Whether Go may retry the same request body (ADR-004). Always true for timeouts.
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, code, detail]
+      properties:
+        field:
+          type: string
+          maxLength: 200
+          examples: ['requirements[2].effort.max_person_days']
+        code:
+          type: string
+          pattern: '^[A-Z][A-Z0-9_]{2,63}$'
+        detail:
+          type: string
+          maxLength: 500
+
+    # ------------------------------------------------------------------ health
+    CapabilityState:
+      type: string
+      enum: [ready, degraded, unavailable]
+    HealthStatus:
+      type: object
+      additionalProperties: false
+      required: [status, service, version, uptime_s]
+      properties:
+        status:
+          type: string
+          enum: [ok, degraded]
+        service:
+          type: string
+          enum: [ml-service]
+        version:
+          type: string
+          pattern: '^[0-9]+\.[0-9]+\.[0-9]+$'
+        uptime_s:
+          type: integer
+          minimum: 0
+    ReadinessReport:
+      type: object
+      additionalProperties: false
+      required: [ready, capabilities, models, solver, limits]
+      properties:
+        ready:
+          type: boolean
+        capabilities:
+          type: object
+          additionalProperties: false
+          required: [extract, embed, optimize]
+          properties:
+            extract:
+              $ref: '#/components/schemas/CapabilityState'
+            embed:
+              $ref: '#/components/schemas/CapabilityState'
+            optimize:
+              $ref: '#/components/schemas/CapabilityState'
+        models:
+          type: object
+          additionalProperties: false
+          required: [embedding, embedding_dim, spacy_pipeline]
+          properties:
+            llm:
+              type: [string, 'null']
+              description: Model id or null when the LLM endpoint is not reachable.
+            embedding:
+              type: string
+            embedding_dim:
+              type: integer
+              minimum: 64
+              maximum: 4096
+            spacy_pipeline:
+              type: string
+        solver:
+          type: object
+          additionalProperties: false
+          required: [name, version]
+          properties:
+            name:
+              type: string
+              enum: [ortools-cp-sat]
+            version:
+              type: string
+        limits:
+          type: object
+          additionalProperties: false
+          required: [extract_timeout_ms, embed_timeout_ms, optimize_max_time_limit_ms, max_requirements, max_candidates, max_weeks]
+          properties:
+            extract_timeout_ms: {type: integer, minimum: 1000}
+            embed_timeout_ms: {type: integer, minimum: 100}
+            optimize_max_time_limit_ms: {type: integer, minimum: 1000}
+            max_requirements: {type: integer, minimum: 1}
+            max_candidates: {type: integer, minimum: 1}
+            max_weeks: {type: integer, minimum: 1}
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+
+    # -------------------------------------------------------------- extraction
+    MatchMethod:
+      type: string
+      enum: [exact_synonym, embedding, llm, hybrid]
+    EvidenceKind:
+      type: string
+      enum: [brief_span, taxonomy_synonym, project_history, user_edit]
+    EvidenceSpan:
+      type: object
+      additionalProperties: false
+      required: [kind, quote]
+      description: |
+        Literal span of `brief.text`. `quote` is authoritative (must occur in the text);
+        `char_start`/`char_end` are optional code-point offsets used for highlighting and, if
+        provided, must match the located position. Go re-checks both.
+      properties:
+        kind:
+          $ref: '#/components/schemas/EvidenceKind'
+        char_start:
+          type: integer
+          minimum: 0
+        char_end:
+          type: integer
+          minimum: 1
+        quote:
+          type: string
+          minLength: 3
+          maxLength: 1000
+    EffortRange:
+      type: object
+      additionalProperties: false
+      required: [min_person_days, likely_person_days, max_person_days, unit]
+      description: Three-point estimate; a single number is never accepted.
+      properties:
+        min_person_days: {type: number, minimum: 0.5, maximum: 2000}
+        likely_person_days: {type: number, minimum: 0.5, maximum: 2000}
+        max_person_days: {type: number, minimum: 0.5, maximum: 2000}
+        unit: {type: string, enum: [person_days]}
+    ExtractRole:
+      type: object
+      additionalProperties: false
+      required: [role_id, name_ru, match, confidence]
+      properties:
+        role_id: {type: string}
+        name_ru: {type: string, maxLength: 120}
+        match:
+          $ref: '#/components/schemas/MatchMethod'
+        confidence: {type: number, minimum: 0, maximum: 1}
+    ExtractCompetency:
+      type: object
+      additionalProperties: false
+      required: [competency_id, name_ru, match, confidence, candidates]
+      properties:
+        competency_id: {type: string}
+        name_ru: {type: string, maxLength: 120}
+        match:
+          $ref: '#/components/schemas/MatchMethod'
+        confidence: {type: number, minimum: 0, maximum: 1}
+        candidates:
+          type: array
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/CompetencyCandidate'
+    CompetencyCandidate:
+      type: object
+      additionalProperties: false
+      required: [competency_id, score]
+      properties:
+        competency_id: {type: string}
+        score: {type: number, minimum: 0, maximum: 1}
+    ExtractedRequirement:
+      type: object
+      additionalProperties: false
+      required: [requirement_id, role, level, criticality, headcount, effort, assumptions, confidence, needs_review, evidence]
+      properties:
+        requirement_id:
+          type: string
+          pattern: '^[A-Za-z0-9_-]{4,40}$'
+          description: Service-local id, unique inside the response.
+        role:
+          $ref: '#/components/schemas/ExtractRole'
+        competency:
+          oneOf:
+            - $ref: '#/components/schemas/ExtractCompetency'
+            - type: 'null'
+          description: Null only for role-level requirements without a specific technology.
+        level:
+          $ref: '#/components/schemas/Level'
+        criticality:
+          $ref: '#/components/schemas/Criticality'
+        headcount: {type: integer, minimum: 1, maximum: 20}
+        effort:
+          $ref: '#/components/schemas/EffortRange'
+        assumptions:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items: {type: string, maxLength: 300}
+        confidence: {type: number, minimum: 0, maximum: 1}
+        needs_review: {type: boolean}
+        evidence:
+          type: array
+          minItems: 1
+          maxItems: 10
+          description: At least one span; a requirement with no evidence is dropped, never emitted empty.
+          items:
+            $ref: '#/components/schemas/EvidenceSpan'
+    ExtractDiagnostics:
+      type: object
+      additionalProperties: false
+      required: [engine, model, prompt_version, temperature, duration_ms, json_valid, retries, dropped_no_evidence]
+      properties:
+        engine:
+          type: string
+          enum: [rules, llm, hybrid]
+        model: {type: string, maxLength: 120}
+        prompt_version: {type: string, maxLength: 40}
+        temperature: {type: number, enum: [0]}
+        duration_ms: {type: integer, minimum: 0}
+        json_valid: {type: boolean}
+        retries: {type: integer, minimum: 0, maximum: 2}
+        dropped_no_evidence: {type: integer, minimum: 0}
+        llm_tokens_in: {type: integer, minimum: 0}
+        llm_tokens_out: {type: integer, minimum: 0}
+    BriefPayload:
+      type: object
+      additionalProperties: false
+      required: [language, text, source_type]
+      properties:
+        language: {type: string, enum: [ru, en]}
+        text:
+          type: string
+          minLength: 1
+          maxLength: 200000
+          description: De-identified brief text (Go strips names/e-mails before calling this service).
+        source_type: {type: string, enum: [text, docx, pdf, txt]}
+    ExtractTaxonomy:
+      type: object
+      additionalProperties: false
+      description: Closed vocabulary. The service must not invent role/competency ids.
+      properties:
+        role_ids:
+          type: array
+          maxItems: 200
+          items: {type: string}
+        competency_ids:
+          type: array
+          maxItems: 500
+          items: {type: string}
+    ExtractOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        max_requirements: {type: integer, minimum: 1, maximum: 60, default: 30}
+        min_confidence: {type: number, minimum: 0, maximum: 1, default: 0.55}
+        return_candidates: {type: boolean, default: true}
+        timeout_ms: {type: integer, minimum: 1000, maximum: 60000, default: 20000}
+    ExtractRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, brief_id, locale, brief, taxonomy, options]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        brief_id: {type: string, maxLength: 40}
+        locale: {type: string, enum: [ru, en]}
+        brief:
+          $ref: '#/components/schemas/BriefPayload'
+        taxonomy:
+          $ref: '#/components/schemas/ExtractTaxonomy'
+        options:
+          $ref: '#/components/schemas/ExtractOptions'
+    ExtractResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, brief_id, requirements, diagnostics, warnings, reason_codes]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        brief_id: {type: string}
+        requirements:
+          type: array
+          maxItems: 60
+          items:
+            $ref: '#/components/schemas/ExtractedRequirement'
+        diagnostics:
+          $ref: '#/components/schemas/ExtractDiagnostics'
+        warnings:
+          type: array
+          items: {type: string, maxLength: 300}
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+
+    # --------------------------------------------------------------- embeddings
+    EmbedKind:
+      type: string
+      enum: [competency_query, competency_name, project_description, brief, requirement]
+    EmbedItem:
+      type: object
+      additionalProperties: false
+      required: [item_id, kind, text]
+      properties:
+        item_id: {type: string, maxLength: 64}
+        kind:
+          $ref: '#/components/schemas/EmbedKind'
+        text:
+          type: string
+          minLength: 1
+          maxLength: 8000
+    EmbedRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, items]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        model:
+          type: string
+          description: Optional pin; the service rejects a model it does not have.
+        normalize: {type: boolean, default: true}
+        items:
+          type: array
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: '#/components/schemas/EmbedItem'
+    EmbeddingVector:
+      type: object
+      additionalProperties: false
+      required: [item_id, vector]
+      properties:
+        item_id: {type: string}
+        vector:
+          type: array
+          minItems: 1
+          maxItems: 4096
+          description: Length must equal `dim`; the example is abbreviated for readability.
+          items: {type: number}
+    EmbedResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, model, dim, normalized, duration_ms, vectors, reason_codes]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        model: {type: string}
+        dim: {type: integer, minimum: 64, maximum: 4096}
+        normalized: {type: boolean}
+        duration_ms: {type: integer, minimum: 0}
+        vectors:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmbeddingVector'
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+
+    # -------------------------------------------------------------- optimizer
+    OptimizeWeights:
+      type: object
+      additionalProperties: false
+      required: [M1, M2, M3, M5, M6, M7, M8, M9, M10, M11]
+      description: |
+        Objective weights. Same numbers as `reference.yaml` presets after renormalization
+        (M4 omitted when `experience_score` is absent for all candidates). Sum must be 1.0 +- 1e-6.
+      properties:
+        M1: {type: number, minimum: 0, maximum: 1}
+        M2: {type: number, minimum: 0, maximum: 1}
+        M3: {type: number, minimum: 0, maximum: 1}
+        M4: {type: number, minimum: 0, maximum: 1}
+        M5: {type: number, minimum: 0, maximum: 1}
+        M6: {type: number, minimum: 0, maximum: 1}
+        M7: {type: number, minimum: 0, maximum: 1}
+        M8: {type: number, minimum: 0, maximum: 1}
+        M9: {type: number, minimum: 0, maximum: 1}
+        M10: {type: number, minimum: 0, maximum: 1}
+        M11: {type: number, minimum: 0, maximum: 1}
+        M12: {type: number, minimum: 0, maximum: 1}
+    OptimizeHorizon:
+      type: object
+      additionalProperties: false
+      required: [start_week, end_week, weeks]
+      properties:
+        start_week:
+          $ref: '#/components/schemas/WeekKey'
+        end_week:
+          $ref: '#/components/schemas/WeekKey'
+        weeks:
+          type: array
+          minItems: 1
+          maxItems: 104
+          description: Explicit ordered week list; `weeks[0] = start_week`, `weeks[-1] = end_week`.
+          items:
+            $ref: '#/components/schemas/WeekKey'
+    OptimizeRequirement:
+      type: object
+      additionalProperties: false
+      required: [requirement_id, role_id, level, criticality, headcount, effort]
+      properties:
+        requirement_id: {type: string, maxLength: 40}
+        role_id: {type: string}
+        competency_id:
+          type: [string, 'null']
+        level:
+          $ref: '#/components/schemas/Level'
+        criticality:
+          $ref: '#/components/schemas/Criticality'
+        headcount: {type: integer, minimum: 1, maximum: 20}
+        effort:
+          $ref: '#/components/schemas/EffortRange'
+        earliest_week:
+          $ref: '#/components/schemas/WeekKey'
+        latest_week:
+          $ref: '#/components/schemas/WeekKey'
+        allows_external:
+          type: boolean
+          default: true
+    CandidateCompetency:
+      type: object
+      additionalProperties: false
+      required: [competency_id, level, confidence]
+      properties:
+        competency_id: {type: string}
+        level:
+          $ref: '#/components/schemas/Level'
+        confidence: {type: number, minimum: 0, maximum: 1}
+    CandidateCapacityWeek:
+      type: object
+      additionalProperties: false
+      required: [week, working_days, free_hours, unavailable]
+      description: |
+        Authoritative capacity for this employee/week. `free_hours` already excludes the reserve,
+        existing assignments and absences (ADR-003). The optimizer must not exceed it.
+      properties:
+        week:
+          $ref: '#/components/schemas/WeekKey'
+        working_days: {type: integer, minimum: 0, maximum: 5}
+        free_hours: {type: number, minimum: 0, maximum: 60}
+        unavailable: {type: boolean}
+    OptimizeCandidate:
+      type: object
+      additionalProperties: false
+      required: [employee_id, grade, role_profile_id, employment_type, bench_flag, cost_coefficient, competencies, capacity]
+      properties:
+        employee_id:
+          type: string
+          pattern: '^emp_[a-z0-9]{4,12}$'
+        grade:
+          type: string
+          enum: [J, M, S, L, P]
+        role_profile_id: {type: string}
+        employment_type:
+          type: string
+          enum: [internal, contractor, external_partner]
+        bench_flag: {type: boolean}
+        cost_coefficient:
+          type: number
+          minimum: 0.5
+          maximum: 5
+        experience_score:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: M4 input (cosine similarity of brief vs past projects); absent when no history.
+        competencies:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/CandidateCompetency'
+        capacity:
+          type: array
+          minItems: 1
+          maxItems: 104
+          items:
+            $ref: '#/components/schemas/CandidateCapacityWeek'
+        current_project_ids:
+          type: array
+          maxItems: 50
+          items: {type: string}
+    OptimizeConstraints:
+      type: object
+      additionalProperties: false
+      required: [max_utilization_ratio]
+      properties:
+        force_include:
+          type: array
+          maxItems: 50
+          items: {type: string}
+        force_exclude:
+          type: array
+          maxItems: 500
+          items: {type: string}
+        max_team_size: {type: integer, minimum: 1, maximum: 50}
+        min_team_size: {type: integer, minimum: 1, maximum: 50}
+        budget_cap_units:
+          type: number
+          minimum: 0
+          description: Cost ceiling in dimensionless units (person-hours x grade coefficient).
+        deadline_week:
+          $ref: '#/components/schemas/WeekKey'
+        forbid_external:
+          type: boolean
+          description: True excludes `contractor`/`external_partner` candidates.
+        min_bus_factor:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: M9/G4 - minimum number of members able to cover each must competency.
+        max_utilization_ratio:
+          type: number
+          minimum: 0.5
+          maximum: 1
+          description: Hard ceiling of assigned/norm hours per week (G2).
+        min_assignment_hours_per_week:
+          type: number
+          minimum: 0
+          maximum: 40
+          description: Avoids fragmentation below the threshold (M10).
+        freeze_members:
+          type: array
+          maxItems: 50
+          description: Recalculation - these employees must stay in the team (roster freeze, ADR-003 §6).
+          items: {type: string}
+        base_variant_id:
+          type: string
+          description: Recalculation - variant to derive from; used together with `freeze_members`.
+    OptimizeOptions:
+      type: object
+      additionalProperties: false
+      properties:
+        num_search_workers:
+          type: integer
+          minimum: 1
+          maximum: 16
+          default: 1
+          description: 1 is required for bit-identical reproducibility.
+        deterministic:
+          type: boolean
+          default: true
+        allow_deficits:
+          type: boolean
+          default: true
+          description: If false, INFEASIBLE is returned instead of a variant with uncovered must.
+        objective_preset:
+          type: string
+          enum: [fast, economical, balanced, low_risk, custom]
+        log_search_progress: {type: boolean, default: false}
+    OptimizeRequest:
+      type: object
+      additionalProperties: false
+      required: [request_id, run_id, seed, time_limit_ms, k, min_jaccard_diversity, horizon, weights, requirements, candidates, constraints, options]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        run_id: {type: string, maxLength: 40}
+        seed: {type: integer, minimum: 0, maximum: 2147483647}
+        time_limit_ms: {type: integer, minimum: 100, maximum: 60000}
+        k: {type: integer, minimum: 2, maximum: 3}
+        min_jaccard_diversity: {type: number, minimum: 0.1, maximum: 1}
+        horizon:
+          $ref: '#/components/schemas/OptimizeHorizon'
+        weights:
+          $ref: '#/components/schemas/OptimizeWeights'
+        requirements:
+          type: array
+          minItems: 1
+          maxItems: 60
+          items:
+            $ref: '#/components/schemas/OptimizeRequirement'
+        candidates:
+          type: array
+          minItems: 1
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/OptimizeCandidate'
+        constraints:
+          $ref: '#/components/schemas/OptimizeConstraints'
+        options:
+          $ref: '#/components/schemas/OptimizeOptions'
+    SolverStatus:
+      type: string
+      enum: [OPTIMAL, FEASIBLE, INFEASIBLE, UNKNOWN, TIMEOUT, MODEL_INVALID, ERROR]
+    SolverInfo:
+      type: object
+      additionalProperties: false
+      required: [name, version, status, wall_time_ms, num_workers, seed, deterministic]
+      properties:
+        name: {type: string, enum: [ortools-cp-sat]}
+        version: {type: string}
+        status:
+          $ref: '#/components/schemas/SolverStatus'
+        wall_time_ms: {type: integer, minimum: 0}
+        objective_value: {type: [number, 'null']}
+        best_bound: {type: [number, 'null']}
+        optimality_gap: {type: [number, 'null'], minimum: 0}
+        num_workers: {type: integer, minimum: 1, maximum: 16}
+        seed: {type: integer, minimum: 0}
+        deterministic: {type: boolean}
+    ProposedMember:
+      type: object
+      additionalProperties: false
+      required: [employee_id, role_id, allocated_hours, assignment_share, reason_codes]
+      properties:
+        employee_id:
+          type: string
+          pattern: '^emp_[a-z0-9]{4,12}$'
+        role_id: {type: string}
+        allocated_hours: {type: number, minimum: 0}
+        assignment_share: {type: number, minimum: 0, maximum: 1}
+        reason_codes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+    ProposedAssignment:
+      type: object
+      additionalProperties: false
+      required: [employee_id, requirement_id, week, hours]
+      properties:
+        employee_id:
+          type: string
+          pattern: '^emp_[a-z0-9]{4,12}$'
+        requirement_id: {type: string}
+        week:
+          $ref: '#/components/schemas/WeekKey'
+        hours: {type: number, minimum: 0, maximum: 60}
+    MlMetrics:
+      type: object
+      additionalProperties: false
+      description: Advisory metric estimates; Go recomputes all of them authoritatively.
+      properties:
+        M1: {type: number, minimum: 0, maximum: 1}
+        M2: {type: number, minimum: 0, maximum: 1}
+        M3: {type: number, minimum: 0, maximum: 1}
+        M4: {type: number, minimum: 0, maximum: 1}
+        M5: {type: number, minimum: 0, maximum: 1}
+        M6: {type: number, minimum: 0, maximum: 1}
+        M7: {type: number, minimum: 0, maximum: 1}
+        M8: {type: number, minimum: 0, maximum: 1}
+        M9: {type: number, minimum: 0, maximum: 1}
+        M10: {type: number, minimum: 0, maximum: 1}
+        M11: {type: number, minimum: 0, maximum: 1}
+        M12: {type: number, minimum: 0, maximum: 1}
+        score: {type: number, minimum: 0, maximum: 1}
+    MlDeficit:
+      type: object
+      additionalProperties: false
+      required: [competency_id, requirement_ids, person_days, external_cooperation_flag, reason_codes]
+      properties:
+        competency_id:
+          type: [string, 'null']
+          description: Null for a role-level deficit (required role missing entirely).
+        role_id:
+          type: [string, 'null']
+        requirement_ids:
+          type: array
+          items: {type: string}
+        person_days: {type: number, exclusiveMinimum: 0}
+        external_cooperation_flag: {type: boolean}
+        reason_codes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+    ActiveConstraintRef:
+      type: object
+      additionalProperties: false
+      required: [id, type, binding, reason_codes]
+      properties:
+        id:
+          type: string
+          description: Solver-side constraint id (stable per run), referenced in explanations.
+        type:
+          type: string
+          enum: [force_include, force_exclude, max_team_size, min_team_size, budget_cap, deadline, forbid_external, min_bus_factor, max_utilization, capacity]
+        value:
+          type: string
+        binding:
+          type: boolean
+          description: True when the constraint is tight in the optimal solution (removing it would improve the score).
+        reason_codes:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+    VariantProposal:
+      type: object
+      additionalProperties: false
+      required: [variant_id, label, members, assignments, metrics, deficits, unscheduled_requirements, active_constraints, reason_codes]
+      properties:
+        variant_id: {type: string, maxLength: 20, pattern: '^var_[A-Za-z0-9]{2,16}$'}
+        label: {type: string, maxLength: 120}
+        members:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposedMember'
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProposedAssignment'
+        metrics:
+          $ref: '#/components/schemas/MlMetrics'
+        deficits:
+          type: array
+          items:
+            $ref: '#/components/schemas/MlDeficit'
+        unscheduled_requirements:
+          type: array
+          description: Requirements with zero assignment in this variant (must be explained by a deficit).
+          items: {type: string}
+        active_constraints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveConstraintRef'
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+    OptimizeDiagnostics:
+      type: object
+      additionalProperties: false
+      required: [model_version, weeks, requirement_count, candidate_count, variables, constraints, time_limit_ms]
+      properties:
+        model_version: {type: string}
+        weeks: {type: integer, minimum: 1}
+        requirement_count: {type: integer, minimum: 0}
+        candidate_count: {type: integer, minimum: 0}
+        variables: {type: integer, minimum: 0}
+        constraints: {type: integer, minimum: 0}
+        time_limit_ms: {type: integer, minimum: 0}
+        presolve_time_ms: {type: integer, minimum: 0}
+        dropped_diversity_variants: {type: integer, minimum: 0}
+    OptimizeResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, run_id, solver, variants, deterministic_fingerprint, diagnostics, reason_codes]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        run_id: {type: string}
+        solver:
+          $ref: '#/components/schemas/SolverInfo'
+        variants:
+          type: array
+          maxItems: 3
+          description: Sorted by advisory score, pairwise Jaccard >= min_jaccard_diversity.
+          items:
+            $ref: '#/components/schemas/VariantProposal'
+        deterministic_fingerprint:
+          type: string
+          description: sha256 over the canonical JSON of the request + solver version; same input => same value.
+          pattern: '^sha256:[a-f0-9]{64}$'
+        diagnostics:
+          $ref: '#/components/schemas/OptimizeDiagnostics'
+        infeasibility:
+          $ref: '#/components/schemas/InfeasibilityReport'
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+    InfeasibilityReport:
+      type: object
+      additionalProperties: false
+      description: |
+        Why no team could be built. Required when `solver.status` is `INFEASIBLE`/`TIMEOUT` and
+        `variants` is empty: a caller must be able to name the constraint or the shortage that blocks
+        the requirement set (METRICS 3.2/3.3), never just "no solution".
+      required: [blocking_constraints]
+      properties:
+        blocking_constraints:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActiveConstraintRef'
+        deficits:
+          type: array
+          items:
+            $ref: '#/components/schemas/MlDeficit'
+        unscheduled_requirements:
+          type: array
+          items: {type: string}
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'

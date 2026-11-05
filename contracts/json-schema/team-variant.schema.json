@@ -1,0 +1,255 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.teamopt.internal/v1/team-variant.schema.json",
+  "title": "Team variant (v1)",
+  "description": "A hard-feasible team variant with weekly assignments, metric vector, duration percentiles and deficits. Emitted by the Go core (authoritative) and structurally matched by the ML proposal. Invariants that JSON Schema cannot express and that the Go validator enforces: (a) every weekly_assignments.employee_id is a member; (b) no assignment in an unavailable week (G1); (c) sum of hours per employee/week <= free_hours (G2); (d) every member appears with at least one reason code; (e) gate_pass == true requires all G1..G5 counts to be 0.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "variant_id",
+    "run_id",
+    "label",
+    "gate_pass",
+    "gate_violations",
+    "score",
+    "team_size",
+    "cost_units",
+    "duration",
+    "metric_values",
+    "members",
+    "weekly_assignments",
+    "deficits",
+    "active_constraints",
+    "reason_codes"
+  ],
+  "properties": {
+    "variant_id": { "type": "string", "pattern": "^var_[A-Za-z0-9]{2,16}$" },
+    "run_id": { "type": "string", "pattern": "^run_[A-Za-z0-9]{4,16}$" },
+    "label": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "gate_pass": { "type": "boolean" },
+    "gate_violations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["G1", "G2", "G3", "G4", "G5"],
+      "properties": {
+        "G1": { "type": "integer", "minimum": 0 },
+        "G2": { "type": "integer", "minimum": 0 },
+        "G3": { "type": "integer", "minimum": 0 },
+        "G4": { "type": "integer", "minimum": 0 },
+        "G5": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "score": { "type": "number", "minimum": 0, "maximum": 1 },
+    "team_size": { "type": "integer", "minimum": 0, "maximum": 50 },
+    "cost_units": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Dimensionless: sum(person_hours * grade_cost_coefficient)."
+    },
+    "duration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p50_weeks", "p80_weeks", "p50_working_days", "p80_working_days"],
+      "properties": {
+        "p50_weeks": { "type": "number", "minimum": 0 },
+        "p80_weeks": { "type": "number", "minimum": 0 },
+        "p50_working_days": { "type": "integer", "minimum": 0 },
+        "p80_working_days": { "type": "integer", "minimum": 0 },
+        "slack_weeks": { "type": "number" },
+        "deadline_week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+        "p_on_time": { "type": "number", "minimum": 0, "maximum": 1 },
+        "monte_carlo": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["runs", "seed"],
+          "properties": {
+            "runs": { "type": "integer", "minimum": 200, "maximum": 20000 },
+            "seed": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "metric_values": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["M1", "M2", "M3", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "score"],
+      "properties": {
+        "M1": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M2": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M3": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M4": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M5": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M6": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M7": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M8": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M9": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M10": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M11": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M12": { "type": "number", "minimum": 0, "maximum": 1 },
+        "M13": { "type": "number", "minimum": 0, "maximum": 1 },
+        "score": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "members": {
+      "type": "array",
+      "maxItems": 50,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["employee_id", "role_id", "grade", "allocated_hours", "assignment_share", "competence_fit", "reason_codes"],
+        "properties": {
+          "employee_id": { "type": "string", "pattern": "^emp_[a-z0-9]{4,12}$" },
+          "role_id": { "type": "string" },
+          "grade": { "$ref": "common.schema.json#/$defs/Grade" },
+          "allocated_hours": { "type": "number", "minimum": 0 },
+          "assignment_share": { "type": "number", "minimum": 0, "maximum": 1 },
+          "competence_fit": { "type": "number", "minimum": 0, "maximum": 1 },
+          "reason_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "common.schema.json#/$defs/ReasonCode" }
+          },
+          "explanation_id": { "type": "string", "pattern": "^exp_[a-z0-9]{4,12}$" }
+        }
+      }
+    },
+    "weekly_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["employee_id", "requirement_id", "week", "hours", "share"],
+        "properties": {
+          "employee_id": { "type": "string", "pattern": "^emp_[a-z0-9]{4,12}$" },
+          "requirement_id": { "type": "string" },
+          "week": { "$ref": "common.schema.json#/$defs/WeekKey" },
+          "hours": { "type": "number", "minimum": 0, "maximum": 60 },
+          "share": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "deficits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["competency_id", "requirement_ids", "person_days", "external_cooperation_flag", "recommended_actions"],
+        "properties": {
+          "competency_id": { "type": ["string", "null"] },
+          "competency_name_ru": { "type": "string" },
+          "requirement_ids": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "type": "string" }
+          },
+          "person_days": { "type": "number", "exclusiveMinimum": 0 },
+          "weeks": { "type": "number", "minimum": 0 },
+          "external_cooperation_flag": { "type": "boolean" },
+          "recommended_actions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["action", "reason_codes"],
+              "properties": {
+                "action": {
+                  "type": "string",
+                  "enum": ["hire", "contractor", "move_deadline", "upskill", "reallocate", "descope"]
+                },
+                "estimated_cost_units": { "type": "number", "minimum": 0 },
+                "time_to_start_weeks": { "type": "number", "minimum": 0 },
+                "from_project_id": { "type": "string" },
+                "reason_codes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "common.schema.json#/$defs/ReasonCode" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "active_constraints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "source", "reason_codes"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["force_include", "force_exclude", "max_team_size", "min_team_size", "budget_cap", "deadline", "forbid_external", "freeze_members", "min_bus_factor", "max_utilization"]
+          },
+          "value": {
+            "oneOf": [
+              { "type": "integer" },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "string" },
+              { "type": "array", "items": { "type": "string" } }
+            ]
+          },
+          "source": { "type": "string", "enum": ["user", "brief", "policy"] },
+          "reason_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "common.schema.json#/$defs/ReasonCode" }
+          }
+        }
+      }
+    },
+    "excluded_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["employee_id", "reason_codes"],
+        "properties": {
+          "employee_id": { "type": "string", "pattern": "^emp_[a-z0-9]{4,12}$" },
+          "reason_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": { "$ref": "common.schema.json#/$defs/ReasonCode" }
+          },
+          "detail": { "type": "object" }
+        }
+      }
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": { "$ref": "common.schema.json#/$defs/ReasonCode" }
+    }
+  },
+  "allOf": [
+    {
+      "description": "A variant exists for the user only if all hard constraints hold: gate_pass must agree with zero violations.",
+      "if": {
+        "properties": {
+          "gate_violations": {
+            "properties": {
+              "G1": { "const": 0 },
+              "G2": { "const": 0 },
+              "G3": { "const": 0 },
+              "G4": { "const": 0 },
+              "G5": { "const": 0 }
+            }
+          }
+        }
+      },
+      "then": { "properties": { "gate_pass": { "const": true } } },
+      "else": { "properties": { "gate_pass": { "const": false } } }
+    },
+    {
+      "description": "Duration percentiles must be ordered.",
+      "properties": {
+        "duration": {
+          "properties": {
+            "p80_weeks": { "minimum": 0 }
+          }
+        }
+      }
+    }
+  ]
+}

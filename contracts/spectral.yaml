@@ -1,0 +1,42 @@
+# Spectral ruleset for the two OpenAPI documents.
+# Built-in rules only (no custom JS functions) so it runs in CI with a single npx install.
+#   npx --yes @stoplight/spectral-cli lint contracts/openapi.yaml contracts/ml-openapi.yaml \
+#     --ruleset contracts/spectral.yaml
+extends:
+  - spectral:oas
+
+rules:
+  # Correctness of the OpenAPI 3.1 document itself.
+  # If spectral's 3.1 support lags behind, oapi-codegen is the second gate (it fails on real errors).
+  oas3-schema: error
+  oas3-api-servers: error
+  no-$ref-siblings: error
+  duplicated-entry-in-enum: error
+  path-params: error
+  path-keys-no-trailing-slash: error
+
+  # Every operation must be addressable from generated code and documented.
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-tags: error
+  operation-tag-defined: error
+  operation-description: error
+  operation-success-response: error
+
+  # Every example must actually validate against its schema (this is what keeps examples honest).
+  oas3-valid-media-example: error
+  oas3-valid-schema-example: error
+
+  # Documentation hygiene.
+  info-contact: error
+  info-description: error
+  tag-description: error
+  openapi-tags: error
+
+  # Not applicable / too noisy for this project.
+  info-license: off
+  license-url: off
+  contact-url: off
+  contact-email: off
+  operation-singular-tag: off
+  oas3-unused-component: warn

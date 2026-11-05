@@ -1,0 +1,132 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.teamopt.internal/v1/requirement.schema.json",
+  "title": "Requirement (v1)",
+  "description": "One extracted and normalized staffing requirement. Used by the /v1/extract contract and by the Go review API. Hard rules encoded here: at least one evidence span, at least one explicit assumption, a three-point effort range, and a taxonomy role that must come from the closed vocabulary.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "requirement_id",
+    "role",
+    "level",
+    "criticality",
+    "headcount",
+    "effort",
+    "assumptions",
+    "confidence",
+    "needs_review",
+    "evidence"
+  ],
+  "properties": {
+    "requirement_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_-]{4,40}$"
+    },
+    "brief_id": {
+      "type": "string",
+      "pattern": "^brf_[A-Za-z0-9]{4,16}$"
+    },
+    "role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role_id", "confidence"],
+      "properties": {
+        "role_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,39}$" },
+        "name_ru": { "type": "string", "maxLength": 120 },
+        "match": { "type": "string", "enum": ["exact_synonym", "embedding", "llm", "hybrid"] },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "competency": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["competency_id", "confidence"],
+          "properties": {
+            "competency_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]{2,39}$" },
+            "name_ru": { "type": "string", "maxLength": 120 },
+            "match": { "type": "string", "enum": ["exact_synonym", "embedding", "llm", "hybrid"] },
+            "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+            "candidates": {
+              "type": "array",
+              "maxItems": 10,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["competency_id", "score"],
+                "properties": {
+                  "competency_id": { "type": "string" },
+                  "score": { "type": "number", "minimum": 0, "maximum": 1 }
+                }
+              }
+            }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "competency_id": { "type": "string" },
+    "level": { "$ref": "common.schema.json#/$defs/Level" },
+    "criticality": { "$ref": "common.schema.json#/$defs/Criticality" },
+    "headcount": { "type": "integer", "minimum": 1, "maximum": 20 },
+    "effort": { "$ref": "common.schema.json#/$defs/EffortRange" },
+    "assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "type": "string", "minLength": 3, "maxLength": 300 }
+    },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "needs_review": { "type": "boolean" },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": { "$ref": "common.schema.json#/$defs/EvidenceSpan" }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["top1_score", "candidates"],
+      "properties": {
+        "top1_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["competency_id", "score"],
+            "properties": {
+              "competency_id": { "type": "string" },
+              "name_ru": { "type": "string" },
+              "score": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["edited"],
+      "properties": {
+        "edited": { "type": "boolean" },
+        "edited_by": { "type": "string", "pattern": "^(emp_[a-z0-9]{4,12}|system)$" },
+        "edited_at": { "type": "string", "format": "date-time" }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "description": "A requirement without a competency must be flagged for review.",
+      "if": { "required": ["competency"], "properties": { "competency": { "type": "null" } } },
+      "then": { "properties": { "needs_review": { "const": true } } }
+    },
+    {
+      "description": "Low-confidence requirements (confidence < 0.7) must be flagged for review.",
+      "if": { "properties": { "confidence": { "exclusiveMaximum": 0.7 } }, "required": ["confidence"] },
+      "then": { "properties": { "needs_review": { "const": true } } }
+    }
+  ]
+}
