@@ -1,0 +1,118 @@
+# Synthetic scenario definitions for optimizer benchmarking (task 2.2).
+# Each scenario produces a dataset with planted solutions in ground_truth.json.
+#
+# Scenario types:
+#   deficit   - Must-requirement cannot be covered → INFEASIBLE
+#   optimal   - Clean feasible case with one obvious optimal team → OPTIMAL
+#   competing - Multiple non-dominated team variants possible → OPTIMAL/FEASIBLE
+#
+# Briefs reference eval/gold/ directories.
+
+defaults:
+  seed: 42
+  planning_horizon_weeks: 16
+  start_week: "2027-W06"
+  units:
+    - unt_dev
+    - unt_data
+    - unt_platform
+    - unt_analytics
+    - unt_security
+    - unt_qa
+
+scenarios:
+  # ───────── Small pool (30 employees) ─────────
+  - id: small_deficit_01
+    pool_size: 30
+    type: deficit
+    brief_id: brf_0006
+    description: >
+      ML recommendation system requires NLP specialist (ml_nlp level 4 must).
+      No employee in the pool has ml_nlp >= 4. Expected: INFEASIBLE.
+    deficit:
+      competency_id: ml_nlp
+      required_level: 4
+      reason: "no employee with ml_nlp level >= 4 available in the pool"
+    seed: 42
+
+  - id: small_optimal_01
+    pool_size: 30
+    type: optimal
+    brief_id: brf_0001
+    description: >
+      Simple web MVP: Go backend + React frontend + QA + DevOps.
+      Pool contains exact team with spare capacity. Expected: OPTIMAL.
+    seed: 43
+
+  - id: small_competing_01
+    pool_size: 30
+    type: competing
+    brief_id: brf_0007
+    description: >
+      BI dashboards on ClickHouse. Multiple data engineers available,
+      two non-dominated team compositions. Expected: FEASIBLE with 2+ variants.
+    seed: 44
+
+  # ───────── Medium pool (100 employees) ─────────
+  - id: medium_deficit_01
+    pool_size: 100
+    type: deficit
+    brief_id: brf_0006
+    description: >
+      ML recommendation system with NLP deficit in a larger pool.
+      Despite 100 employees, no ml_nlp specialist at level 4+.
+    deficit:
+      competency_id: ml_nlp
+      required_level: 4
+      reason: "no employee with ml_nlp level >= 4 available in the pool"
+    seed: 45
+
+  - id: medium_optimal_01
+    pool_size: 100
+    type: optimal
+    brief_id: brf_0004
+    description: >
+      K8s migration: requires DevOps with K8s, GitLab CI, Prometheus, Grafana,
+      OpenTelemetry at level 3-4. Pool has well-matched candidates.
+    seed: 46
+
+  - id: medium_competing_01
+    pool_size: 100
+    type: competing
+    brief_id: brf_0002
+    description: >
+      Retail DWH project. Multiple qualified data engineers and backend devs;
+      cost-optimized vs schedule-optimized variants both feasible.
+    seed: 47
+
+  # ───────── Large pool (300 employees) ─────────
+  - id: large_deficit_01
+    pool_size: 300
+    type: deficit
+    brief_id: brf_0010
+    description: >
+      Internal DevOps platform requires security engineer with sec_appsec level 4 must.
+      No security engineer at that level in the entire 300-person pool.
+    deficit:
+      competency_id: sec_appsec
+      required_level: 4
+      reason: "no employee with sec_appsec level >= 4 available in the pool"
+    seed: 48
+
+  - id: large_optimal_01
+    pool_size: 300
+    type: optimal
+    brief_id: brf_0005
+    description: >
+      Legacy modernization: Java→Go rewrite. Large pool has multiple qualified
+      candidates per role. Clear optimal team with minimal deficit.
+    seed: 49
+
+  - id: large_competing_01
+    pool_size: 300
+    type: competing
+    brief_id: brf_0009
+    description: >
+      Corporate ESB with Kafka. Multiple experienced backend and integration
+      teams; at least 3 non-dominated variants differing in cost vs schedule.
+    seed: 50
