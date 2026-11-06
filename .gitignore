@@ -1,3 +1,23 @@
 .opencode
-.venv
 opencode.json
+eval/gold
+
+# Environment
+.env
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node / Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
