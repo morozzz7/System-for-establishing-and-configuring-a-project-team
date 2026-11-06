@@ -1,0 +1,31 @@
+# Multi-stage: build Go binary, then run on Alpine (static binary works everywhere).
+# Note: AGENTS.md suggests distroless/static, but we use Alpine for portability
+# when gcr.io is unreachable. The binary is CGO_ENABLED=0 so it runs on any Linux.
+# The "healthcheck" sub-command is used by Docker HEALTHCHECK (exec form).
+
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /src
+
+# Download dependencies first for layer caching.
+COPY backend/go.mod ./
+RUN go mod tidy
+
+# Copy source and build.
+COPY backend/ .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags='-s -w' -o /api ./cmd/api
+
+# --- runtime ---
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates tzdata
+
+COPY --from=builder /api /usr/local/bin/api
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=5s --timeout=3s --start-period=15s --retries=6 \
+  CMD ["/usr/local/bin/api", "healthcheck"]
+
+ENTRYPOINT ["/usr/local/bin/api"]

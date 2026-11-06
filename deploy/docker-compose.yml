@@ -1,0 +1,102 @@
+# Main compose file for the team-formation system.
+# Usage: make up (wraps docker compose --file deploy/docker-compose.yml ...)
+#
+# Host port mappings are configurable via .env (see .env.example).
+# Internal container ports are always fixed: backend=8080, ml=8000, postgres=5432, frontend=3000.
+
+services:
+  # ---- PostgreSQL 16 + pgvector ----
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-teamopt}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-teamopt}
+      POSTGRES_DB: ${POSTGRES_DB:-teamopt}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-teamopt} -d ${POSTGRES_DB:-teamopt}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ---- Go backend (chi + pgx) ----
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    restart: unless-stopped
+    environment:
+      # Internal port is always 8080. BACKEND_PORT only controls host mapping.
+      DATABASE_URL: "postgres://${POSTGRES_USER:-teamopt}:${POSTGRES_PASSWORD:-teamopt}@postgres:5432/${POSTGRES_DB:-teamopt}?sslmode=disable"
+      ML_SERVICE_URL: "${ML_SERVICE_URL:-http://ml:8000}"
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/api", "healthcheck"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  # ---- Python ML service (FastAPI stub) ----
+  ml:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.ml
+    restart: unless-stopped
+    ports:
+      - "${ML_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  # ---- React frontend (Vite build -> nginx) ----
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 15s
+
+  # ---- nginx reverse proxy gateway ----
+  gateway:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "${GATEWAY_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+      ml:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  pgdata:

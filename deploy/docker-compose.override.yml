@@ -1,0 +1,15 @@
+# Dev overrides: hot-reload, source mounts.
+# Applied automatically alongside docker-compose.yml by docker compose.
+
+services:
+  backend:
+    build:
+      target: builder
+    volumes:
+      - ../backend:/src
+    command: ["go", "run", "./cmd/api"]
+
+  ml:
+    volumes:
+      - ../ml:/app
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
