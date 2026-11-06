@@ -1,20 +1,22 @@
-# Multi-stage: build Go binary, then run on Alpine (static binary works everywhere).
+# Multi-stage: build Go binaries (api + seed), then run on Alpine.
 # Note: AGENTS.md suggests distroless/static, but we use Alpine for portability
-# when gcr.io is unreachable. The binary is CGO_ENABLED=0 so it runs on any Linux.
+# when gcr.io is unreachable. The binaries are CGO_ENABLED=0 so they run on any Linux.
 # The "healthcheck" sub-command is used by Docker HEALTHCHECK (exec form).
 
-FROM golang:1.23-alpine AS builder
+FROM golang:1.27-alpine AS builder
 
 WORKDIR /src
 
 # Download dependencies first for layer caching.
-COPY backend/go.mod ./
-RUN go mod tidy
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
 
-# Copy source and build.
+# Copy source and build both binaries.
 COPY backend/ .
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
-    go build -ldflags='-s -w' -o /api ./cmd/api
+    go build -ldflags='-s -w' -o /api ./cmd/api && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build -ldflags='-s -w' -o /seed ./cmd/seed
 
 # --- runtime ---
 FROM alpine:3.20
@@ -22,6 +24,13 @@ FROM alpine:3.20
 RUN apk add --no-cache ca-certificates tzdata
 
 COPY --from=builder /api /usr/local/bin/api
+COPY --from=builder /seed /usr/local/bin/seed
+
+# Copy contracts for seed binary.
+COPY contracts /app/contracts
+# Copy migrations for seed binary (goose).
+COPY db/migrations /app/db/migrations
+WORKDIR /app
 
 EXPOSE 8080
 

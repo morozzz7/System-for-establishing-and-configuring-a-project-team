@@ -13,6 +13,11 @@ help: ## Show this help
 
 up: ## docker compose up --build -d, wait for healthy (90 s)
 	@cp -n .env.example .env 2>/dev/null || true
+	$(COMPOSE) up --build -d postgres
+	@echo "Waiting for postgres..."
+	@sleep 5
+	@echo "Running seed (migrations + reference data)..."
+	$(COMPOSE) run --rm --entrypoint /usr/local/bin/seed backend
 	$(COMPOSE) up --build -d --wait --wait-timeout 90
 	@echo ""
 	@echo "=== All services healthy ==="
@@ -74,5 +79,5 @@ test: lint-contracts ## Run all tests: spectral, go test, pytest
 
 # ----------------------------------------------------------- seed
 
-seed: ## Placeholder for synthetic data seed (task 2.2)
-	@echo "seed: not implemented yet (will be added in task 2.2)"
+seed: ## Apply migrations + load taxonomy/reference seed into the running database
+	$(COMPOSE) run --rm --entrypoint /usr/local/bin/seed backend
