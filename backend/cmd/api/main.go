@@ -1,6 +1,4 @@
 // Package main is the entrypoint for the teamopt backend API.
-// In phase 1.3 it serves only /api/v1/healthz and /api/v1/readyz.
-// Business endpoints are added in phase 2.x.
 package main
 
 import (
@@ -17,7 +15,10 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/teamopt/backend/internal/handler"
 	"github.com/teamopt/backend/internal/platform/config"
+	"github.com/teamopt/backend/internal/repository"
+	"github.com/teamopt/backend/internal/service"
 )
 
 const version = "1.0.0"
@@ -67,6 +68,37 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthz", handleHealthz)
 		r.Get("/readyz", handleReadyz(pool, cfg.MLServiceURL))
+
+		// CRUD routes (task 2.3) + capacity routes (task 2.4).
+		if pool != nil {
+			empRepo := repository.NewPgEmployeeRepo(pool)
+			compRepo := repository.NewPgEmployeeCompetencyRepo(pool)
+			prjRepo := repository.NewPgProjectRepo(pool)
+			asgRepo := repository.NewPgAssignmentRepo(pool)
+			absRepo := repository.NewPgAbsenceRepo(pool)
+			audRepo := repository.NewPgAuditRepo(pool)
+			capRepo := repository.NewPgCapacityRepo(pool)
+
+			capSvc := service.NewCapacityService(empRepo, asgRepo, absRepo, capRepo)
+
+			empSvc := &service.EmployeeService{EmployeeRepo: empRepo, CompRepo: compRepo, AuditRepo: audRepo}
+			prjSvc := &service.ProjectService{ProjectRepo: prjRepo, AuditRepo: audRepo}
+			asgSvc := &service.AssignmentService{
+				AssignmentRepo: asgRepo,
+				EmployeeRepo:   empRepo,
+				AbsenceRepo:    absRepo,
+				ProjectRepo:    prjRepo,
+				AuditRepo:      audRepo,
+				CapacitySvc:    capSvc,
+			}
+			absSvc := &service.AbsenceService{AbsenceRepo: absRepo, EmployeeRepo: empRepo, AuditRepo: audRepo}
+
+			crudRouter := handler.NewRouter(empSvc, prjSvc, asgSvc, absSvc, capSvc)
+			r.Mount("/", crudRouter)
+			logger.Info("CRUD + capacity routes registered")
+		} else {
+			logger.Warn("CRUD routes not registered: no database pool")
+		}
 	})
 
 	srv := &http.Server{
