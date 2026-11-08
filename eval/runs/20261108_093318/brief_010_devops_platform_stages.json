@@ -1,0 +1,975 @@
+{
+  "brief_id": "brief_010_devops_platform",
+  "brief_text": "Проект «Платформа»\n\nВнутренняя DevOps-платформа для компании (200 разработчиков). Нужно:\n— DevOps-инженер senior (Kubernetes, Terraform, GitLab CI)\n— Бэкенд-разработчик Go (внутренний self-service портал)\n— Фронтенд-разработчик React (UI портала)\n\nЗадачи: внутренние CLI-утилиты, шаблоны сервисов, автоматизация онбординга.\nСрок — 6 месяцев. Команда — 3 человека.\n",
+  "gold": [
+    {
+      "requirement_id": "req_010_001",
+      "brief_id": "brf_010",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "cloud_kubernetes",
+        "name_ru": "Kubernetes",
+        "confidence": 0.95
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84,
+        "likely_person_days": 120,
+        "max_person_days": 168,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "6 months × 21 days = 126pd; senior = level 4"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "DevOps-инженер senior (Kubernetes",
+          "char_start": 91,
+          "char_end": 124
+        }
+      ],
+      "confidence": 0.95,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_010_002",
+      "brief_id": "brf_010",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "iac_terraform",
+        "name_ru": "Terraform",
+        "confidence": 0.9
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Terraform for IaC; same DevOps person"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Terraform",
+          "char_start": 126,
+          "char_end": 135
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_010_003",
+      "brief_id": "brf_010",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "confidence": 0.9
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "GitLab CI for template pipelines"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "GitLab CI",
+          "char_start": 137,
+          "char_end": 146
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_010_004",
+      "brief_id": "brf_010",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84,
+        "likely_person_days": 120,
+        "max_person_days": 168,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Go backend for self-service portal; middle level"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Бэкенд-разработчик Go",
+          "char_start": 150,
+          "char_end": 171
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_010_005",
+      "brief_id": "brf_010",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84,
+        "likely_person_days": 120,
+        "max_person_days": 168,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "React frontend for portal UI"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Фронтенд-разработчик React",
+          "char_start": 207,
+          "char_end": 233
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_18fb",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 58.2,
+        "likely_person_days": 83.2,
+        "max_person_days": 116.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.60; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 235,
+          "char_end": 238,
+          "quote": "UI "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_60da",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "iac_terraform",
+        "name_ru": "Terraform",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.7,
+        "likely_person_days": 59.6,
+        "max_person_days": 83.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 126,
+          "char_end": 135,
+          "quote": "Terraform"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8183",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 164.9,
+        "likely_person_days": 235.6,
+        "max_person_days": 329.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 172,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_bfbb",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cloud_kubernetes",
+        "name_ru": "Kubernetes",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84.4,
+        "likely_person_days": 120.6,
+        "max_person_days": 168.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 114,
+          "char_end": 124,
+          "quote": "Kubernetes"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_c8d0",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 123.2,
+        "likely_person_days": 176.0,
+        "max_person_days": 246.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.27; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 228,
+          "char_end": 233,
+          "quote": "React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cb11",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "soft_mentoring",
+        "name_ru": "Наставничество",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.20; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 312,
+          "char_end": 321,
+          "quote": "онбординг"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_f239",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 48.5,
+        "likely_person_days": 69.3,
+        "max_person_days": 97.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.50; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 137,
+          "char_end": 146,
+          "quote": "GitLab CI"
+        }
+      ]
+    }
+  ],
+  "llm": [],
+  "merger": [
+    {
+      "requirement_id": "req_18fb",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 58.2,
+        "likely_person_days": 83.2,
+        "max_person_days": 116.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.60; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 235,
+          "char_end": 238,
+          "quote": "UI "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_60da",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "iac_terraform",
+        "name_ru": "Terraform",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.7,
+        "likely_person_days": 59.6,
+        "max_person_days": 83.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 126,
+          "char_end": 135,
+          "quote": "Terraform"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8183",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 164.9,
+        "likely_person_days": 235.6,
+        "max_person_days": 329.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 172,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_bfbb",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cloud_kubernetes",
+        "name_ru": "Kubernetes",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84.4,
+        "likely_person_days": 120.6,
+        "max_person_days": 168.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 114,
+          "char_end": 124,
+          "quote": "Kubernetes"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_c8d0",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 123.2,
+        "likely_person_days": 176.0,
+        "max_person_days": 246.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.27; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 228,
+          "char_end": 233,
+          "quote": "React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cb11",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "soft_mentoring",
+        "name_ru": "Наставничество",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.20; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 312,
+          "char_end": 321,
+          "quote": "онбординг"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_f239",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 48.5,
+        "likely_person_days": 69.3,
+        "max_person_days": 97.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.50; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 137,
+          "char_end": 146,
+          "quote": "GitLab CI"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_18fb",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 58.2,
+        "likely_person_days": 83.2,
+        "max_person_days": 116.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.60; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 235,
+          "char_end": 238,
+          "quote": "UI "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_60da",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "iac_terraform",
+        "name_ru": "Terraform",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.7,
+        "likely_person_days": 59.6,
+        "max_person_days": 83.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 126,
+          "char_end": 135,
+          "quote": "Terraform"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8183",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 164.9,
+        "likely_person_days": 235.6,
+        "max_person_days": 329.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 172,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_bfbb",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cloud_kubernetes",
+        "name_ru": "Kubernetes",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 84.4,
+        "likely_person_days": 120.6,
+        "max_person_days": 168.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 114,
+          "char_end": 124,
+          "quote": "Kubernetes"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_c8d0",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 123.2,
+        "likely_person_days": 176.0,
+        "max_person_days": 246.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 1.27; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 228,
+          "char_end": 233,
+          "quote": "React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cb11",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "soft_mentoring",
+        "name_ru": "Наставничество",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.20; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 312,
+          "char_end": 321,
+          "quote": "онбординг"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_f239",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 48.5,
+        "likely_person_days": 69.3,
+        "max_person_days": 97.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 126 working days; team size 3; headcount 1; weight 0.50; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 137,
+          "char_end": 146,
+          "quote": "GitLab CI"
+        }
+      ]
+    }
+  ],
+  "llm_empty_reason": "skipped (mode=rules)",
+  "llm_stats": null
+}

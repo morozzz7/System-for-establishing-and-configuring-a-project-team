@@ -1,0 +1,6 @@
+{
+  "content": "[\n  {\n    \"role_id\": \"devops_engineer\",\n    \"competency_id\": \"cicd_gitlab\",\n    \"quote\": \"настроить пайплайны для команды из 15 разработчиков\",\n    \"level\": 3,\n    \"criticality\": \"must\",\n    \"headcount\": 1,\n    \"confidence\": 0.85,\n    \"needs_review\": false\n  },\n  {\n    \"role_id\": \"data_engineer\",\n    \"competency_id\": \"etl_orchestration\",\n    \"quote\": \"настройка пайплайнов данных для ежедневной загрузки\",\n    \"level\": 3,\n    \"criticality\": \"must\",\n    \"headcount\": 1,\n    \"confidence\": 0.65,\n    \"needs_review\": true\n  },\n  {\n    \"role_id\": \"devops_engineer\",\n    \"competency_id\": \"cloud_docker\",\n    \"quote\": \"Технологии: GitLab, Docker\",\n    \"level\": 3,\n    \"criticality\": \"must\",\n    \"headcount\": 1,\n    \"confidence\": 0.88,\n    \"needs_review\": false\n  },\n  {\n    \"role_id\": \"data_engineer\",\n    \"competency_id\": \"lang_python\",\n    \"quote\": \"GitLab, Docker, Python\",\n    \"level\": 3,\n    \"criticality\": \"must\",\n    \"headcount\": 1,\n    \"confidence\": 0.78,\n    \"needs_review\": true\n  }\n]",
+  "tokens_in": 2530,
+  "tokens_out": 989,
+  "model": "qwen/qwen-2.5-72b-instruct"
+}

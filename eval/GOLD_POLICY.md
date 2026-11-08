@@ -73,7 +73,15 @@ Two requirements are kept:
 ### `brief_013` — contradictory levels
 Junior level for architect-level work is kept as-is with `needs_review = true`.
 
-## 4. Validation commands
+## 4. Hold-out split and evaluation commands
+
+To prevent overfitting prompts to the gold set (per `tz_ml_extract_fix_v2.md` §2.3), 5 briefs (one per category) are designated as the fixed hold-out split and are never used in prompt examples or prompt debugging:
+
+- `brief_005_legacy_modernization`
+- `brief_007_bi_dashboards`
+- `brief_010_devops_platform`
+- `brief_015_telecom_migration`
+- `brief_016_ecommerce`
 
 ```bash
 # Check gold against taxonomy and evidence offsets
@@ -81,6 +89,12 @@ python eval/scripts/validate_gold.py --verbose
 
 # Reproduce the baseline (rules-only, no API key needed)
 python eval/run_eval.py --mode rules --out eval/BASELINE.md --dump-raw
+
+# Evaluate with recorded LLM fixtures
+python eval/run_eval.py --mode fixtures --llm-dir ml/tests/fixtures/llm --out eval/BASELINE.md
+
+# Live LLM evaluation (3 runs per brief by default)
+python eval/run_eval.py --mode live --runs 3 --out eval/BASELINE.md --dump-raw
 ```
 
 ## 5. Open questions for the orchestrator / gold owner

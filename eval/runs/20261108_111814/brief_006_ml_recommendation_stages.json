@@ -1,0 +1,1892 @@
+{
+  "brief_id": "brief_006_ml_recommendation",
+  "run_index": 0,
+  "brief_text": "Проект «Рекомендация»\n\nМаркетплейс запускает систему рекомендаций товаров. Нужны: ML-инженер senior (Python, PyTorch),\nдата-инженер (Python, Airflow, Kafka), бизнес-аналитик для определения метрик качества.\n\nОсобенность: нужен специалист по NLP для обработки описаний товаров (векторные эмбеддинги,\nсемантический поиск). Такого специалиста в компании нет — требуется внешний консультант\nили найм.\n\nСрок — 5 месяцев. Данные: каталог 100K товаров, история покупок 2M записей.\nХранилище — ClickHouse + PostgreSQL.\n",
+  "gold": [
+    {
+      "requirement_id": "req_006_001",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "confidence": 0.95
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 70,
+        "likely_person_days": 100,
+        "max_person_days": 140,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "5 months × 21 days ≈ 105pd; senior = level 4"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "ML-инженер senior (Python",
+          "char_start": 82,
+          "char_end": 107
+        }
+      ],
+      "confidence": 0.95,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_002",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "ml_pytorch",
+        "name_ru": "PyTorch",
+        "confidence": 0.95
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 56,
+        "likely_person_days": 80,
+        "max_person_days": 112,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "PyTorch for recommendation model development"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "PyTorch",
+          "char_start": 109,
+          "char_end": 116
+        }
+      ],
+      "confidence": 0.95,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_003",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 70,
+        "likely_person_days": 100,
+        "max_person_days": 140,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Data engineer for pipeline development; middle level assumed"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "дата-инженер (Python",
+          "char_start": 119,
+          "char_end": 139
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_004",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Airflow for data pipeline orchestration"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Airflow",
+          "char_start": 141,
+          "char_end": 148
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_005",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "confidence": 0.85
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21,
+        "likely_person_days": 30,
+        "max_person_days": 42,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Kafka for streaming data from the marketplace to ML pipeline"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Kafka",
+          "char_start": 150,
+          "char_end": 155
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_006",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "confidence": 0.85
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21,
+        "likely_person_days": 30,
+        "max_person_days": 42,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "BA for defining quality metrics; part-time role"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "бизнес-аналитик для определения метрик качества",
+          "char_start": 158,
+          "char_end": 205
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_007",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "ml_nlp",
+        "name_ru": "Обработка естественного языка",
+        "confidence": 0.8
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "NLP specialist for product description embeddings; external hire needed",
+        "DEFICIT: no such specialist in the company"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "специалист по NLP для обработки описаний товаров",
+          "char_start": 227,
+          "char_end": 275
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_008",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14,
+        "likely_person_days": 20,
+        "max_person_days": 28,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "ClickHouse for analytical data store"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "ClickHouse",
+          "char_start": 486,
+          "char_end": 496
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_006_009",
+      "brief_id": "brf_006",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14,
+        "likely_person_days": 20,
+        "max_person_days": 28,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "PostgreSQL for operational data"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "PostgreSQL",
+          "char_start": 499,
+          "char_end": 509
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_4cbd",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 76.8,
+        "likely_person_days": 109.7,
+        "max_person_days": 153.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 101,
+          "char_end": 107,
+          "quote": "Python"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_59ec",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_retail",
+        "name_ru": "Ритейл-домен",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 20.2,
+        "likely_person_days": 28.9,
+        "max_person_days": 40.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.25; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 23,
+          "char_end": 34,
+          "quote": "Маркетплейс"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_6777",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 486,
+          "char_end": 496,
+          "quote": "ClickHouse"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_9587",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "ml_pytorch",
+        "name_ru": "PyTorch",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 57.4,
+        "likely_person_days": 82.0,
+        "max_person_days": 114.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.71; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 109,
+          "char_end": 116,
+          "quote": "PyTorch"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_b59e",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 52.6,
+        "likely_person_days": 75.1,
+        "max_person_days": 105.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.65; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 141,
+          "char_end": 148,
+          "quote": "Airflow"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_b7eb",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 23.4,
+        "likely_person_days": 33.5,
+        "max_person_days": 46.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.29; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 150,
+          "char_end": 155,
+          "quote": "Kafka"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_d7ce",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 76.8,
+        "likely_person_days": 109.7,
+        "max_person_days": 153.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 101,
+          "char_end": 107,
+          "quote": "Python"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_e603",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "ml_nlp",
+        "name_ru": "Обработка естественного языка",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42.0,
+        "likely_person_days": 60.1,
+        "max_person_days": 84.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.52; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 287,
+          "char_end": 297,
+          "quote": "эмбеддинги"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 241,
+          "char_end": 244,
+          "quote": "NLP"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_ffe9",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 23.5,
+        "likely_person_days": 33.6,
+        "max_person_days": 47.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 105 working days; team size 1; headcount 1; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 499,
+          "char_end": 509,
+          "quote": "PostgreSQL"
+        }
+      ]
+    }
+  ],
+  "llm_raw": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 76.8,
+        "likely_person_days": 109.7,
+        "max_person_days": 153.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "ml_pytorch",
+        "name_ru": "PyTorch",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "ml_pytorch",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 57.4,
+        "likely_person_days": 82.0,
+        "max_person_days": 114.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_pytorch",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.71; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 69.8,
+        "likely_person_days": 99.8,
+        "max_person_days": 139.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 47.8,
+        "likely_person_days": 68.2,
+        "max_person_days": 95.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "mq_kafka",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21.3,
+        "likely_person_days": 30.4,
+        "max_person_days": 42.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/mq_kafka",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_requirements",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for business_analyst/an_requirements",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "бизнес-аналитик для определения метрик качества"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "ml_nlp",
+        "name_ru": "Обработка естественного языка",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "ml_nlp",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42.0,
+        "likely_person_days": 60.1,
+        "max_person_days": 84.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_nlp",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.52; level factor 1.10"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "специалист по NLP для обработки описаний товаров (векторные эмбеддинги, семантический поиск)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_008",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_clickhouse",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_clickhouse",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_009",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 23.5,
+        "likely_person_days": 33.6,
+        "max_person_days": 47.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_postgresql",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    }
+  ],
+  "llm_validated": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 76.8,
+        "likely_person_days": 109.7,
+        "max_person_days": 153.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 82,
+          "char_end": 117,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "ml_pytorch",
+        "name_ru": "PyTorch",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "ml_pytorch",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 57.4,
+        "likely_person_days": 82.0,
+        "max_person_days": 114.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_pytorch",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.71; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 82,
+          "char_end": 117,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 69.8,
+        "likely_person_days": 99.8,
+        "max_person_days": 139.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 47.8,
+        "likely_person_days": 68.2,
+        "max_person_days": 95.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "mq_kafka",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21.3,
+        "likely_person_days": 30.4,
+        "max_person_days": 42.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/mq_kafka",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_requirements",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for business_analyst/an_requirements",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 158,
+          "char_end": 205,
+          "quote": "бизнес-аналитик для определения метрик качества"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "ml_nlp",
+        "name_ru": "Обработка естественного языка",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "ml_nlp",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42.0,
+        "likely_person_days": 60.1,
+        "max_person_days": 84.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_nlp",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.52; level factor 1.10"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 227,
+          "char_end": 319,
+          "quote": "специалист по NLP для обработки описаний товаров (векторные эмбеддинги,\nсемантический поиск)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_008",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_clickhouse",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_clickhouse",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 474,
+          "char_end": 509,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_009",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 23.5,
+        "likely_person_days": 33.6,
+        "max_person_days": 47.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_postgresql",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 474,
+          "char_end": 509,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 76.8,
+        "likely_person_days": 109.7,
+        "max_person_days": 153.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 82,
+          "char_end": 117,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "ml_pytorch",
+        "name_ru": "PyTorch",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "ml_pytorch",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 57.4,
+        "likely_person_days": 82.0,
+        "max_person_days": 114.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_pytorch",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.71; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 82,
+          "char_end": 117,
+          "quote": "ML-инженер senior (Python, PyTorch)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 69.8,
+        "likely_person_days": 99.8,
+        "max_person_days": 139.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/lang_python",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 47.8,
+        "likely_person_days": 68.2,
+        "max_person_days": 95.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "mq_kafka",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21.3,
+        "likely_person_days": 30.4,
+        "max_person_days": 42.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/mq_kafka",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 119,
+          "char_end": 156,
+          "quote": "дата-инженер (Python, Airflow, Kafka)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_requirements",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for business_analyst/an_requirements",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 158,
+          "char_end": 205,
+          "quote": "бизнес-аналитик для определения метрик качества"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "ml_engineer",
+        "name_ru": "ML-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "ml_nlp",
+        "name_ru": "Обработка естественного языка",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "ml_nlp",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42.0,
+        "likely_person_days": 60.1,
+        "max_person_days": 84.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ml_engineer/ml_nlp",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.52; level factor 1.10"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 227,
+          "char_end": 319,
+          "quote": "специалист по NLP для обработки описаний товаров (векторные эмбеддинги,\nсемантический поиск)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_008",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_clickhouse",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_clickhouse",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 474,
+          "char_end": 509,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_009",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 23.5,
+        "likely_person_days": 33.6,
+        "max_person_days": 47.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_postgresql",
+        "Timeline parsed: 105 working days; team size 9; headcount 1; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 474,
+          "char_end": 509,
+          "quote": "Хранилище — ClickHouse + PostgreSQL"
+        }
+      ]
+    }
+  ],
+  "drop_counts": {
+    "dropped_schema_invalid": 0,
+    "dropped_unknown_taxonomy": 0,
+    "dropped_no_evidence": 0,
+    "post_processor_dropped": 0,
+    "dropped_duplicate": 0,
+    "dropped_over_limit": 0
+  },
+  "llm_empty_reason": "",
+  "llm_stats": {
+    "tokens_in": 7040,
+    "tokens_out": 769,
+    "duration_ms": 79614,
+    "retries": 0,
+    "json_valid": true
+  }
+}

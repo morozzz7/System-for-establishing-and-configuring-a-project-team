@@ -1,0 +1,1187 @@
+{
+  "brief_id": "brief_003_enterprise_1c",
+  "run_index": 0,
+  "brief_text": "Проект «Мост»\n\nКомпании необходимо интегрировать 1С:Предприятие (бухгалтерия и склад) с новой CRM-системой.\nОбмен данными — через REST API, синхронизация номенклатуры, контрагентов и заказов.\n\nТребуется системный аналитик (опыт интеграций, описание API в Swagger/OpenAPI) и\nбэкенд-разработчик на Java (Spring Boot). Срок — 3 месяца.\n\nОбъём: около 20 эндпоинтов, нагрузка — до 1000 транзакций в час.\nНужно обеспечить идемпотентность и retry-механизм.\n",
+  "gold": [
+    {
+      "requirement_id": "req_003_001",
+      "brief_id": "brf_003",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 30,
+        "likely_person_days": 42,
+        "max_person_days": 58,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "3 months × 21 days ≈ 63pd; SA does integration analysis + API spec"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "системный аналитик (опыт интеграций",
+          "char_start": 203,
+          "char_end": 238
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_003_002",
+      "brief_id": "brf_003",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "REST API design",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21,
+        "likely_person_days": 30,
+        "max_person_days": 42,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "SA designs the API specification in OpenAPI format"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "описание API в Swagger/OpenAPI",
+          "char_start": 240,
+          "char_end": 270
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_003_003",
+      "brief_id": "brf_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "confidence": 0.95
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Java backend developer for integration layer; 3 months full-time"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "бэкенд-разработчик на Java",
+          "char_start": 274,
+          "char_end": 300
+        }
+      ],
+      "confidence": 0.95,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_003_004",
+      "brief_id": "brf_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Spring Boot is the framework for Java backend; same person as lang_java"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Spring Boot",
+          "char_start": 302,
+          "char_end": 313
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_003_005",
+      "brief_id": "brf_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 10,
+        "likely_person_days": 15,
+        "max_person_days": 21,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Idempotency and retry patterns are integration patterns; implied by 'идемпотентность и retry-механизм'"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "идемпотентность и retry-механизм",
+          "char_start": 416,
+          "char_end": 448
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_1447",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 296,
+          "char_end": 300,
+          "quote": "Java"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_15f6",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 29.5,
+        "likely_person_days": 42.2,
+        "max_person_days": 59.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.67; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 108,
+          "char_end": 121,
+          "quote": "Обмен данными"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_5f68",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "test_performance",
+        "name_ru": "Нагрузочное тестирование",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 26.5,
+        "likely_person_days": 37.8,
+        "max_person_days": 52.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.60; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 362,
+          "char_end": 370,
+          "quote": "нагрузка"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_734b",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "Проектирование REST API",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 130,
+          "char_end": 138,
+          "quote": "REST API"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_73bc",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 302,
+          "char_end": 313,
+          "quote": "Spring Boot"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_7d30",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 12.8,
+        "likely_person_days": 18.3,
+        "max_person_days": 25.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 416,
+          "char_end": 431,
+          "quote": "идемпотентность"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 434,
+          "char_end": 439,
+          "quote": "retry"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_92b0",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "Проектирование REST API",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 22.0,
+        "likely_person_days": 31.5,
+        "max_person_days": 44.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 263,
+          "char_end": 270,
+          "quote": "OpenAPI"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 255,
+          "char_end": 262,
+          "quote": "Swagger"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_a6ae",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_logistics",
+        "name_ru": "Логистика",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 11.0,
+        "likely_person_days": 15.8,
+        "max_person_days": 22.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 63 working days; team size 1; headcount 1; weight 0.25; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 79,
+          "char_end": 84,
+          "quote": "склад"
+        }
+      ]
+    }
+  ],
+  "llm_raw": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_integration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 29.5,
+        "likely_person_days": 42.2,
+        "max_person_days": 59.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/an_integration",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.67; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "Проектирование REST API",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "api_rest",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 22.0,
+        "likely_person_days": 31.5,
+        "max_person_days": 44.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/api_rest",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_java",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_java",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "fw_spring",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/fw_spring",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "arch_integration_patterns",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 12.8,
+        "likely_person_days": 18.3,
+        "max_person_days": 25.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_integration_patterns",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Нужно обеспечить идемпотентность и retry-механизм"
+        }
+      ]
+    }
+  ],
+  "llm_validated": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_integration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 29.5,
+        "likely_person_days": 42.2,
+        "max_person_days": 59.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/an_integration",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.67; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 223,
+          "char_end": 270,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "Проектирование REST API",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "api_rest",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 22.0,
+        "likely_person_days": 31.5,
+        "max_person_days": 44.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/api_rest",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 223,
+          "char_end": 270,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_java",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_java",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 274,
+          "char_end": 314,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "fw_spring",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/fw_spring",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 274,
+          "char_end": 314,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "arch_integration_patterns",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 12.8,
+        "likely_person_days": 18.3,
+        "max_person_days": 25.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_integration_patterns",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 399,
+          "char_end": 448,
+          "quote": "Нужно обеспечить идемпотентность и retry-механизм"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "an_integration",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 29.5,
+        "likely_person_days": 42.2,
+        "max_person_days": 59.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/an_integration",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.67; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 223,
+          "char_end": 270,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "api_rest",
+        "name_ru": "Проектирование REST API",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "api_rest",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 22.0,
+        "likely_person_days": 31.5,
+        "max_person_days": 44.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/api_rest",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 223,
+          "char_end": 270,
+          "quote": "опыт интеграций, описание API в Swagger/OpenAPI"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_java",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_java",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 274,
+          "char_end": 314,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "fw_spring",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.9,
+        "likely_person_days": 59.8,
+        "max_person_days": 83.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/fw_spring",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 274,
+          "char_end": 314,
+          "quote": "бэкенд-разработчик на Java (Spring Boot)"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "arch_integration_patterns",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 12.8,
+        "likely_person_days": 18.3,
+        "max_person_days": 25.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_integration_patterns",
+        "Timeline parsed: 63 working days; team size 5; headcount 1; weight 0.29; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 399,
+          "char_end": 448,
+          "quote": "Нужно обеспечить идемпотентность и retry-механизм"
+        }
+      ]
+    }
+  ],
+  "drop_counts": {
+    "dropped_schema_invalid": 0,
+    "dropped_unknown_taxonomy": 0,
+    "dropped_no_evidence": 0,
+    "post_processor_dropped": 0,
+    "dropped_duplicate": 0,
+    "dropped_over_limit": 0
+  },
+  "llm_empty_reason": "",
+  "llm_stats": {
+    "tokens_in": 7034,
+    "tokens_out": 424,
+    "duration_ms": 22163,
+    "retries": 0,
+    "json_valid": true
+  }
+}

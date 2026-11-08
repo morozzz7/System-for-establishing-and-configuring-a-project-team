@@ -1,0 +1,1438 @@
+{
+  "brief_id": "brief_012_implicit_pci_dss",
+  "run_index": 0,
+  "brief_text": "Проект «Платёж»\n\nПлатёжный сервис для интернет-магазина. Приём оплат картами, рекуррентные платежи,\nвозвраты. Система должна полностью соответствовать PCI DSS level 1.\n\nБэкенд: Go, микросервисы, PostgreSQL. Фронтенд: React. Интеграция с платёжным шлюзом.\n\nКоманда: 2 бэкенд-разработчика senior, 1 фронтенд middle, тестировщик.\nСрок — 4 месяца.\n",
+  "gold": [
+    {
+      "requirement_id": "req_012_001",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "confidence": 0.95
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 112,
+        "likely_person_days": 160,
+        "max_person_days": 224,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "4 months × 21 days × 2 = 168pd; senior = level 4"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "2 бэкенд-разработчика senior",
+          "char_start": 265,
+          "char_end": 293
+        }
+      ],
+      "confidence": 0.95,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_002",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "arch_microservices",
+        "name_ru": "Микросервисы",
+        "confidence": 0.9
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 56,
+        "likely_person_days": 80,
+        "max_person_days": 112,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Microservices architecture for payment system"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "микросервисы",
+          "char_start": 181,
+          "char_end": 193
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_003",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "confidence": 0.85
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21,
+        "likely_person_days": 30,
+        "max_person_days": 42,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "PostgreSQL for transaction data"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "PostgreSQL",
+          "char_start": 195,
+          "char_end": 205
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_004",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 56,
+        "likely_person_days": 80,
+        "max_person_days": 112,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "React frontend for payment UI; middle = level 3"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Фронтенд: React",
+          "char_start": 207,
+          "char_end": 222
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_005",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "qa_test_design",
+        "name_ru": "Тест-дизайн",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "QA for payment flows; test design for financial transactions"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "тестировщик",
+          "char_start": 314,
+          "char_end": 325
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_006",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "confidence": 0.7
+      },
+      "competency": {
+        "competency_id": "sec_appsec",
+        "name_ru": "Безопасность приложений",
+        "confidence": 0.7
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 28,
+        "likely_person_days": 40,
+        "max_person_days": 56,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "IMPLICIT: PCI DSS level 1 requires application security expertise",
+        "Security engineer not explicitly listed but implied by compliance requirement",
+        "Part-time engagement (~25%)"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "PCI DSS level 1",
+          "char_start": 151,
+          "char_end": 166
+        }
+      ],
+      "confidence": 0.7,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_012_007",
+      "brief_id": "brf_012",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "dom_fintech",
+        "name_ru": "Финтех-домен",
+        "confidence": 0.75
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14,
+        "likely_person_days": 20,
+        "max_person_days": 28,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "IMPLICIT: fintech domain knowledge needed for payment processing",
+        "Payment gateway integration requires domain expertise"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Платёжный сервис для интернет-магазина",
+          "char_start": 17,
+          "char_end": 55
+        }
+      ],
+      "confidence": 0.7,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_1cc2",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_fintech",
+        "name_ru": "Финтех-домен",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 15.5,
+        "likely_person_days": 22.2,
+        "max_person_days": 31.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 0.24; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 91,
+          "char_end": 98,
+          "quote": "платежи"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 151,
+          "char_end": 158,
+          "quote": "PCI DSS"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_3425",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_microservices",
+        "name_ru": "Микросервисы",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 51.2,
+        "likely_person_days": 73.1,
+        "max_person_days": 102.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 0.87; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 181,
+          "char_end": 193,
+          "quote": "микросервисы"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_6a0f",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 18.8,
+        "likely_person_days": 26.9,
+        "max_person_days": 37.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 195,
+          "char_end": 205,
+          "quote": "PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_91af",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 74.7,
+        "likely_person_days": 106.7,
+        "max_person_days": 149.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 1.27; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 217,
+          "char_end": 222,
+          "quote": "React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_a108",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 100.0,
+        "likely_person_days": 142.8,
+        "max_person_days": 199.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 1.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 177,
+          "char_end": 193,
+          "quote": "Go, микросервисы"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_ba20",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 29.4,
+        "likely_person_days": 42.0,
+        "max_person_days": 58.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 84 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 314,
+          "char_end": 325,
+          "quote": "тестировщик"
+        }
+      ]
+    }
+  ],
+  "llm_raw": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_go",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 110.0,
+        "likely_person_days": 157.1,
+        "max_person_days": 219.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_go",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Бэкенд: Go, микросервисы"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "arch_microservices",
+        "name_ru": "Микросервисы",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "arch_microservices",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 56.3,
+        "likely_person_days": 80.4,
+        "max_person_days": 112.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_microservices",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Go, микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 20.7,
+        "likely_person_days": 29.6,
+        "max_person_days": 41.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/db_postgresql",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.32; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.86
+      },
+      "competency": {
+        "competency_id": "dom_fintech",
+        "name_ru": "Финтех-домен",
+        "match": "llm",
+        "confidence": 0.86,
+        "candidates": [
+          {
+            "competency_id": "dom_fintech",
+            "score": 0.86
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 15.5,
+        "likely_person_days": 22.2,
+        "max_person_days": 31.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/dom_fintech",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.24; level factor 1.10"
+      ],
+      "confidence": 0.86,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Платёжный сервис для интернет-магазина"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.94
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "llm",
+        "confidence": 0.94,
+        "candidates": [
+          {
+            "competency_id": "fw_react",
+            "score": 0.94
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 74.7,
+        "likely_person_days": 106.7,
+        "max_person_days": 149.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/fw_react",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 1.27; level factor 1.00"
+      ],
+      "confidence": 0.94,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Фронтенд: React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "qa_test_design",
+        "name_ru": "Тест-дизайн",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "qa_test_design",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 55.9,
+        "likely_person_days": 79.8,
+        "max_person_days": 111.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for qa_engineer/qa_test_design",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "1 фронтенд middle, тестировщик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "match": "llm",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "sec_appsec",
+        "name_ru": "Безопасность приложений",
+        "match": "llm",
+        "confidence": 0.75,
+        "candidates": [
+          {
+            "competency_id": "sec_appsec",
+            "score": 0.75
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.8,
+        "likely_person_days": 39.7,
+        "max_person_days": 55.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for security_engineer/sec_appsec",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.75,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "соответствовать PCI DSS level 1"
+        }
+      ]
+    }
+  ],
+  "llm_validated": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_go",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 110.0,
+        "likely_person_days": 157.1,
+        "max_person_days": 219.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_go",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 193,
+          "quote": "Бэкенд: Go, микросервисы"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "arch_microservices",
+        "name_ru": "Микросервисы",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "arch_microservices",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 56.3,
+        "likely_person_days": 80.4,
+        "max_person_days": 112.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_microservices",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 177,
+          "char_end": 205,
+          "quote": "Go, микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 20.7,
+        "likely_person_days": 29.6,
+        "max_person_days": 41.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/db_postgresql",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.32; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 181,
+          "char_end": 205,
+          "quote": "микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.86
+      },
+      "competency": {
+        "competency_id": "dom_fintech",
+        "name_ru": "Финтех-домен",
+        "match": "llm",
+        "confidence": 0.86,
+        "candidates": [
+          {
+            "competency_id": "dom_fintech",
+            "score": 0.86
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 15.5,
+        "likely_person_days": 22.2,
+        "max_person_days": 31.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/dom_fintech",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.24; level factor 1.10"
+      ],
+      "confidence": 0.86,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 17,
+          "char_end": 55,
+          "quote": "Платёжный сервис для интернет-магазина"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.94
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "llm",
+        "confidence": 0.94,
+        "candidates": [
+          {
+            "competency_id": "fw_react",
+            "score": 0.94
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 74.7,
+        "likely_person_days": 106.7,
+        "max_person_days": 149.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/fw_react",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 1.27; level factor 1.00"
+      ],
+      "confidence": 0.94,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 207,
+          "char_end": 222,
+          "quote": "Фронтенд: React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "qa_test_design",
+        "name_ru": "Тест-дизайн",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "qa_test_design",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 55.9,
+        "likely_person_days": 79.8,
+        "max_person_days": 111.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for qa_engineer/qa_test_design",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 295,
+          "char_end": 325,
+          "quote": "1 фронтенд middle, тестировщик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "match": "llm",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "sec_appsec",
+        "name_ru": "Безопасность приложений",
+        "match": "llm",
+        "confidence": 0.75,
+        "candidates": [
+          {
+            "competency_id": "sec_appsec",
+            "score": 0.75
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.8,
+        "likely_person_days": 39.7,
+        "max_person_days": 55.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for security_engineer/sec_appsec",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.75,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 135,
+          "char_end": 166,
+          "quote": "соответствовать PCI DSS level 1"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_go",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 110.0,
+        "likely_person_days": 157.1,
+        "max_person_days": 219.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_go",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 1.70; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 193,
+          "quote": "Бэкенд: Go, микросервисы"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "arch_microservices",
+        "name_ru": "Микросервисы",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "arch_microservices",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 56.3,
+        "likely_person_days": 80.4,
+        "max_person_days": 112.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/arch_microservices",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.87; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 177,
+          "char_end": 205,
+          "quote": "Go, микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.92
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.92,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.92
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 20.7,
+        "likely_person_days": 29.6,
+        "max_person_days": 41.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/db_postgresql",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.32; level factor 1.10"
+      ],
+      "confidence": 0.92,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 181,
+          "char_end": 205,
+          "quote": "микросервисы, PostgreSQL"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.86
+      },
+      "competency": {
+        "competency_id": "dom_fintech",
+        "name_ru": "Финтех-домен",
+        "match": "llm",
+        "confidence": 0.86,
+        "candidates": [
+          {
+            "competency_id": "dom_fintech",
+            "score": 0.86
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 15.5,
+        "likely_person_days": 22.2,
+        "max_person_days": 31.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/dom_fintech",
+        "Timeline parsed: 84 working days; team size 7; headcount 2; weight 0.24; level factor 1.10"
+      ],
+      "confidence": 0.86,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 17,
+          "char_end": 55,
+          "quote": "Платёжный сервис для интернет-магазина"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.94
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "llm",
+        "confidence": 0.94,
+        "candidates": [
+          {
+            "competency_id": "fw_react",
+            "score": 0.94
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 74.7,
+        "likely_person_days": 106.7,
+        "max_person_days": 149.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/fw_react",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 1.27; level factor 1.00"
+      ],
+      "confidence": 0.94,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 207,
+          "char_end": 222,
+          "quote": "Фронтенд: React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "qa_test_design",
+        "name_ru": "Тест-дизайн",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "qa_test_design",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 55.9,
+        "likely_person_days": 79.8,
+        "max_person_days": 111.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for qa_engineer/qa_test_design",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 295,
+          "char_end": 325,
+          "quote": "1 фронтенд middle, тестировщик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "match": "llm",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "sec_appsec",
+        "name_ru": "Безопасность приложений",
+        "match": "llm",
+        "confidence": 0.75,
+        "candidates": [
+          {
+            "competency_id": "sec_appsec",
+            "score": 0.75
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.8,
+        "likely_person_days": 39.7,
+        "max_person_days": 55.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for security_engineer/sec_appsec",
+        "Timeline parsed: 84 working days; team size 7; headcount 1; weight 0.43; level factor 1.10"
+      ],
+      "confidence": 0.75,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 135,
+          "char_end": 166,
+          "quote": "соответствовать PCI DSS level 1"
+        }
+      ]
+    }
+  ],
+  "drop_counts": {
+    "dropped_schema_invalid": 0,
+    "dropped_unknown_taxonomy": 0,
+    "dropped_no_evidence": 0,
+    "post_processor_dropped": 0,
+    "dropped_duplicate": 0,
+    "dropped_over_limit": 0
+  },
+  "llm_empty_reason": "",
+  "llm_stats": {
+    "tokens_in": 1925,
+    "tokens_out": 554,
+    "duration_ms": 0,
+    "retries": 0,
+    "json_valid": true
+  }
+}

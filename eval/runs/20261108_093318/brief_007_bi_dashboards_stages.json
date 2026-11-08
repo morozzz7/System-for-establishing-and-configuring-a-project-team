@@ -1,0 +1,351 @@
+{
+  "brief_id": "brief_007_bi_dashboards",
+  "brief_text": "Проект «Дашборд»\n\nОтдел продаж заказывает набор BI-дашбордов. Данные уже в ClickHouse. Нужно: аналитик,\nкоторый построит 8 дашбордов (продажи по регионам, воронка, ABC/XYZ-анализ).\n\nИнструмент: Superset или Metabase. Срок — 1.5 месяца. Один человек.\n\nАналитик должен уверенно знать SQL и уметь работать с бизнес-пользователями.\n",
+  "gold": [
+    {
+      "requirement_id": "req_007_001",
+      "brief_id": "brf_007",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "an_sql_analysis",
+        "name_ru": "Анализ данных через SQL",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 21,
+        "likely_person_days": 30,
+        "max_person_days": 42,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "1.5 months × 21 days ≈ 31pd; one person full-time"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "аналитик",
+          "char_start": 94,
+          "char_end": 102
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_007_002",
+      "brief_id": "brf_007",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 7,
+        "likely_person_days": 10,
+        "max_person_days": 14,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Working with business users = requirement gathering; part of BA role"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "уметь работать с бизнес-пользователями",
+          "char_start": 288,
+          "char_end": 326
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_007_003",
+      "brief_id": "brf_007",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "confidence": 0.8
+      },
+      "level": 2,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 5,
+        "likely_person_days": 7,
+        "max_person_days": 10,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Data already in ClickHouse; minimal DE effort for data prep"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Данные уже в ClickHouse",
+          "char_start": 62,
+          "char_end": 85
+        }
+      ],
+      "confidence": 0.7,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_6777",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 5.3,
+        "likely_person_days": 7.6,
+        "max_person_days": 10.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 75,
+          "char_end": 85,
+          "quote": "ClickHouse"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8f1e",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_sql",
+        "name_ru": "SQL",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.80; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 282,
+          "char_end": 285,
+          "quote": "SQL"
+        }
+      ]
+    }
+  ],
+  "llm": [],
+  "merger": [
+    {
+      "requirement_id": "req_6777",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 5.3,
+        "likely_person_days": 7.6,
+        "max_person_days": 10.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 75,
+          "char_end": 85,
+          "quote": "ClickHouse"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8f1e",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_sql",
+        "name_ru": "SQL",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.80; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 282,
+          "char_end": 285,
+          "quote": "SQL"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_6777",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 5.3,
+        "likely_person_days": 7.6,
+        "max_person_days": 10.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 75,
+          "char_end": 85,
+          "quote": "ClickHouse"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_8f1e",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_sql",
+        "name_ru": "SQL",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 17.6,
+        "likely_person_days": 25.2,
+        "max_person_days": 35.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 31.5 working days; team size 1; headcount 1; weight 0.80; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 282,
+          "char_end": 285,
+          "quote": "SQL"
+        }
+      ]
+    }
+  ],
+  "llm_empty_reason": "skipped (mode=rules)",
+  "llm_stats": null
+}

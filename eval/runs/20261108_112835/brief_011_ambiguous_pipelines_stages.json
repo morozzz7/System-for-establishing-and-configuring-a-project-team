@@ -1,0 +1,832 @@
+{
+  "brief_id": "brief_011_ambiguous_pipelines",
+  "run_index": 0,
+  "brief_text": "Проект «Пайплайн»\n\nНужно настроить пайплайны для команды из 15 разработчиков. Пайплайны должны включать\nсборку, тесты, деплой в staging и production. Также нужна настройка пайплайнов данных\nдля ежедневной загрузки из внешних источников.\n\nТехнологии: GitLab, Docker, Python. Один DevOps-инженер middle на 2 месяца.\n",
+  "gold": [
+    {
+      "requirement_id": "req_011_001",
+      "brief_id": "brf_011",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "confidence": 0.85
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 28,
+        "likely_person_days": 40,
+        "max_person_days": 56,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "CI/CD pipelines in GitLab for 15 developers",
+        "2 months × 21 days ≈ 42pd; middle = level 3"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "пайплайны для команды из 15 разработчиков",
+          "char_start": 35,
+          "char_end": 76
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_011_002",
+      "brief_id": "brf_011",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "confidence": 0.85
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14,
+        "likely_person_days": 20,
+        "max_person_days": 28,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Docker for containerized builds and deploys"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Docker",
+          "char_start": 258,
+          "char_end": 264
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_011_003",
+      "brief_id": "brf_011",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.65
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "confidence": 0.6
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14,
+        "likely_person_days": 20,
+        "max_person_days": 28,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "AMBIGUOUS: 'пайплайны данных' could be ETL (data_engineer) or CI/CD (devops)",
+        "Annotated as data pipeline → etl_orchestration",
+        "Same person may handle both if they have the skills"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "пайплайнов данных\nдля ежедневной загрузки",
+          "char_start": 172,
+          "char_end": 213
+        }
+      ],
+      "confidence": 0.6,
+      "needs_review": true
+    },
+    {
+      "requirement_id": "req_011_004",
+      "brief_id": "brf_011",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "confidence": 0.75
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "confidence": 0.7
+      },
+      "level": 2,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 7,
+        "likely_person_days": 10,
+        "max_person_days": 14,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Python used for data loading scripts; basic level sufficient"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Python",
+          "char_start": 266,
+          "char_end": 272
+        }
+      ],
+      "confidence": 0.65,
+      "needs_review": true
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_375f",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 258,
+          "char_end": 264,
+          "quote": "Docker"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_d287",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 35,
+          "char_end": 44,
+          "quote": "пайплайны"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 78,
+          "char_end": 87,
+          "quote": "Пайплайны"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 250,
+          "char_end": 256,
+          "quote": "GitLab"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_d7ce",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.9,
+        "likely_person_days": 39.9,
+        "max_person_days": 55.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 272,
+          "quote": "Python"
+        }
+      ]
+    }
+  ],
+  "llm_raw": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cicd_gitlab",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cicd_gitlab",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "настроить пайплайны для команды из 15 разработчиков"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cloud_docker",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_docker",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Docker"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 7.3,
+        "likely_person_days": 10.5,
+        "max_person_days": 14.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/lang_python",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.25; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "Python"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 19.1,
+        "likely_person_days": 27.3,
+        "max_person_days": 38.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": null,
+          "char_end": null,
+          "quote": "настройка пайплайнов данных для ежедневной загрузки из внешних источников"
+        }
+      ]
+    }
+  ],
+  "llm_validated": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cicd_gitlab",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cicd_gitlab",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 25,
+          "char_end": 76,
+          "quote": "настроить пайплайны для команды из 15 разработчиков"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cloud_docker",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_docker",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 258,
+          "char_end": 264,
+          "quote": "Docker"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 19.1,
+        "likely_person_days": 27.3,
+        "max_person_days": 38.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 162,
+          "char_end": 235,
+          "quote": "настройка пайплайнов данных\nдля ежедневной загрузки из внешних источников"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.9,
+        "likely_person_days": 39.9,
+        "max_person_days": 55.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_python",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 272,
+          "quote": "Python"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cicd_gitlab",
+        "name_ru": "GitLab CI",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cicd_gitlab",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cicd_gitlab",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 25,
+          "char_end": 76,
+          "quote": "настроить пайплайны для команды из 15 разработчиков"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cloud_docker",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 14.1,
+        "likely_person_days": 20.2,
+        "max_person_days": 28.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_docker",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 258,
+          "char_end": 264,
+          "quote": "Docker"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "etl_orchestration",
+        "name_ru": "ETL и оркестрация",
+        "match": "llm",
+        "confidence": 0.85,
+        "candidates": [
+          {
+            "competency_id": "etl_orchestration",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 19.1,
+        "likely_person_days": 27.3,
+        "max_person_days": 38.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/etl_orchestration",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.65; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 162,
+          "char_end": 235,
+          "quote": "настройка пайплайнов данных\nдля ежедневной загрузки из внешних источников"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "lang_python",
+        "name_ru": "Python",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "lang_python",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 27.9,
+        "likely_person_days": 39.9,
+        "max_person_days": 55.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_python",
+        "Timeline parsed: 42 working days; team size 15; headcount 1; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 272,
+          "quote": "Python"
+        }
+      ]
+    }
+  ],
+  "drop_counts": {
+    "dropped_schema_invalid": 0,
+    "dropped_unknown_taxonomy": 0,
+    "dropped_no_evidence": 0,
+    "post_processor_dropped": 0,
+    "dropped_duplicate": 0,
+    "dropped_over_limit": 0
+  },
+  "llm_empty_reason": "",
+  "llm_stats": {
+    "tokens_in": 14400,
+    "tokens_out": 667,
+    "duration_ms": 30450,
+    "retries": 1,
+    "json_valid": true
+  }
+}

@@ -1,0 +1,1260 @@
+{
+  "brief_id": "brief_009_esb_messaging",
+  "brief_text": "Проект «Шина»\n\nКрупный ритейлер строит корпоративную шину данных (ESB) для обмена сообщениями между\n15 системами (1С, CRM, WMS, сайт). Паттерны: pub/sub, request/reply, outbox.\n\nНужны: архитектор (событийная архитектура, Kafka), 2 бэкенд-разработчика (Go или Java),\nсистемный аналитик (интеграционные спецификации).\n\nСрок — 10 месяцев. Нагрузка: до 50K сообщений в минуту.\n",
+  "gold": [
+    {
+      "requirement_id": "req_009_001",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "arch_event_driven",
+        "name_ru": "Событийная архитектура",
+        "confidence": 0.9
+      },
+      "level": 5,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 140,
+        "likely_person_days": 200,
+        "max_person_days": 280,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "10 months × 21 days ≈ 210pd; architect = level 5",
+        "Part-time ~50% = ~100pd actual"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "архитектор (событийная архитектура",
+          "char_start": 185,
+          "char_end": 219
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_009_002",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.85
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "confidence": 0.85
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Kafka as the messaging backbone; architect must know Kafka"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Kafka",
+          "char_start": 221,
+          "char_end": 226
+        }
+      ],
+      "confidence": 0.85,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_009_003",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 196,
+        "likely_person_days": 280,
+        "max_person_days": 392,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Go or Java → Go chosen as primary; 2 people × 10 months = 420pd max",
+        "Headcount = 2"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "2 бэкенд-разработчика (Go или Java)",
+          "char_start": 229,
+          "char_end": 264
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_009_004",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.7
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "confidence": 0.7
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 98,
+        "likely_person_days": 140,
+        "max_person_days": 196,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Java as alternative; brief says 'Go or Java' → need at least one",
+        "Marked as alternative to Go"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "Go или Java",
+          "char_start": 252,
+          "char_end": 263
+        }
+      ],
+      "confidence": 0.65,
+      "needs_review": true
+    },
+    {
+      "requirement_id": "req_009_005",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "confidence": 0.9
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 98,
+        "likely_person_days": 140,
+        "max_person_days": 196,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "SA writes integration specs for 15 systems"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "системный аналитик (интеграционные спецификации)",
+          "char_start": 266,
+          "char_end": 314
+        }
+      ],
+      "confidence": 0.9,
+      "needs_review": false
+    },
+    {
+      "requirement_id": "req_009_006",
+      "brief_id": "brf_009",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "confidence": 0.8
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 42,
+        "likely_person_days": 60,
+        "max_person_days": 84,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "pub/sub, request/reply, outbox are integration patterns"
+      ],
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "quote": "pub/sub, request/reply, outbox",
+          "char_start": 145,
+          "char_end": 175
+        }
+      ],
+      "confidence": 0.8,
+      "needs_review": false
+    }
+  ],
+  "rules": [
+    {
+      "requirement_id": "req_3671",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 139.6,
+        "likely_person_days": 199.5,
+        "max_person_days": 279.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 259,
+          "char_end": 263,
+          "quote": "Java"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_3de2",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 284,
+          "quote": "системный аналитик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_46ef",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 66,
+          "char_end": 69,
+          "quote": "ESB"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_61aa",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_event_driven",
+        "name_ru": "Событийная архитектура",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 116.1,
+        "likely_person_days": 165.9,
+        "max_person_days": 232.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.79; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 197,
+          "char_end": 219,
+          "quote": "событийная архитектура"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_652f",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 102.9,
+        "likely_person_days": 147.0,
+        "max_person_days": 205.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 175,
+          "quote": "outbox"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_70f8",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_retail",
+        "name_ru": "Ритейл-домен",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 23,
+          "char_end": 29,
+          "quote": "ритейл"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 123,
+          "char_end": 126,
+          "quote": "WMS"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_a108",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 249.9,
+        "likely_person_days": 357.0,
+        "max_person_days": 499.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 1.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 252,
+          "char_end": 255,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_adfe",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 47.0,
+        "likely_person_days": 67.2,
+        "max_person_days": 94.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 221,
+          "char_end": 226,
+          "quote": "Kafka"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cdfd",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "test_performance",
+        "name_ru": "Нагрузочное тестирование",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 336,
+          "char_end": 344,
+          "quote": "Нагрузка"
+        }
+      ]
+    }
+  ],
+  "llm": [],
+  "merger": [
+    {
+      "requirement_id": "req_3671",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 139.6,
+        "likely_person_days": 199.5,
+        "max_person_days": 279.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 259,
+          "char_end": 263,
+          "quote": "Java"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_3de2",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 284,
+          "quote": "системный аналитик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_46ef",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 66,
+          "char_end": 69,
+          "quote": "ESB"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_61aa",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_event_driven",
+        "name_ru": "Событийная архитектура",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 116.1,
+        "likely_person_days": 165.9,
+        "max_person_days": 232.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.79; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 197,
+          "char_end": 219,
+          "quote": "событийная архитектура"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_652f",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 102.9,
+        "likely_person_days": 147.0,
+        "max_person_days": 205.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 175,
+          "quote": "outbox"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_70f8",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_retail",
+        "name_ru": "Ритейл-домен",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 23,
+          "char_end": 29,
+          "quote": "ритейл"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 123,
+          "char_end": 126,
+          "quote": "WMS"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_a108",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 249.9,
+        "likely_person_days": 357.0,
+        "max_person_days": 499.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 1.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 252,
+          "char_end": 255,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_adfe",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 47.0,
+        "likely_person_days": 67.2,
+        "max_person_days": 94.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 221,
+          "char_end": 226,
+          "quote": "Kafka"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cdfd",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "test_performance",
+        "name_ru": "Нагрузочное тестирование",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 336,
+          "char_end": 344,
+          "quote": "Нагрузка"
+        }
+      ]
+    }
+  ],
+  "final_api": [
+    {
+      "requirement_id": "req_3671",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 139.6,
+        "likely_person_days": 199.5,
+        "max_person_days": 279.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.95; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 259,
+          "char_end": 263,
+          "quote": "Java"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_3de2",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 266,
+          "char_end": 284,
+          "quote": "системный аналитик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_46ef",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 66,
+          "char_end": 69,
+          "quote": "ESB"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_61aa",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_event_driven",
+        "name_ru": "Событийная архитектура",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 116.1,
+        "likely_person_days": 165.9,
+        "max_person_days": 232.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.79; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 197,
+          "char_end": 219,
+          "quote": "событийная архитектура"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_652f",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "arch_integration_patterns",
+        "name_ru": "Паттерны интеграции",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 102.9,
+        "likely_person_days": 147.0,
+        "max_person_days": 205.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 169,
+          "char_end": 175,
+          "quote": "outbox"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_70f8",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "dom_retail",
+        "name_ru": "Ритейл-домен",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 35.3,
+        "likely_person_days": 50.4,
+        "max_person_days": 70.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 23,
+          "char_end": 29,
+          "quote": "ритейл"
+        },
+        {
+          "kind": "brief_span",
+          "char_start": 123,
+          "char_end": 126,
+          "quote": "WMS"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_a108",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "lang_go",
+        "name_ru": "Go",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 249.9,
+        "likely_person_days": 357.0,
+        "max_person_days": 499.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 1.70; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 252,
+          "char_end": 255,
+          "quote": "Go "
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_adfe",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 47.0,
+        "likely_person_days": 67.2,
+        "max_person_days": 94.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.32; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 221,
+          "char_end": 226,
+          "quote": "Kafka"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_cdfd",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "exact_synonym",
+        "confidence": 1.0
+      },
+      "competency": {
+        "competency_id": "test_performance",
+        "name_ru": "Нагрузочное тестирование",
+        "match": "exact_synonym",
+        "confidence": 1.0,
+        "candidates": []
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 73.5,
+        "likely_person_days": 105.0,
+        "max_person_days": 147.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Timeline parsed: 210 working days; team size 2; headcount 2; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 336,
+          "char_end": 344,
+          "quote": "Нагрузка"
+        }
+      ]
+    }
+  ],
+  "llm_empty_reason": "skipped (mode=rules)",
+  "llm_stats": null
+}
