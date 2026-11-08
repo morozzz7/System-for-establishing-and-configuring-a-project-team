@@ -1,0 +1,149 @@
+[
+  {
+    "requirement_id": "req_011_001",
+    "brief_id": "brf_011",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "cicd_gitlab",
+      "name_ru": "GitLab CI",
+      "confidence": 0.85
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 28,
+      "likely_person_days": 40,
+      "max_person_days": 56,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "CI/CD pipelines in GitLab for 15 developers",
+      "2 months × 21 days ≈ 42pd; middle = level 3"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "пайплайны для команды из 15 разработчиков",
+        "char_start": 35,
+        "char_end": 76
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_011_002",
+    "brief_id": "brf_011",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "cloud_docker",
+      "name_ru": "Docker",
+      "confidence": 0.85
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 14,
+      "likely_person_days": 20,
+      "max_person_days": 28,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Docker for containerized builds and deploys"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Docker",
+        "char_start": 258,
+        "char_end": 264
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_011_003",
+    "brief_id": "brf_011",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер",
+      "confidence": 0.65
+    },
+    "competency": {
+      "competency_id": "etl_orchestration",
+      "name_ru": "ETL и оркестрация",
+      "confidence": 0.6
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 14,
+      "likely_person_days": 20,
+      "max_person_days": 28,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "AMBIGUOUS: 'пайплайны данных' could be ETL (data_engineer) or CI/CD (devops)",
+      "Annotated as data pipeline → etl_orchestration",
+      "Same person may handle both if they have the skills"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "пайплайнов данных\nдля ежедневной загрузки",
+        "char_start": 172,
+        "char_end": 213
+      }
+    ],
+    "confidence": 0.6,
+    "needs_review": true
+  },
+  {
+    "requirement_id": "req_011_004",
+    "brief_id": "brf_011",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер",
+      "confidence": 0.75
+    },
+    "competency": {
+      "competency_id": "lang_python",
+      "name_ru": "Python",
+      "confidence": 0.7
+    },
+    "level": 2,
+    "criticality": "should",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 7,
+      "likely_person_days": 10,
+      "max_person_days": 14,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Python used for data loading scripts; basic level sufficient"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Python",
+        "char_start": 266,
+        "char_end": 272
+      }
+    ],
+    "confidence": 0.65,
+    "needs_review": true
+  }
+]
