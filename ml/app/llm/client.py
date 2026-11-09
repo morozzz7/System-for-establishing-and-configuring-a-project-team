@@ -88,7 +88,10 @@ class LLMClient:
             LLMTimeoutError: request timed out
             LLMErrorResponse: HTTP error or malformed body
         """
-        headers = {
+        is_openrouter = "openrouter.ai" in self._url.lower()
+        is_deepseek = "deepseek.com" in self._url.lower()
+
+        headers: dict[str, str] = {
             "Authorization": f"Bearer {self._settings.api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "teamopt-ml-service",
@@ -103,7 +106,9 @@ class LLMClient:
         if seed is not None:
             body["seed"] = seed
         if max_tokens is not None:
-            body["max_tokens"] = max_tokens
+            body["max_tokens"] = min(max_tokens, 8192) if is_deepseek else max_tokens
+        if is_openrouter and ":free" in self._settings.model:
+            body["reasoning"] = {"exclude": True, "effort": "low"}
         if response_format is not None:
             body["response_format"] = response_format
 
@@ -117,6 +122,16 @@ class LLMClient:
         try:
             async with httpx.AsyncClient(timeout=timeout_s) as http:
                 resp = await http.post(self._url, json=body, headers=headers)
+                if (
+                    is_deepseek
+                    and resp.status_code in (400, 422)
+                    and "seed" in body
+                    and "seed" in resp.text.lower()
+                ):
+                    body_no_seed = {k: v for k, v in body.items() if k != "seed"}
+                    resp = await http.post(
+                        self._url, json=body_no_seed, headers=headers
+                    )
         except httpx.ConnectError as exc:
             raise LLMUnavailableError(
                 f"Cannot connect to LLM endpoint: {exc}"
@@ -144,15 +159,21 @@ class LLMClient:
 
         try:
             choice = data["choices"][0]
-            content: str = choice["message"]["content"] or ""
+            msg = choice["message"]
+            content: str = msg.get("content") or msg.get("reasoning_content") or ""
             finish_reason: str | None = choice.get("finish_reason")
             usage = data.get("usage", {})
             tokens_in = usage.get("prompt_tokens", 0)
             tokens_out = usage.get("completion_tokens", 0)
             model = data.get("model", self._settings.model)
         except (KeyError, IndexError, TypeError) as exc:
+            if isinstance(data, dict) and data.get("error"):
+                raise LLMErrorResponse(
+                    f"LLM provider error in 200 response: {data['error']}",
+                    status_code=502,
+                ) from exc
             raise LLMErrorResponse(
-                f"Unexpected LLM response structure: {exc}"
+                f"Unexpected LLM response structure: {exc} | body={resp.text[:400]}"
             ) from exc
 
         return LLMResponse(

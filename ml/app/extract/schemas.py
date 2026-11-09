@@ -112,6 +112,21 @@ class ExtractedRequirement(_FrozenBase):
         return v
 
 
+class ExtractVerification(_FrozenBase):
+    """Candidate-verification accounting (ml-openapi.yaml ExtractVerification).
+
+    Invariant: `candidates_found == confirmed + rejected + skipped`.
+    `skipped` means no decision was obtained (transport/parse), not "rejected".
+    """
+
+    candidates_found: int = Field(ge=0)
+    confirmed: int = Field(ge=0)
+    rejected: int = Field(ge=0)
+    skipped: int = Field(ge=0)
+    failed_batches: int = Field(ge=0)
+    attempts: int = Field(ge=0)
+
+
 class ExtractDiagnostics(_FrozenBase):
     engine: Literal["rules", "llm", "hybrid"]
     model: str = Field(max_length=120)
@@ -122,6 +137,8 @@ class ExtractDiagnostics(_FrozenBase):
     retries: int = Field(ge=0, le=2)
     dropped_no_evidence: int = Field(ge=0)
     post_processor_dropped: int = Field(default=0, ge=0, exclude=True)
+    dropped_generic_mention: int = Field(default=0, ge=0)
+    verification: Optional[ExtractVerification] = None
     llm_tokens_in: Optional[int] = Field(default=None, ge=0)
     llm_tokens_out: Optional[int] = Field(default=None, ge=0)
 
@@ -157,6 +174,9 @@ class ExtractResponse(_FrozenBase):
     request_id: str = Field(pattern=r"^req_[A-Za-z0-9-]{6,32}$")
     brief_id: str
     requirements: list[ExtractedRequirement] = Field(max_length=60)
+    requirements_for_review: list[ExtractedRequirement] = Field(
+        default_factory=list, max_length=60
+    )
     diagnostics: ExtractDiagnostics
     warnings: list[str] = Field(default_factory=list)
     reason_codes: list[str] = Field(default_factory=list)

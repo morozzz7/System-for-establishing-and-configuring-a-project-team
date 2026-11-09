@@ -1,0 +1,692 @@
+[
+  {
+    "requirement_id": "req_scat_001",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "lang_go",
+      "name_ru": "Go"
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 2,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Ядро платформы пишется на Go, и для его разработки нужны два бэкенд-разработчика уровня senior",
+        "char_start": 598,
+        "char_end": 692
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_002",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик"
+    },
+    "competency": {
+      "competency_id": "dom_retail",
+      "name_ru": "Ритейл-домен"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бизнес-аналитик, который понимает специфику розничной торговли продуктами питания (FMCG)",
+        "char_start": 1316,
+        "char_end": 1404
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_003",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик"
+    },
+    "competency": {
+      "competency_id": "an_bpmn",
+      "name_ru": "Моделирование процессов (BPMN)"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бизнес-аналитик моделирует их в нотации BPMN",
+        "char_start": 1583,
+        "char_end": 1627
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_004",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "fw_vue",
+      "name_ru": "Vue.js"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Личный кабинет — это веб-приложение на Vue.js, над ним работает один фронтенд-разработчик уровня middle",
+        "char_start": 2978,
+        "char_end": 3081
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_005",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "lang_typescript",
+      "name_ru": "TypeScript"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Весь клиентский код фронтенд-разработчики пишут строго на TypeScript",
+        "char_start": 3083,
+        "char_end": 3151
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_006",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "web_accessibility",
+      "name_ru": "Доступность веб-интерфейсов"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Интерфейс обязан соответствовать требованиям доступности WCAG 2.1 уровня AA; за это отвечает фронтенд-разработчик",
+        "char_start": 3208,
+        "char_end": 3321
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_007",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "ux_ui_designer",
+      "name_ru": "UX/UI-дизайнер"
+    },
+    "competency": {
+      "competency_id": "ui_figma",
+      "name_ru": "Figma"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Макеты экранов и интерактивные прототипы ведутся в Figma силами UX/UI-дизайнера уровня middle",
+        "char_start": 3362,
+        "char_end": 3455
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_008",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "ux_ui_designer",
+      "name_ru": "UX/UI-дизайнер"
+    },
+    "competency": {
+      "competency_id": "ui_design_system",
+      "name_ru": "Дизайн-система"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Он же собирает единую дизайн-систему сети",
+        "char_start": 3457,
+        "char_end": 3498
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_009",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "api_rest",
+      "name_ru": "Проектирование REST API"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Публичные методы для партнёров (банки, сервисы доставки, оператор мобильной связи) публикуются как REST API, их реализуют бэкенд-разработчики",
+        "char_start": 3608,
+        "char_end": 3749
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_010",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "db_postgresql",
+      "name_ru": "PostgreSQL"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Бэкенд-команда проектирует схему хранения в PostgreSQL",
+        "char_start": 3892,
+        "char_end": 3946
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_011",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "db_redis",
+      "name_ru": "Redis"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бэкенд-разработчики держат в Redis",
+        "char_start": 4155,
+        "char_end": 4189
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_012",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "mq_kafka",
+      "name_ru": "Apache Kafka"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бэкенд-разработчики публикуют в Apache Kafka",
+        "char_start": 4299,
+        "char_end": 4343
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_013",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения"
+    },
+    "competency": {
+      "competency_id": "arch_microservices",
+      "name_ru": "Микросервисы"
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Архитектор решения уровня senior отвечает за разделение платформы на микросервисную архитектуру",
+        "char_start": 4478,
+        "char_end": 4573
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_014",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "system_analyst",
+      "name_ru": "Системный аналитик"
+    },
+    "competency": {
+      "competency_id": "an_integration",
+      "name_ru": "Анализ интеграций"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Системный аналитик описывает обмен с кассовым ПО и с учётной системой ERP",
+        "char_start": 4897,
+        "char_end": 4970
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_015",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер"
+    },
+    "competency": {
+      "competency_id": "db_clickhouse",
+      "name_ru": "ClickHouse"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Витрины для маркетинга строятся в ClickHouse; дата-инженер проектирует их",
+        "char_start": 5097,
+        "char_end": 5170
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_016",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер"
+    },
+    "competency": {
+      "competency_id": "etl_orchestration",
+      "name_ru": "ETL и оркестрация"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "оркестрируются в Apache Airflow под управлением дата-инженера",
+        "char_start": 5257,
+        "char_end": 5318
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_017",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "ml_engineer",
+      "name_ru": "ML-инженер"
+    },
+    "competency": {
+      "competency_id": "ml_recsys",
+      "name_ru": "Рекомендательные системы"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "ML-инженер уровня middle строит рекомендательную систему",
+        "char_start": 5457,
+        "char_end": 5513
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_018",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "cloud_yandex",
+      "name_ru": "Yandex Cloud"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Платформа развёртывается в Yandex Cloud, поскольку персональные данные граждан России должны храниться на территории страны (152-ФЗ)",
+        "char_start": 5688,
+        "char_end": 5820
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_019",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "cloud_kubernetes",
+      "name_ru": "Kubernetes"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "DevOps-инженер поднимает кластер Kubernetes для запуска всех сервисов",
+        "char_start": 6042,
+        "char_end": 6111
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_020",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "iac_terraform",
+      "name_ru": "Terraform"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "описывает инфраструктуру как код в Terraform",
+        "char_start": 6225,
+        "char_end": 6269
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_021",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "cicd_gitlab",
+      "name_ru": "GitLab CI"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "DevOps-инженер настраивает в GitLab CI конвейер от коммита до стенда",
+        "char_start": 6404,
+        "char_end": 6472
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_022",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "obs_prometheus",
+      "name_ru": "Prometheus"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Метрики сервисов собираются в Prometheus",
+        "char_start": 6474,
+        "char_end": 6514
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_023",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "obs_grafana",
+      "name_ru": "Grafana"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "дашборды желательно строить в Grafana",
+        "char_start": 6518,
+        "char_end": 6555
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_024",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "security_engineer",
+      "name_ru": "Инженер по безопасности"
+    },
+    "competency": {
+      "competency_id": "sec_iam",
+      "name_ru": "Управление доступом (IAM)"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Инженер по информационной безопасности настраивает единый вход покупателей и сотрудников по протоколам OAuth 2.0 и OIDC",
+        "char_start": 6671,
+        "char_end": 6790
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_025",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "security_engineer",
+      "name_ru": "Инженер по безопасности"
+    },
+    "competency": {
+      "competency_id": "sec_owasp",
+      "name_ru": "OWASP Top 10"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "проверяет приложения на соответствие OWASP Top 10",
+        "char_start": 6816,
+        "char_end": 6865
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_026",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик"
+    },
+    "competency": {
+      "competency_id": "test_playwright",
+      "name_ru": "Playwright"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Сквозные сценарии личного кабинета автоматизирует QA-инженер уровня middle на Playwright",
+        "char_start": 7163,
+        "char_end": 7251
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_027",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик"
+    },
+    "competency": {
+      "competency_id": "test_api",
+      "name_ru": "Тестирование API"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Тестирование API партнёрских методов — автоматизированные проверки контрактов — выполняет тот же QA-инженер",
+        "char_start": 7304,
+        "char_end": 7411
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_028",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик"
+    },
+    "competency": {
+      "competency_id": "test_performance",
+      "name_ru": "Нагрузочное тестирование"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "нагрузочное тестирование на 2 000 запросов в секунду в течение часа; результаты и выводы по узким местам готовит QA-инженер",
+        "char_start": 7522,
+        "char_end": 7645
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_029",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "project_manager",
+      "name_ru": "Руководитель проекта"
+    },
+    "competency": {
+      "competency_id": "proc_agile_scrum",
+      "name_ru": "Agile / Scrum"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "руководитель проекта, который ведёт работу по Scrum с двухнедельными спринтами",
+        "char_start": 7813,
+        "char_end": 7891
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_scat_030",
+    "brief_id": "brf_scatter_001",
+    "role": {
+      "role_id": "project_manager",
+      "name_ru": "Руководитель проекта"
+    },
+    "competency": {
+      "competency_id": "proc_risk_management",
+      "name_ru": "Управление рисками"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Реестр рисков ведёт руководитель проекта",
+        "char_start": 7944,
+        "char_end": 7984
+      }
+    ]
+  }
+]

@@ -452,7 +452,7 @@ class RulesEngine:
                 level=level,
                 criticality=criticality,
                 headcount=headcount,
-                evidence=list(evidence_list),
+                evidence=list(evidence_list[:10]),
                 confidence=0.95,
                 assumptions=[],
             )

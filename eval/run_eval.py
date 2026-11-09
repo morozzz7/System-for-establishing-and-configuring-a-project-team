@@ -8,17 +8,27 @@ Evaluates the ML extraction pipeline against `eval/gold` and reports:
   4. `final_api`: final `/v1/extract` output
 
 Metrics per brief and in aggregate (All 17 briefs + Hold-out 5 briefs):
+  - `role`: set of `role_id` per brief (TP/FP/FN, Precision, Recall, F1; target Recall = 1.0)
   - `competency`: set of `competency_id` per brief (TP/FP/FN, Precision, Recall, F1)
-  - `pair`: set of exact `(role_id, competency_id)` per brief
+  - `pair`: set of exact `(role_id, competency_id)` per brief (role-only items excluded unless in gold)
   - `pair_relaxed`: `(role_id, competency_id)` where role counts if `role_id in competency.roles`
   - `role_accuracy`: accuracy of `role_id` on correctly found competencies (`correct_roles / matched_comps`)
+  - `headcount_accuracy`: exact headcount match on matched pairs, and specifically on `gold.headcount > 1`
+  - `trap_rate`: share of false word-boundary candidates in brief text that leaked into predictions
+  - `pair_hit_rate` (when `--runs > 1`): fraction of runs in which each `(role_id, competency_id)` pair appeared
+
+ADR-006 additions (additive, `pair` semantics unchanged = full validated list):
+  - `pair_main` / `pair_review`: the `pair` block computed on `requirements` vs `requirements_for_review`
+  - `predicted_main_count` / `review_count` / `review_items` (role_id, competency_id, confidence)
+  - `diagnostics.verification` (`candidates_found == confirmed + rejected + skipped`,
+    `failed_batches`, `attempts`) and `diagnostics.dropped_generic_mention`
 
 Usage:
     # Auto-detect (runs live if LLM_API_KEY is in env / ml/.env / .env, else rules)
     python eval/run_eval.py
 
-    # Explicit live LLM run (defaults to --runs 3; use --runs 1 for a quick single pass)
-    python eval/run_eval.py --mode live --runs 1
+    # Multi-run stability benchmark (e.g. 10 runs)
+    python eval/run_eval.py --mode live --runs 10
 
     # Baseline without LLM (deterministic, no API key needed)
     python eval/run_eval.py --mode rules --out eval/BASELINE.md --dump-raw
@@ -58,14 +68,24 @@ HOLD_OUT_BRIEFS: list[str] = [
 ]
 
 STAGE_ORDER: list[str] = ["rules", "llm_raw", "llm_validated", "final_api"]
-METRIC_KEYS: tuple[str, ...] = ("competency", "pair", "pair_relaxed", "role_accuracy")
+METRIC_KEYS: tuple[str, ...] = (
+    "role",
+    "competency",
+    "pair",
+    "pair_relaxed",
+    "role_accuracy",
+    "headcount_accuracy",
+    "headcount_multi",
+)
 
 sys.path.insert(0, str(ML_DIR))
 
+from app.extract.candidates import scan_unmatched_competencies  # noqa: E402
 from app.extract.effort import EffortEstimator  # noqa: E402
 from app.extract.llm_extract import LLMStats, llm_extract  # noqa: E402
 from app.extract.postprocessor import RoleCompetencyValidator  # noqa: E402
 from app.extract.prompt import PROMPT_VERSION  # noqa: E402
+from app.extract.review import REVIEW_CONFIDENCE_MAX, split_for_review  # noqa: E402
 from app.extract.rules import RulesEngine  # noqa: E402
 from app.extract.schemas import ExtractedRequirement  # noqa: E402
 from app.extract.taxonomy import TaxonomyRegistry, get_registry  # noqa: E402
@@ -130,6 +150,50 @@ def _req_competency(req: ExtractedRequirement | dict[str, Any]) -> str | None:
     return comp_id or None
 
 
+def _req_headcount(req: ExtractedRequirement | dict[str, Any]) -> int:
+    if isinstance(req, ExtractedRequirement):
+        return req.headcount
+    val = req.get("headcount", 1)
+    return int(val) if isinstance(val, int) and val >= 1 else 1
+
+
+def diagnostics_from_stats(llm_stats: LLMStats | None) -> dict[str, Any]:
+    """Build an `ExtractDiagnostics`-shaped dict (ADR-006) from `LLMStats`.
+
+    Field names match `app.extract.diagnostics.build_diagnostics`:
+    `verification.{candidates_found,confirmed,rejected,skipped,failed_batches,attempts}`
+    and `dropped_generic_mention`. `verification` is `None` without LLM stats
+    (rules mode), because no candidate verification call can run.
+    """
+    if llm_stats is None:
+        return {"verification": None, "dropped_generic_mention": 0}
+    return {
+        "verification": {
+            "candidates_found": llm_stats.candidate_competencies_found,
+            "confirmed": llm_stats.candidate_competencies_confirmed,
+            "rejected": llm_stats.candidate_competencies_rejected,
+            "skipped": llm_stats.candidate_competencies_skipped,
+            "failed_batches": llm_stats.verification_failed_batches,
+            "attempts": llm_stats.verification_attempts,
+        },
+        "dropped_generic_mention": llm_stats.dropped_generic_mention,
+    }
+
+
+def _pair_block_on(
+    gold_reqs: list[dict[str, Any]],
+    pred_reqs: list[ExtractedRequirement | dict[str, Any]],
+    registry: TaxonomyRegistry,
+    brief_text: str,
+) -> dict[str, Any]:
+    """Return the `pair` block of `compute_metrics` for a requirement subset.
+
+    Uses the same gold list, so `pair_review` is measured against all gold pairs
+    (ADR-006 §2 quotes review recall as 1/19 for the mega-brief, not 1/4).
+    """
+    return compute_metrics(gold_reqs, pred_reqs, registry, brief_text)["pair"]
+
+
 # ---------------------------------------------------------------------------
 # Metrics
 # ---------------------------------------------------------------------------
@@ -173,11 +237,40 @@ def compute_metrics(
     gold_reqs: list[dict[str, Any]],
     pred_reqs: list[ExtractedRequirement | dict[str, Any]],
     registry: TaxonomyRegistry,
+    brief_text: str = "",
+    explicit_traps: set[str] | None = None,
 ) -> dict[str, Any]:
     """Compute per-stage metrics for one brief."""
+    all_gold_pairs = [_req_pair(g) for g in gold_reqs]
+    all_pred_pairs = [_req_pair(p) for p in pred_reqs]
+
+    # 0. Role-level sets (includes role-only predictions from Role Safety Net!)
+    gold_roles = {r for r, _ in all_gold_pairs if r}
+    pred_roles = {r for r, _ in all_pred_pairs if r}
+    tp_role = len(gold_roles & pred_roles)
+    fp_role = len(pred_roles - gold_roles)
+    fn_role = len(gold_roles - pred_roles)
+    p_role = tp_role / (tp_role + fp_role) if (tp_role + fp_role) > 0 else 0.0
+    r_role = tp_role / (tp_role + fn_role) if (tp_role + fn_role) > 0 else 0.0
+
+    # Role-only predictions (competency == "") are evaluated at the `role` level
+    # and NOT penalized as false positives in `pair` / `pair_relaxed` unless gold has role-only.
+    gold_has_role_only = any(not c for _, c in all_gold_pairs)
+    role_only_count = sum(1 for _, c in all_pred_pairs if not c)
+    gold_pairs = (
+        all_gold_pairs
+        if gold_has_role_only
+        else [(r, c) for r, c in all_gold_pairs if c]
+    )
+    pred_pairs = (
+        all_pred_pairs
+        if gold_has_role_only
+        else [(r, c) for r, c in all_pred_pairs if c]
+    )
+
     # 1. Competency-level sets (ignore role, ignore role-only requirements)
-    gold_comps = {c for g in gold_reqs if (c := _req_competency(g))}
-    pred_comps = {c for p in pred_reqs if (c := _req_competency(p))}
+    gold_comps = {c for _, c in gold_pairs if c}
+    pred_comps = {c for _, c in pred_pairs if c}
 
     tp_c = len(gold_comps & pred_comps)
     fp_c = len(pred_comps - gold_comps)
@@ -186,9 +279,6 @@ def compute_metrics(
     r_c = tp_c / (tp_c + fn_c) if (tp_c + fn_c) > 0 else 0.0
 
     # 2. Exact pair-level sets
-    gold_pairs = [_req_pair(g) for g in gold_reqs]
-    pred_pairs = [_req_pair(p) for p in pred_reqs]
-
     gold_pair_set = set(gold_pairs)
     pred_pair_set = set(pred_pairs)
     tp_p = len(gold_pair_set & pred_pair_set)
@@ -215,9 +305,67 @@ def compute_metrics(
     wrong_roles = len(matched_comps) - correct_roles
     role_acc = correct_roles / len(matched_comps) if matched_comps else 0.0
 
+    # 5. Headcount accuracy (normalized by role: max headcount among mentions of each role)
+    gold_role_hc: dict[str, int] = {}
+    for g in gold_reqs:
+        r_id, _ = _req_pair(g)
+        if r_id:
+            gold_role_hc[r_id] = max(gold_role_hc.get(r_id, 1), _req_headcount(g))
+
+    pred_role_hc: dict[str, int] = {}
+    for p in pred_reqs:
+        r_id, _ = _req_pair(p)
+        if r_id:
+            pred_role_hc[r_id] = max(pred_role_hc.get(r_id, 1), _req_headcount(p))
+
+    gold_hc_map: dict[tuple[str, str], int] = {}
+    for g in gold_reqs:
+        pair = _req_pair(g)
+        if pair[1]:
+            gold_hc_map[pair] = gold_role_hc.get(pair[0], _req_headcount(g))
+
+    pred_hc_map: dict[tuple[str, str], int] = {}
+    for p in pred_reqs:
+        pair = _req_pair(p)
+        if pair[1]:
+            pred_hc_map[pair] = pred_role_hc.get(pair[0], _req_headcount(p))
+
+    matched_exact_pairs = gold_pair_set & pred_pair_set
+    hc_correct = sum(
+        1 for k in matched_exact_pairs if pred_hc_map.get(k, 1) == gold_hc_map.get(k, 1)
+    )
+    hc_wrong = len(matched_exact_pairs) - hc_correct
+    hc_acc = hc_correct / len(matched_exact_pairs) if matched_exact_pairs else 0.0
+
+    multi_hc_gold_roles = [r_id for r_id, hc in gold_role_hc.items() if hc > 1]
+    hc_multi_correct = sum(
+        1 for r_id in multi_hc_gold_roles if pred_role_hc.get(r_id) == gold_role_hc[r_id]
+    )
+    hc_multi_wrong = len(multi_hc_gold_roles) - hc_multi_correct
+    hc_multi_acc = (
+        hc_multi_correct / len(multi_hc_gold_roles) if multi_hc_gold_roles else 1.0
+    )
+
+    # 6. Trap / false rule-candidate trigger rate
+    trap_set: set[str] = set(explicit_traps) if explicit_traps else set()
+    if brief_text and not trap_set:
+        scanned = scan_unmatched_competencies(brief_text, registry, gold_comps)
+        trap_set = {c.competency_id for c in scanned}
+    triggered_traps = sorted(pred_comps & trap_set)
+    trap_rate = len(triggered_traps) / len(trap_set) if trap_set else 0.0
+
     return {
         "gold_count": len(gold_reqs),
         "predicted_count": len(pred_reqs),
+        "role_only_count": role_only_count,
+        "role": {
+            "tp": tp_role,
+            "fp": fp_role,
+            "fn": fn_role,
+            "precision": round(p_role, 4),
+            "recall": round(r_role, 4),
+            "f1": round(_f1(p_role, r_role), 4),
+        },
         "competency": {
             "tp": tp_c,
             "fp": fp_c,
@@ -253,13 +401,37 @@ def compute_metrics(
             "recall": round(role_acc, 4),
             "f1": round(role_acc, 4),
         },
+        "headcount_accuracy": {
+            "tp": hc_correct,
+            "fp": hc_wrong,
+            "fn": hc_wrong,
+            "accuracy": round(hc_acc, 4),
+            "precision": round(hc_acc, 4),
+            "recall": round(hc_acc, 4),
+            "f1": round(hc_acc, 4),
+        },
+        "headcount_multi": {
+            "tp": hc_multi_correct,
+            "fp": hc_multi_wrong,
+            "fn": hc_multi_wrong,
+            "accuracy": round(hc_multi_acc, 4),
+            "precision": round(hc_multi_acc, 4),
+            "recall": round(hc_multi_acc, 4),
+            "f1": round(hc_multi_acc, 4),
+        },
+        "traps": {
+            "total_traps": len(trap_set),
+            "triggered_count": len(triggered_traps),
+            "triggered_ids": triggered_traps,
+            "trap_rate": round(trap_rate, 4),
+        },
     }
 
 
 def aggregate_metrics(per_brief: list[dict[str, Any]]) -> dict[str, Any]:
     """Aggregate TP/FP/FN across briefs per metric."""
     out: dict[str, Any] = {}
-    for key in ("competency", "pair", "pair_relaxed"):
+    for key in ("role", "competency", "pair", "pair_relaxed"):
         tp = sum(b[key]["tp"] for b in per_brief)
         fp = sum(b[key]["fp"] for b in per_brief)
         fn = sum(b[key]["fn"] for b in per_brief)
@@ -274,21 +446,22 @@ def aggregate_metrics(per_brief: list[dict[str, Any]]) -> dict[str, Any]:
             "f1": round(_f1(precision, recall), 4),
         }
 
-    correct = sum(b["role_accuracy"]["tp"] for b in per_brief)
-    wrong = sum(b["role_accuracy"]["fp"] for b in per_brief)
-    matched = correct + wrong
-    acc = correct / matched if matched > 0 else 0.0
-    out["role_accuracy"] = {
-        "tp": correct,
-        "fp": wrong,
-        "fn": wrong,
-        "matched_comps": matched,
-        "correct_roles": correct,
-        "accuracy": round(acc, 4),
-        "precision": round(acc, 4),
-        "recall": round(acc, 4),
-        "f1": round(acc, 4),
-    }
+    for acc_key in ("role_accuracy", "headcount_accuracy", "headcount_multi"):
+        correct = sum(b[acc_key]["tp"] for b in per_brief)
+        wrong = sum(b[acc_key]["fp"] for b in per_brief)
+        total = correct + wrong
+        acc = correct / total if total > 0 else 0.0
+        out[acc_key] = {
+            "tp": correct,
+            "fp": wrong,
+            "fn": wrong,
+            "matched_comps": total,
+            "correct_roles": correct,
+            "accuracy": round(acc, 4),
+            "precision": round(acc, 4),
+            "recall": round(acc, 4),
+            "f1": round(acc, 4),
+        }
     return out
 
 
@@ -320,11 +493,46 @@ def aggregate_multi_run_metrics(
             "precision": round(sum(p_vals) / n, 4),
             "recall": round(sum(r_vals) / n, 4),
             "f1": round(f1_mean, 4),
+            "accuracy": round(f1_mean, 4),
             "f1_min": round(min(f1_vals), 4),
             "f1_max": round(max(f1_vals), 4),
             "f1_std": round(f1_std, 4),
         }
     return out
+
+
+def compute_pair_hit_rates(
+    gold_reqs: list[dict[str, Any]],
+    runs_pred_reqs: list[list[ExtractedRequirement | dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    """Compute per-pair hit rate (`hits / num_runs`) across N runs for one brief."""
+    num_runs = len(runs_pred_reqs)
+    if num_runs == 0:
+        return []
+
+    gold_pairs = {_req_pair(g) for g in gold_reqs if _req_competency(g)}
+    counts: dict[tuple[str, str], int] = {gp: 0 for gp in gold_pairs}
+
+    for run_reqs in runs_pred_reqs:
+        run_pairs = {_req_pair(p) for p in run_reqs if _req_competency(p)}
+        for pair in run_pairs:
+            counts[pair] = counts.get(pair, 0) + 1
+
+    rows: list[dict[str, Any]] = []
+    for (role_id, comp_id), hits in sorted(
+        counts.items(), key=lambda kv: (kv[1] / num_runs, kv[0])
+    ):
+        rows.append(
+            {
+                "role_id": role_id,
+                "competency_id": comp_id,
+                "in_gold": (role_id, comp_id) in gold_pairs,
+                "hits": hits,
+                "num_runs": num_runs,
+                "hit_rate": round(hits / num_runs, 4),
+            }
+        )
+    return rows
 
 
 # ---------------------------------------------------------------------------
@@ -355,7 +563,7 @@ def run_rules_stage(
                 assumptions=p.assumptions if p.assumptions else ["Rules-based extraction"],
                 confidence=p.confidence,
                 needs_review=False,
-                evidence=p.evidence,
+                evidence=p.evidence[:10],
             )
         )
     validator = EvidenceValidator()
@@ -390,6 +598,7 @@ def run_deterministic_validation(
             "post_processor_dropped": vstats.dropped_invalid_pair,
             "dropped_duplicate": vstats.dropped_duplicate,
             "dropped_over_limit": vstats.dropped_over_limit,
+            "dropped_generic_mention": vstats.dropped_generic_mention,
         }
 
     post = RoleCompetencyValidator(registry)
@@ -402,6 +611,7 @@ def run_deterministic_validation(
         "post_processor_dropped": post.dropped_count,
         "dropped_duplicate": 0,
         "dropped_over_limit": 0,
+        "dropped_generic_mention": 0,
     }
 
 
@@ -495,7 +705,12 @@ async def run_single_llm_eval(
             else settings
         )
         reqs, stats = await llm_extract(
-            brief_text, "ru", registry, client, effective_settings
+            brief_text,
+            "ru",
+            registry,
+            client,
+            effective_settings,
+            timeout_ms=effective_settings.timeout_ms,
         )
     except Exception as exc:
         return [], [], None, f"{type(exc).__name__}: {exc}", drop_counts
@@ -582,8 +797,8 @@ def _stage_table(
 ) -> str:
     """Render aggregate stage metrics as markdown (with multi-run spread if runs > 1)."""
     lines = [
-        "| Stage | Metric | TP | FP | FN | Precision | Recall | F1 | Spread (min..max, std) |",
-        "|-------|--------|----|----|----|-----------|--------|----|------------------------|",
+        "| Stage | Metric | TP | FP | FN | Precision | Recall | F1 / Acc | Spread (min..max, std) |",
+        "|-------|--------|----|----|----|-----------|--------|----------|------------------------|",
     ]
     for stage in STAGE_ORDER:
         if stage not in stage_runs:
@@ -616,8 +831,8 @@ def _stage_table(
 
 def _per_brief_table(stage_runs: dict[str, list[list[dict[str, Any]]]]) -> str:
     lines = [
-        "| Brief | Split | Stage | Gold | Pred | Comp F1 | Pair F1 | Pair* F1 | Role Acc | Drops (ev/pair/dup) | Tokens (in/out) | Time ms | Notes |",
-        "|-------|-------|-------|------|------|---------|---------|----------|----------|---------------------|-----------------|---------|-------|",
+        "| Brief | Split | Stage | Gold | Pred | Role Rec | Comp F1 | Pair F1 | Pair* F1 | Role Acc | HC Acc | Drops (ev/pair/dup) | Tokens (in/out) | Time ms | Notes |",
+        "|-------|-------|-------|------|------|----------|---------|---------|----------|----------|--------|---------------------|-----------------|---------|-------|",
     ]
     rules_run0 = stage_runs["rules"][0]
     brief_count = len(rules_run0)
@@ -646,10 +861,135 @@ def _per_brief_table(stage_runs: dict[str, list[list[dict[str, Any]]]]) -> str:
             dur_ms = m.get("llm_duration_ms") if m.get("llm_duration_ms") is not None else m.get("duration_ms", 0)
             lines.append(
                 f"| {label} | {s_label} | `{stage}` | {m['gold_count']} | {m['predicted_count']} | "
-                f"{m['competency']['f1']:.3f} | {m['pair']['f1']:.3f} | "
+                f"{m['role']['recall']:.3f} | {m['competency']['f1']:.3f} | {m['pair']['f1']:.3f} | "
                 f"{m['pair_relaxed']['f1']:.3f} | {m['role_accuracy']['accuracy']:.3f} | "
+                f"{m['headcount_accuracy']['accuracy']:.3f} | "
                 f"{drops_str} | {tok_str} | {dur_ms} | {notes} |"
             )
+    return "\n".join(lines)
+
+
+def _sum_pair_blocks(blocks: list[dict[str, Any]]) -> dict[str, Any]:
+    """Sum TP/FP/FN over per-brief `pair` blocks and recompute P/R/F1."""
+    tp = sum(b["tp"] for b in blocks)
+    fp = sum(b["fp"] for b in blocks)
+    fn = sum(b["fn"] for b in blocks)
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
+    return {
+        "tp": tp,
+        "fp": fp,
+        "fn": fn,
+        "precision": round(precision, 4),
+        "recall": round(recall, 4),
+        "f1": round(_f1(precision, recall), 4),
+    }
+
+
+def _sum_verification(briefs: list[dict[str, Any]]) -> dict[str, int] | None:
+    """Sum `diagnostics.verification` counters over briefs; None in rules mode."""
+    blocks = [
+        b.get("diagnostics", {}).get("verification")
+        for b in briefs
+    ]
+    present = [v for v in blocks if v]
+    if not present:
+        return None
+    keys = (
+        "candidates_found",
+        "confirmed",
+        "rejected",
+        "skipped",
+        "failed_batches",
+        "attempts",
+    )
+    return {k: sum(int(v.get(k, 0)) for v in present) for k in keys}
+
+
+def _pair_cell(p: dict[str, Any]) -> str:
+    return f"{p['tp']}/{p['fp']}/{p['fn']} {p['precision']:.4f}/{p['recall']:.4f}/{p['f1']:.4f}"
+
+
+def _review_routing_section(stage_runs: dict[str, list[list[dict[str, Any]]]]) -> str:
+    """Render the ADR-006 review-routing / mention-quality block for `final_api`."""
+    lines = [
+        "## ADR-006 review routing (`final_api`)",
+        "",
+        f"- Review threshold: `needs_review = true` and `confidence <= {REVIEW_CONFIDENCE_MAX}` "
+        "(`app.extract.review.REVIEW_CONFIDENCE_MAX`, starting hypothesis).",
+        "- `pair` keeps its pre-ADR-006 semantics: computed on the full validated list (main + review).",
+        "  `pair_main` / `pair_review` are computed on the split lists against the same gold set,",
+        "  so `pair_review` recall is measured against all gold pairs (ADR-006 §2: 1/19, not 1/4).",
+        "- `verification`: `candidates_found` must equal `confirmed + rejected + skipped`;",
+        "  `failed_batches > 0` means a candidate batch got no LLM decision.",
+        "",
+    ]
+    runs = stage_runs.get("final_api") or []
+    if not runs or not runs[0]:
+        lines.append("No `final_api` stage data.")
+        lines.append("")
+        return "\n".join(lines)
+
+    briefs = runs[0]
+    agg_full = _sum_pair_blocks([b["pair"] for b in briefs])
+    agg_main = _sum_pair_blocks([b["pair_main"] for b in briefs])
+    agg_review = _sum_pair_blocks([b["pair_review"] for b in briefs])
+    total_pred = sum(b["predicted_count"] for b in briefs)
+    total_main = sum(b.get("predicted_main_count", 0) for b in briefs)
+    total_review = sum(b.get("review_count", 0) for b in briefs)
+    total_generic = sum(
+        int(b.get("diagnostics", {}).get("dropped_generic_mention", 0)) for b in briefs
+    )
+    verification = _sum_verification(briefs)
+
+    lines.append(
+        "| Scope | Predicted | Main | Review | Pair (full) TP/FP/FN P/R/F1 | "
+        "Pair (main) TP/FP/FN P/R/F1 | Pair (review) TP/FP/FN P/R/F1 | dropped_generic_mention |"
+    )
+    lines.append(
+        "|---|---|---|---|---|---|---|---|"
+    )
+    lines.append(
+        f"| all briefs (Run 1) | {total_pred} | {total_main} | {total_review} | "
+        f"{_pair_cell(agg_full)} | {_pair_cell(agg_main)} | {_pair_cell(agg_review)} | "
+        f"{total_generic} |"
+    )
+    for b in briefs:
+        lines.append(
+            f"| {b.get('brief_id', '?')} | {b['predicted_count']} | "
+            f"{b.get('predicted_main_count', 0)} | {b.get('review_count', 0)} | "
+            f"{_pair_cell(b['pair'])} | {_pair_cell(b['pair_main'])} | "
+            f"{_pair_cell(b['pair_review'])} | "
+            f"{int(b.get('diagnostics', {}).get('dropped_generic_mention', 0))} |"
+        )
+    lines.append("")
+
+    if verification is None:
+        lines.append(
+            "Verification counters: `n/a` (rules mode — no candidate verification call runs)."
+        )
+    else:
+        found = verification["candidates_found"]
+        resolved = (
+            verification["confirmed"]
+            + verification["rejected"]
+            + verification["skipped"]
+        )
+        invariant = "OK" if found == resolved else f"MISMATCH ({found} != {resolved})"
+        lines.append(
+            "| candidates_found | confirmed | rejected | skipped | failed_batches | attempts | invariant |"
+        )
+        lines.append("|---|---|---|---|---|---|---|")
+        lines.append(
+            f"| {found} | {verification['confirmed']} | {verification['rejected']} | "
+            f"{verification['skipped']} | {verification['failed_batches']} | "
+            f"{verification['attempts']} | {invariant} |"
+        )
+        skipped_share = verification["skipped"] / found if found else 0.0
+        lines.append(
+            f"\n- `skipped` share: {skipped_share:.4f} (ADR-006 §1: <= 0.10 across the 17 gold briefs)."
+        )
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -669,6 +1009,7 @@ def render_baseline_markdown(
         f"- Mode: `{mode}`",
         f"- Runs per brief: `{runs}`",
         f"- Prompt version: `{PROMPT_VERSION}`",
+        f"- Review threshold (`REVIEW_CONFIDENCE_MAX`): `{REVIEW_CONFIDENCE_MAX}` (ADR-006)",
         f"- Hold-out briefs ({len(HOLD_OUT_BRIEFS)}): `{', '.join(HOLD_OUT_BRIEFS)}`",
         f"- Total wall time: {duration_s:.2f}s",
         "",
@@ -681,15 +1022,18 @@ def render_baseline_markdown(
         _stage_table(stage_runs, brief_filter=holdout_set),
         "",
         "*Metric definitions:*",
+        "- `role`: unique `role_id` set per brief (target Recall = 1.0).",
         "- `competency`: unique `competency_id` set per brief.",
-        "- `pair`: exact `(role_id, competency_id)` set per brief.",
+        "- `pair`: exact `(role_id, competency_id)` set per brief (role-only items excluded unless in gold).",
         "- `pair_relaxed`: `(role_id, competency_id)` where role matches if `role_id in competency.roles`.",
-        "- `role_accuracy`: share of matched competencies (`gold_comps & pred_comps`) assigned to the exact gold `role_id` (`correct_roles / matched_comps`).",
+        "- `role_accuracy`: share of matched competencies (`gold_comps & pred_comps`) assigned to the exact gold `role_id`.",
+        "- `headcount_accuracy`: exact `headcount` match on matched pairs; `headcount_multi`: accuracy on gold requirements with `headcount > 1`.",
         "",
         "## Per-brief metrics (Run 1)",
         "",
         _per_brief_table(stage_runs),
         "",
+        _review_routing_section(stage_runs),
         "## Gold audit",
         "",
         f"- Total gold requirements: {audit['total_requirements']}",
@@ -735,7 +1079,11 @@ def render_baseline_markdown(
 # ---------------------------------------------------------------------------
 
 
-def _load_effective_settings(api_key_arg: str | None, model_arg: str | None) -> LLMSettings:
+def _load_effective_settings(
+    api_key_arg: str | None,
+    model_arg: str | None,
+    timeout_ms_arg: int | None = None,
+) -> LLMSettings:
     """Load LLMSettings checking CLI args, environment, ml/.env, and repo .env."""
     clear_settings_cache()
     settings = get_settings()
@@ -750,6 +1098,12 @@ def _load_effective_settings(api_key_arg: str | None, model_arg: str | None) -> 
         settings = settings.model_copy(update={"api_key": api_key_arg.strip()})
     if model_arg:
         settings = settings.model_copy(update={"model": model_arg.strip()})
+    effective_timeout = (
+        timeout_ms_arg
+        if timeout_ms_arg is not None
+        else max(settings.timeout_ms, 300000)
+    )
+    settings = settings.model_copy(update={"timeout_ms": effective_timeout})
     return settings
 
 
@@ -786,6 +1140,12 @@ async def main() -> None:
         help="Optional LLM model override",
     )
     parser.add_argument(
+        "--timeout-ms",
+        type=int,
+        default=None,
+        help="Per-attempt LLM timeout in ms (default: max(LLM_TIMEOUT_MS, 300000))",
+    )
+    parser.add_argument(
         "--out",
         type=Path,
         default=REPO_ROOT / "eval" / "BASELINE.md",
@@ -801,7 +1161,7 @@ async def main() -> None:
     t_start = time.monotonic()
     registry = get_registry()
     briefs = load_gold_briefs()
-    settings = _load_effective_settings(args.api_key, args.model)
+    settings = _load_effective_settings(args.api_key, args.model, args.timeout_ms)
 
     mode = args.mode
     if mode == "auto":
@@ -832,6 +1192,7 @@ async def main() -> None:
     print(f"  Model:          {settings.model if mode != 'rules' else 'n/a (rules-only)'}", flush=True)
     print(f"  Base URL:       {settings.base_url}", flush=True)
     print(f"  API Key:        {_mask_key(settings.api_key)}", flush=True)
+    print(f"  Timeout:        {settings.timeout_ms} ms ({settings.timeout_ms // 1000}s)", flush=True)
     print(f"  Prompt version: {PROMPT_VERSION}", flush=True)
     print(f"  Briefs:         {len(briefs)} (hold-out: {len(HOLD_OUT_BRIEFS)})", flush=True)
     print(f"  Runs per brief: {num_runs}", flush=True)
@@ -877,7 +1238,7 @@ async def main() -> None:
                 final_drops = dict(drop_counts)
 
             # Compute metrics for each stage
-            rules_metrics = compute_metrics(gold, rules_reqs, registry)
+            rules_metrics = compute_metrics(gold, rules_reqs, registry, text)
             rules_metrics.update(
                 {
                     "brief_id": bid,
@@ -893,7 +1254,7 @@ async def main() -> None:
             )
             run_stage_results["rules"].append(rules_metrics)
 
-            llm_raw_metrics = compute_metrics(gold, llm_raw_reqs, registry)
+            llm_raw_metrics = compute_metrics(gold, llm_raw_reqs, registry, text)
             llm_raw_metrics.update(
                 {
                     "brief_id": bid,
@@ -909,7 +1270,7 @@ async def main() -> None:
             )
             run_stage_results["llm_raw"].append(llm_raw_metrics)
 
-            llm_val_metrics = compute_metrics(gold, llm_val_reqs, registry)
+            llm_val_metrics = compute_metrics(gold, llm_val_reqs, registry, text)
             llm_val_metrics.update(
                 {
                     "brief_id": bid,
@@ -925,7 +1286,7 @@ async def main() -> None:
             )
             run_stage_results["llm_validated"].append(llm_val_metrics)
 
-            final_metrics = compute_metrics(gold, final_reqs, registry)
+            final_metrics = compute_metrics(gold, final_reqs, registry, text)
             final_metrics.update(
                 {
                     "brief_id": bid,
@@ -939,13 +1300,43 @@ async def main() -> None:
                     "llm_duration_ms": llm_stats.duration_ms if llm_stats else None,
                 }
             )
+
+            # ADR-006: review routing. `pair` above keeps its original semantics
+            # (computed on the full validated list: main + review) for baseline
+            # comparability; the split blocks below are additive.
+            final_main, final_review = split_for_review(list(final_reqs))
+            final_metrics["predicted_main_count"] = len(final_main)
+            final_metrics["review_count"] = len(final_review)
+            final_metrics["pair_main"] = _pair_block_on(gold, final_main, registry, text)
+            final_metrics["pair_review"] = _pair_block_on(gold, final_review, registry, text)
+            if mode == "rules":
+                final_metrics["diagnostics"] = {
+                    "verification": None,
+                    "dropped_generic_mention": final_drops.get(
+                        "dropped_generic_mention", 0
+                    ),
+                }
+            else:
+                final_metrics["diagnostics"] = diagnostics_from_stats(llm_stats)
+            final_metrics["review_items"] = [
+                (
+                    r.role.role_id,
+                    r.competency.competency_id if r.competency else None,
+                    r.confidence,
+                )
+                for r in final_review
+            ]
             run_stage_results["final_api"].append(final_metrics)
 
             if mode == "rules":
                 print(
-                    f"gold={final_metrics['gold_count']:2d} pred={final_metrics['predicted_count']:2d} | "
+                    f"gold={final_metrics['gold_count']:2d} pred={final_metrics['predicted_count']:2d} "
+                    f"(main={final_metrics['predicted_main_count']}, "
+                    f"review={final_metrics['review_count']}) | "
+                    f"RoleRec={final_metrics['role']['recall']:.3f} "
                     f"CompF1={final_metrics['competency']['f1']:.3f} "
-                    f"PairF1={final_metrics['pair']['f1']:.3f} | "
+                    f"PairF1={final_metrics['pair']['f1']:.3f} "
+                    f"PairMainF1={final_metrics['pair_main']['f1']:.3f} | "
                     f"{rules_duration_ms}ms",
                     flush=True,
                 )
@@ -959,10 +1350,14 @@ async def main() -> None:
                 )
                 dur_ms = llm_stats.duration_ms if llm_stats else 0
                 print(
-                    f"gold={final_metrics['gold_count']:2d} pred={final_metrics['predicted_count']:2d} | "
+                    f"gold={final_metrics['gold_count']:2d} pred={final_metrics['predicted_count']:2d} "
+                    f"(main={final_metrics['predicted_main_count']}, "
+                    f"review={final_metrics['review_count']}) | "
+                    f"RoleRec={final_metrics['role']['recall']:.3f} "
                     f"CompF1={final_metrics['competency']['f1']:.3f} "
                     f"PairF1={final_metrics['pair']['f1']:.3f} "
-                    f"RoleAcc={final_metrics['role_accuracy']['accuracy']:.3f} | "
+                    f"PairMainF1={final_metrics['pair_main']['f1']:.3f} "
+                    f"HCAcc={final_metrics['headcount_accuracy']['accuracy']:.3f} | "
                     f"tok={tok_str} | {dur_ms}ms",
                     flush=True,
                 )
@@ -976,6 +1371,9 @@ async def main() -> None:
                 "llm_raw": _normalize_for_dump(llm_raw_reqs),
                 "llm_validated": _normalize_for_dump(llm_val_reqs),
                 "final_api": _normalize_for_dump(final_reqs),
+                "final_api_main": _normalize_for_dump(final_main),
+                "final_api_review": _normalize_for_dump(final_review),
+                "diagnostics": final_metrics["diagnostics"],
                 "drop_counts": drop_counts,
                 "llm_empty_reason": llm_empty_reason,
                 "llm_stats": (
@@ -985,6 +1383,16 @@ async def main() -> None:
                         "duration_ms": llm_stats.duration_ms,
                         "retries": llm_stats.retries,
                         "json_valid": llm_stats.json_valid,
+                        "ensemble_runs_completed": llm_stats.ensemble_runs_completed,
+                        "candidate_competencies_found": llm_stats.candidate_competencies_found,
+                        "candidate_competencies_confirmed": llm_stats.candidate_competencies_confirmed,
+                        "candidate_competencies_rejected": llm_stats.candidate_competencies_rejected,
+                        "candidate_competencies_skipped": llm_stats.candidate_competencies_skipped,
+                        "verification_attempts": llm_stats.verification_attempts,
+                        "verification_failed_batches": llm_stats.verification_failed_batches,
+                        "dropped_generic_mention": llm_stats.dropped_generic_mention,
+                        "missing_roles_found": llm_stats.missing_roles_found,
+                        "missing_roles_recovered": llm_stats.missing_roles_recovered,
                     }
                     if llm_stats
                     else None
@@ -1010,6 +1418,7 @@ async def main() -> None:
     print("  Aggregate Metrics — Hold-out Split (5 briefs, 30 gold reqs)", flush=True)
     print("=" * 72, flush=True)
     print(_stage_table(stage_runs, brief_filter=set(HOLD_OUT_BRIEFS)), flush=True)
+    print("\n" + _review_routing_section(stage_runs), flush=True)
     print(f"\nWrote evaluation report to {args.out} ({duration_s:.2f}s)", flush=True)
 
     if args.dump_raw or mode == "live":

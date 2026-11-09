@@ -276,18 +276,65 @@ class TestLLMExtract:
         assert client.calls[1]["max_tokens"] > client.calls[0]["max_tokens"]
 
     async def test_llm_errors_propagate_not_swallowed(self):
-        """LLMTimeoutError, LLMUnavailableError, and HTTP 500 LLMErrorResponse must propagate."""
+        """Non-transient LLM errors (LLMUnavailableError) must propagate immediately."""
         registry = get_registry()
         settings = _make_settings()
 
-        for err_cls, err_inst in [
-            (LLMTimeoutError, LLMTimeoutError("Request timed out")),
-            (LLMUnavailableError, LLMUnavailableError("Connection refused")),
-            (LLMErrorResponse, LLMErrorResponse("HTTP 502 Bad Gateway", status_code=502)),
-        ]:
-            client = MockLLMClient([err_inst])
-            with pytest.raises(err_cls):
-                await llm_extract("Нужен Go разработчик", "ru", registry, client, settings)
+        client = MockLLMClient([LLMUnavailableError("Connection refused")])
+        with pytest.raises(LLMUnavailableError):
+            await llm_extract("Нужен Go разработчик", "ru", registry, client, settings)
+        assert len(client.calls) == 1
+
+    async def test_transient_502_is_retried_then_succeeds(self):
+        """A transient LLMErrorResponse (502) on the first call is retried, then succeeds."""
+        brief_text = "Бэкенд на Go (middle). Срок — 8 недель."
+        good_resp = LLMResponse(
+            content=json.dumps(
+                [
+                    {
+                        "role_id": "backend_engineer",
+                        "competency_id": "lang_go",
+                        "quote": "Бэкенд на Go",
+                        "level": 3,
+                        "criticality": "must",
+                    }
+                ],
+                ensure_ascii=False,
+            ),
+            tokens_in=100,
+            tokens_out=50,
+            model="test",
+        )
+        client = MockLLMClient(
+            [LLMErrorResponse("transient", status_code=502), good_resp]
+        )
+        registry = get_registry()
+        settings = _make_settings(max_retries=2)
+
+        reqs, stats = await llm_extract(brief_text, "ru", registry, client, settings)
+        assert len(reqs) == 1
+        assert stats.retries >= 1
+        assert len(client.calls) == 2
+
+    async def test_unavailable_error_not_retried(self):
+        """LLMUnavailableError is not retried and propagates immediately."""
+        client = MockLLMClient([LLMUnavailableError("Connection refused")])
+        registry = get_registry()
+        settings = _make_settings(max_retries=2)
+
+        with pytest.raises(LLMUnavailableError):
+            await llm_extract("Нужен Go разработчик", "ru", registry, client, settings)
+        assert len(client.calls) == 1
+
+    async def test_timeout_not_retried_in_extraction_pass(self):
+        """LLMTimeoutError is not retried in the extraction pass and propagates immediately."""
+        client = MockLLMClient([LLMTimeoutError("timed out")])
+        registry = get_registry()
+        settings = _make_settings(max_retries=2)
+
+        with pytest.raises(LLMTimeoutError):
+            await llm_extract("Нужен Go разработчик", "ru", registry, client, settings)
+        assert len(client.calls) == 1
 
     async def test_max_retries_exhausted(self):
         """All responses invalid JSON -> returns empty + retries=2 + json_valid=False."""

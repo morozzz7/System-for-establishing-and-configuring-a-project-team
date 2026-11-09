@@ -21,6 +21,7 @@ from ..llm.client import LLMClient, LLMError, LLMTimeoutError, LLMUnavailableErr
 from ..llm.config import get_settings
 from .diagnostics import build_diagnostics
 from .llm_extract import LLMStats, llm_extract
+from .review import REVIEW_CONFIDENCE_MAX, split_for_review
 from .schemas import ExtractRequest, ExtractResponse
 from .taxonomy import get_registry
 from .validator import EvidenceValidator
@@ -136,6 +137,7 @@ async def extract_handler(request: Request) -> JSONResponse:
 
     try:
         client = LLMClient(settings)
+        effective_timeout_ms = max(req.options.timeout_ms, settings.timeout_ms)
         llm_reqs, llm_stats = await llm_extract(
             brief_text,
             locale,
@@ -147,7 +149,7 @@ async def extract_handler(request: Request) -> JSONResponse:
             max_requirements=req.options.max_requirements,
             min_confidence=req.options.min_confidence,
             return_candidates=req.options.return_candidates,
-            timeout_ms=req.options.timeout_ms,
+            timeout_ms=effective_timeout_ms,
         )
     except LLMTimeoutError as exc:
         return JSONResponse(
@@ -190,9 +192,19 @@ async def extract_handler(request: Request) -> JSONResponse:
         max_requirements=req.options.max_requirements,
     )
 
+    # ADR-006 §2: low-confidence competency pairs go to a separate review list and
+    # never reach the optimizer until a human confirms them. Role-only items stay.
+    main_reqs, review_reqs = split_for_review(valid)
+
     dropped_no_evidence = llm_stats.dropped_no_evidence + pipe_stats.dropped_no_evidence
     post_processor_dropped = (
         llm_stats.post_processor_dropped + pipe_stats.post_processor_dropped
+    )
+    dropped_generic_mention = (
+        llm_stats.dropped_generic_mention + pipe_stats.dropped_generic_mention
+    )
+    dropped_generic_ids = list(llm_stats.dropped_generic_ids) + list(
+        pipe_stats.dropped_generic_ids
     )
 
     if post_processor_dropped > 0:
@@ -207,15 +219,31 @@ async def extract_handler(request: Request) -> JSONResponse:
             f"Evidence gate dropped {dropped_no_evidence} requirement(s) with unverified quote(s)"
         )
 
-    if any(r.needs_review for r in valid):
+    if dropped_generic_mention > 0:
+        warnings.append(
+            f"{dropped_generic_mention} requirement(s) dropped as generic/passing technology mentions (no concrete task)"
+        )
+        for req_id, quote in dropped_generic_ids:
+            flat = " ".join(str(quote or "").split())
+            if len(flat) > 120:
+                flat = flat[:117].rstrip() + "..."
+            warnings.append(f"Dropped generic mention {req_id}: {flat!r}")
+
+    if review_reqs:
+        warnings.append(
+            f"{len(review_reqs)} low-confidence pair(s) moved to requirements_for_review "
+            f"(needs_review=True, confidence<={REVIEW_CONFIDENCE_MAX:g})"
+        )
+
+    if review_reqs or any(r.needs_review for r in main_reqs):
         if "REQ_NEEDS_REVIEW" not in reason_codes:
             reason_codes.append("REQ_NEEDS_REVIEW")
 
-    if any(r.confidence < 0.7 for r in valid):
+    if any(r.confidence < 0.7 for r in main_reqs):
         if "REQ_LOW_CONFIDENCE" not in reason_codes:
             reason_codes.append("REQ_LOW_CONFIDENCE")
 
-    if not valid:
+    if not main_reqs and not review_reqs:
         if not llm_stats.json_valid:
             warnings.append(
                 "LLM output failed JSON/schema validation after retries; 0 requirements returned"
@@ -237,12 +265,14 @@ async def extract_handler(request: Request) -> JSONResponse:
         duration_ms=duration_ms,
         dropped_no_evidence=dropped_no_evidence,
         post_processor_dropped=post_processor_dropped,
+        dropped_generic_mention=dropped_generic_mention,
     )
 
     response = ExtractResponse(
         request_id=request_id,
         brief_id=req.brief_id,
-        requirements=valid,
+        requirements=main_reqs,
+        requirements_for_review=review_reqs,
         diagnostics=diagnostics,
         warnings=warnings,
         reason_codes=reason_codes,

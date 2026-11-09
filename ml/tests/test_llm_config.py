@@ -45,7 +45,13 @@ class TestLLMSettingsDefaults:
 
     def test_default_timeout(self):
         s = LLMSettings()
-        assert s.timeout_ms == 20000
+        assert s.timeout_ms == 180000
+
+    def test_default_ensemble_and_safety_flags(self):
+        s = LLMSettings()
+        assert s.ensemble_runs == 3
+        assert s.verify_candidates is True
+        assert s.role_safety_net is True
 
     def test_default_max_retries(self):
         s = LLMSettings()

@@ -151,6 +151,22 @@ paths:
         in it is reported as a requirement only if it is a genuine staffing statement. `assumptions`
         and `warnings` echo model text and are rendered as data (escaped) by the UI, never re-fed into
         a prompt.
+
+        Only requirements fit to feed the optimizer are returned in `requirements`. Two deterministic
+        gates run after LLM extraction and validation (ADR-006):
+        - **Review routing:** a pair (`competency != null`) with `needs_review == true` and
+          `confidence <= 0.60` is moved to `requirements_for_review` for human confirmation and never
+          appears in `requirements`. Role-only requirements (`competency = null`) stay in
+          `requirements` with `needs_review = true` because a role without a technology creates no
+          pair and is still usable for staffing.
+        - **Generic-mention gate:** a technology mentioned only in a passing remark or a generic stack
+          list ("разумеется, Docker, как у всех", "Стек: ...") without a concrete project task is
+          dropped and counted in `diagnostics.dropped_generic_mention` (never silently).
+
+        Candidate verification (word-boundary scanner -> LLM confirmation) is batched and retried;
+        `diagnostics.verification` accounts for every candidate as confirmed + rejected + skipped.
+        A verification candidate is never added to the output unless the LLM explicitly returns
+        `decision = "confirm"` with an exact brief quote.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
       requestBody:
@@ -245,6 +261,7 @@ paths:
                     evidence:
                       - kind: brief_span
                         quote: один аналитик
+                requirements_for_review: []
                 diagnostics:
                   engine: hybrid
                   model: qwen2.5-14b-instruct
@@ -254,6 +271,14 @@ paths:
                   json_valid: true
                   retries: 0
                   dropped_no_evidence: 0
+                  dropped_generic_mention: 0
+                  verification:
+                    candidates_found: 0
+                    confirmed: 0
+                    rejected: 0
+                    skipped: 0
+                    failed_batches: 0
+                    attempts: 0
                   llm_tokens_in: 1830
                   llm_tokens_out: 940
                 warnings: []
@@ -938,8 +963,48 @@ components:
         json_valid: {type: boolean}
         retries: {type: integer, minimum: 0, maximum: 2}
         dropped_no_evidence: {type: integer, minimum: 0}
+        dropped_generic_mention:
+          type: integer
+          minimum: 0
+          default: 0
+          description: |
+            Requirements dropped by the deterministic generic-mention gate (passing remark or generic
+            stack list without a concrete task, ADR-006). Never dropped silently: the count is
+            reported here and the reason is repeated in `warnings`.
+        verification:
+          description: |
+            Candidate-verification accounting for the LLM-first pipeline. Null when the pipeline ran
+            rules-only (no candidate verification LLM call was made); always populated for `/v1/extract`.
+          oneOf:
+            - $ref: '#/components/schemas/ExtractVerification'
+            - type: 'null'
         llm_tokens_in: {type: integer, minimum: 0}
         llm_tokens_out: {type: integer, minimum: 0}
+    ExtractVerification:
+      type: object
+      additionalProperties: false
+      description: |
+        Competency-candidate verification accounting (role candidates use the separate
+        `missing_roles_*` counters and are not part of this block). Invariant:
+        `candidates_found == confirmed + rejected + skipped`. `skipped` is a transport/parse failure,
+        not a decision; it is logged per candidate and must stay <= 10% of `candidates_found` (ADR-006).
+      required: [candidates_found, confirmed, rejected, skipped, failed_batches, attempts]
+      properties:
+        candidates_found:
+          type: integer
+          minimum: 0
+          description: Number of unmatched competency candidates sent to the verification LLM.
+        confirmed: {type: integer, minimum: 0}
+        rejected: {type: integer, minimum: 0}
+        skipped: {type: integer, minimum: 0}
+        failed_batches:
+          type: integer
+          minimum: 0
+          description: Verification batches that still failed after all retries (each contributes only skipped candidates).
+        attempts:
+          type: integer
+          minimum: 0
+          description: Total verification LLM calls, including retries and batches.
     BriefPayload:
       type: object
       additionalProperties: false
@@ -1001,6 +1066,18 @@ components:
         requirements:
           type: array
           maxItems: 60
+          description: Requirements fit to feed the optimizer (see review routing in the operation description).
+          items:
+            $ref: '#/components/schemas/ExtractedRequirement'
+        requirements_for_review:
+          type: array
+          maxItems: 60
+          default: []
+          description: |
+            Low-confidence pairs moved out of `requirements` for human confirmation:
+            `competency != null`, `needs_review == true`, `confidence <= 0.60` (ADR-006).
+            These items must never reach `/v1/optimize` until a human confirms them. Additive field:
+            clients that do not know it still receive a valid response.
           items:
             $ref: '#/components/schemas/ExtractedRequirement'
         diagnostics:

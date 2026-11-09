@@ -531,9 +531,12 @@ def generate_report(
     total_review = sum(m["needs_review_count"] for m in per_brief_metrics)
     needs_review_share = total_review / total_pred if total_pred > 0 else 0.0
 
+    from app.llm.config import get_settings
+
+    active_model = get_settings().model or LLM_MODEL
     report: dict[str, Any] = {
         "benchmark_date": datetime.now(timezone.utc).isoformat(),
-        "llm_model": LLM_MODEL,
+        "llm_model": active_model,
         "prompt_version": PROMPT_VERSION,
         "mode": mode,
         "summary": {
@@ -593,8 +596,8 @@ def main() -> None:
     parser.add_argument(
         "--timeout-ms",
         type=int,
-        default=20000,
-        help="Per-request timeout in ms (default: 20000)",
+        default=300000,
+        help="Per-request timeout in ms (default: 300000)",
     )
     parser.add_argument(
         "--detailed",

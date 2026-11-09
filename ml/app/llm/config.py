@@ -1,11 +1,14 @@
 """LLM configuration via environment variables (pydantic-settings).
 
 Environment variables (prefix LLM_):
-  LLM_BASE_URL   — OpenAI-compatible base URL (default: https://openrouter.ai/api/v1)
-  LLM_API_KEY    — API key; empty/missing → LLM unavailable
-  LLM_MODEL      — model name (default: qwen/qwen-2.5-72b-instruct)
-  LLM_TIMEOUT_MS — request timeout in milliseconds (default: 20000)
-  LLM_MAX_RETRIES — repair-retry attempts on JSON parse failure (default: 2)
+  LLM_BASE_URL          — OpenAI-compatible base URL (default: https://openrouter.ai/api/v1)
+  LLM_API_KEY           — API key; empty/missing → LLM unavailable
+  LLM_MODEL             — model name (default: qwen/qwen-2.5-72b-instruct)
+  LLM_TIMEOUT_MS        — request timeout in milliseconds per HTTP call (default: 180000)
+  LLM_MAX_RETRIES       — repair-retry attempts on JSON parse failure (default: 2)
+  LLM_ENSEMBLE_RUNS     — number of parallel extraction calls in union ensemble (default: 3)
+  LLM_VERIFY_CANDIDATES — enable word-boundary candidate scanner + LLM verification (default: True)
+  LLM_ROLE_SAFETY_NET   — enable word-boundary role scanner + missing-role recovery (default: True)
 
 Sources (in priority order):
   1. Environment variables (Docker, CI)
@@ -46,8 +49,11 @@ class LLMSettings(BaseSettings):
     base_url: str = "https://openrouter.ai/api/v1"
     api_key: str = ""
     model: str = "qwen/qwen-2.5-72b-instruct"
-    timeout_ms: int = 20000
+    timeout_ms: int = 180000
     max_retries: int = Field(default=2, ge=0, le=10)
+    ensemble_runs: int = Field(default=3, ge=1, le=10)
+    verify_candidates: bool = True
+    role_safety_net: bool = True
 
     @property
     def is_available(self) -> bool:

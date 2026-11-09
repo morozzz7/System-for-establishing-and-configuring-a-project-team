@@ -201,3 +201,45 @@ class TestLLMClientErrors:
     async def test_no_api_key_raises_unavailable(self):
         with pytest.raises(LLMUnavailableError):
             LLMClient(_make_settings(api_key=""))
+
+    async def test_missing_choices_includes_body_in_error(self):
+        async def handler(request):
+            return httpx.Response(200, text='{"unexpected": "payload"}')
+
+        transport = MockTransport(handler)
+        client = LLMClient(_make_settings())
+        orig_init = httpx.AsyncClient.__init__
+
+        def patched_init(self_client, **kwargs):
+            kwargs["transport"] = transport
+            orig_init(self_client, **kwargs)
+
+        httpx.AsyncClient.__init__ = patched_init
+        try:
+            with pytest.raises(LLMErrorResponse) as exc_info:
+                await client.chat([{"role": "user", "content": "test"}])
+            assert "body=" in str(exc_info.value)
+            assert '"unexpected"' in str(exc_info.value)
+        finally:
+            httpx.AsyncClient.__init__ = orig_init
+
+    async def test_provider_error_body_raises_502(self):
+        async def handler(request):
+            return httpx.Response(200, json={"error": {"message": "quota"}})
+
+        transport = MockTransport(handler)
+        client = LLMClient(_make_settings())
+        orig_init = httpx.AsyncClient.__init__
+
+        def patched_init(self_client, **kwargs):
+            kwargs["transport"] = transport
+            orig_init(self_client, **kwargs)
+
+        httpx.AsyncClient.__init__ = patched_init
+        try:
+            with pytest.raises(LLMErrorResponse) as exc_info:
+                await client.chat([{"role": "user", "content": "test"}])
+            assert exc_info.value.status_code == 502
+            assert "quota" in str(exc_info.value)
+        finally:
+            httpx.AsyncClient.__init__ = orig_init
