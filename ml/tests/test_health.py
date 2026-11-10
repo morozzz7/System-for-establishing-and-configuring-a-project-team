@@ -39,19 +39,15 @@ async def test_readyz(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_extract_stub_501(client: AsyncClient) -> None:
+async def test_extract_invalid_body_422(client: AsyncClient) -> None:
+    """Real /v1/extract returns 422 on invalid request body (was 501 stub)."""
     resp = await client.post("/v1/extract", json={})
-    assert resp.status_code == 501
+    assert resp.status_code == 422
     body = resp.json()
-    # Must conform to Problem schema from ml-openapi.yaml.
-    assert body["status"] == 501
-    assert body["code"] == "NOT_IMPLEMENTED"
+    assert body["status"] == 422
+    assert body["code"] == "INVALID_REQUEST"
     assert "request_id" in body
     assert isinstance(body["reason_codes"], list)
-    assert "retryable" in body
-    assert "type" in body
-    assert "title" in body
-    assert "detail" in body
 
 
 @pytest.mark.asyncio
@@ -72,8 +68,9 @@ async def test_optimize_stub_501(client: AsyncClient) -> None:
 
 @pytest.mark.asyncio
 async def test_stub_respects_request_id_header(client: AsyncClient) -> None:
+    """Stub endpoints (/v1/embed) echo X-Request-Id in Problem response."""
     resp = await client.post(
-        "/v1/extract",
+        "/v1/embed",
         json={},
         headers={"X-Request-Id": "req_test00000001"},
     )

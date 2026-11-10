@@ -1,7 +1,7 @@
-"""Team Optimizer ML Service stub (phase 1.3).
+"""Team Optimizer ML Service.
 
-Implements /healthz, /readyz and returns 501 for the three optimizer endpoints
-(/v1/extract, /v1/embed, /v1/optimize) which will be implemented in phase 3.
+Implements /healthz, /readyz, and POST /v1/extract (real extraction pipeline).
+/v1/embed and /v1/optimize remain stubs (501) for phases 3.2/3.3.
 All error responses conform to the Problem schema from contracts/ml-openapi.yaml.
 """
 
@@ -13,13 +13,18 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
+from .extract.router import router as extract_router
+from .llm.config import get_settings
 from .version import __version__
 
 app = FastAPI(
     title="Team Optimizer ML Service",
     version=__version__,
-    description="Stub for phase 1.3. Optimizer endpoints return 501.",
+    description="ML service for team formation: extraction (implemented), embedding and optimization (stubs).",
 )
+
+# Include the real /v1/extract router
+app.include_router(extract_router)
 
 _start_time: float = time.time()
 
@@ -71,20 +76,23 @@ async def healthz() -> dict[str, Any]:
 @app.get("/readyz")
 async def readyz() -> dict[str, Any]:
     """Readiness probe per contracts/ml-openapi.yaml.
-
-    In the stub phase all capabilities are 'degraded' because the underlying
-    models/solver are not yet loaded. The service itself is ready to receive
-    traffic (it answers), so HTTP 200 is returned with degraded capability states.
+    
+    Reports actual capability states based on LLM availability.
     """
+    settings = get_settings()
+    
+    # Determine extract capability state
+    extract_state = "ready" if settings.is_available else "degraded"
+    
     return {
         "ready": True,
         "capabilities": {
-            "extract": "degraded",
+            "extract": extract_state,
             "embed": "degraded",
             "optimize": "degraded",
         },
         "models": {
-            "llm": None,
+            "llm": settings.model if settings.is_available else None,
             "embedding": "multilingual-e5-large",
             "embedding_dim": 1024,
             "spacy_pipeline": "ru_core_news_lg",
@@ -94,7 +102,7 @@ async def readyz() -> dict[str, Any]:
             "version": "9.11.4210",
         },
         "limits": {
-            "extract_timeout_ms": 20000,
+            "extract_timeout_ms": settings.timeout_ms,
             "embed_timeout_ms": 5000,
             "optimize_max_time_limit_ms": 60000,
             "max_requirements": 60,
@@ -105,24 +113,9 @@ async def readyz() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Stub endpoints: return 501 Not Implemented per contracts/ml-openapi.yaml
-# Problem schema. Will be replaced by real implementations in phase 3.
+# Stub endpoints: /v1/embed and /v1/optimize return 501 Not Implemented
+# (they belong to phases 3.2 and 3.3). /v1/extract is now real (via router).
 # ---------------------------------------------------------------------------
-
-@app.post("/v1/extract")
-async def extract(request: Request) -> JSONResponse:
-    """Stub: brief extraction not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/extract is a stub; implementation comes in phase 3.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
 
 
 @app.post("/v1/embed")

@@ -1,0 +1,255 @@
+[
+  {
+    "requirement_id": "req_015_001",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "dom_telecom",
+      "name_ru": "Телеком-домен",
+      "confidence": 0.8
+    },
+    "level": 5,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 126,
+      "likely_person_days": 180,
+      "max_person_days": 252,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "9 months × 21 days ≈ 189pd; telecom domain expertise required",
+      "Architect = level 5; part-time ~60%"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "архитектор (опыт в телекоме, биллинг)",
+        "char_start": 176,
+        "char_end": 213
+      }
+    ],
+    "confidence": 0.8,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_002",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "arch_event_driven",
+      "name_ru": "Событийная архитектура",
+      "confidence": 0.85
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 63,
+      "likely_person_days": 90,
+      "max_person_days": 126,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Event-driven architecture with Kafka"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Kafka (событийная архитектура)",
+        "char_start": 136,
+        "char_end": 166
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_003",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "lang_go",
+      "name_ru": "Go",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 252,
+      "likely_person_days": 360,
+      "max_person_days": 504,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "9 months × 21 days × 2 = 378pd; senior = level 4"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "2 Go-разработчика senior",
+        "char_start": 215,
+        "char_end": 239
+      }
+    ],
+    "confidence": 0.95,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_004",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "lang_sql",
+      "name_ru": "SQL",
+      "confidence": 0.85
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 84,
+      "likely_person_days": 120,
+      "max_person_days": 168,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Data migration from Oracle; SQL expertise needed for data extraction and transformation"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "дата-инженер (миграция данных из Oracle)",
+        "char_start": 241,
+        "char_end": 281
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_005",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "db_postgresql",
+      "name_ru": "PostgreSQL",
+      "confidence": 0.85
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 42,
+      "likely_person_days": 60,
+      "max_person_days": 84,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "PostgreSQL as target database"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "PostgreSQL",
+        "char_start": 123,
+        "char_end": 133
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_006",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "cloud_kubernetes",
+      "name_ru": "Kubernetes",
+      "confidence": 0.8
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 84,
+      "likely_person_days": 120,
+      "max_person_days": 168,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "DevOps for deployment; Kubernetes implied for microservices"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "DevOps",
+        "char_start": 283,
+        "char_end": 289
+      }
+    ],
+    "confidence": 0.8,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_015_007",
+    "brief_id": "brf_015",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.8
+    },
+    "competency": {
+      "competency_id": "mq_kafka",
+      "name_ru": "Apache Kafka",
+      "confidence": 0.8
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 42,
+      "likely_person_days": 60,
+      "max_person_days": 84,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Kafka for event-driven messaging"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Kafka",
+        "char_start": 136,
+        "char_end": 141
+      }
+    ],
+    "confidence": 0.8,
+    "needs_review": false
+  }
+]

@@ -1,0 +1,439 @@
+[
+  {
+    "requirement_id": "req_impl_001",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "lang_java",
+      "name_ru": "Java"
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 2,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Серверную часть пара бэкенд-разработчиков уровня senior пишет на Java",
+        "char_start": 2341,
+        "char_end": 2410
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_002",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "fw_spring",
+      "name_ru": "Spring Boot"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Основной фреймворк — Spring Boot, бэкенд-разработчики работают в нём",
+        "char_start": 2412,
+        "char_end": 2480
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_003",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "mq_kafka",
+      "name_ru": "Apache Kafka"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Для обмена событиями между сервисами, скорее всего, возьмём Kafka",
+        "char_start": 2482,
+        "char_end": 2547
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_004",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "fw_react",
+      "name_ru": "React"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 3,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Веб-кабинет разрабатывают трое фронтенд-разработчиков на React",
+        "char_start": 1816,
+        "char_end": 1878
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_005",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "lang_typescript",
+      "name_ru": "TypeScript"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Код фронтенда пишется на TypeScript",
+        "char_start": 1880,
+        "char_end": 1915
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_006",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "test_playwright",
+      "name_ru": "Playwright"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Сквозные тесты пишут сами фронтенд-разработчики на Playwright",
+        "char_start": 1974,
+        "char_end": 2035
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_007",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик"
+    },
+    "competency": {
+      "competency_id": "web_accessibility",
+      "name_ru": "Доступность веб-интерфейсов"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Желательно, чтобы интерфейс отвечал требованиям доступности WCAG 2.1 AA; фронтенд-разработчики учитывают это при вёрстке",
+        "char_start": 2078,
+        "char_end": 2198
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_008",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения"
+    },
+    "competency": {
+      "competency_id": "arch_event_driven",
+      "name_ru": "Событийная архитектура"
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Архитектор решения уровня senior проектирует взаимодействие сервисов через события",
+        "char_start": 2634,
+        "char_end": 2716
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_009",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения"
+    },
+    "competency": {
+      "competency_id": "arch_c4",
+      "name_ru": "Документирование архитектуры (C4)"
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "документирует архитектуру по модели C4",
+        "char_start": 2719,
+        "char_end": 2757
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_010",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "system_analyst",
+      "name_ru": "Системный аналитик"
+    },
+    "competency": {
+      "competency_id": "an_integration",
+      "name_ru": "Анализ интеграций"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Системный аналитик описывает интеграцию с биллингом и CRM оператора",
+        "char_start": 2864,
+        "char_end": 2931
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_011",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "db_postgresql",
+      "name_ru": "PostgreSQL"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Эксплуатацию PostgreSQL — резервные копии, репликацию, обновления — берёт на себя DevOps-инженер",
+        "char_start": 2994,
+        "char_end": 3090
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_012",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер"
+    },
+    "competency": {
+      "competency_id": "db_clickhouse",
+      "name_ru": "ClickHouse"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "По возможности — витрины для отдела маркетинга в ClickHouse; проектирует их дата-инженер",
+        "char_start": 3092,
+        "char_end": 3180
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_013",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "cloud_yandex",
+      "name_ru": "Yandex Cloud"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Размещение — Yandex Cloud, так требует политика компании по хранению данных в России",
+        "char_start": 3205,
+        "char_end": 3289
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_014",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "cloud_kubernetes",
+      "name_ru": "Kubernetes"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Все сервисы запускаются в кластере Kubernetes",
+        "char_start": 3291,
+        "char_end": 3336
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_015",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "iac_terraform",
+      "name_ru": "Terraform"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Инфраструктура описывается кодом на Terraform",
+        "char_start": 3338,
+        "char_end": 3383
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_016",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер"
+    },
+    "competency": {
+      "competency_id": "obs_grafana",
+      "name_ru": "Grafana"
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Дашборды по возможности собираем в Grafana",
+        "char_start": 3477,
+        "char_end": 3519
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_017",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "security_engineer",
+      "name_ru": "Инженер по безопасности"
+    },
+    "competency": {
+      "competency_id": "sec_iam",
+      "name_ru": "Управление доступом (IAM)"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Инженер по информационной безопасности настраивает единый вход абонентов и сотрудников по OIDC и ролевую модель доступа",
+        "char_start": 3543,
+        "char_end": 3662
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_018",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "security_engineer",
+      "name_ru": "Инженер по безопасности"
+    },
+    "competency": {
+      "competency_id": "sec_owasp",
+      "name_ru": "OWASP Top 10"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Перед релизом приложения проверяются по OWASP Top 10",
+        "char_start": 3664,
+        "char_end": 3716
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_impl_019",
+    "brief_id": "brf_implicit_001",
+    "role": {
+      "role_id": "project_manager",
+      "name_ru": "Руководитель проекта"
+    },
+    "competency": {
+      "competency_id": "proc_kanban",
+      "name_ru": "Kanban"
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Проектом руководит один руководитель проекта, работа ведётся по Kanban",
+        "char_start": 3813,
+        "char_end": 3883
+      }
+    ]
+  }
+]

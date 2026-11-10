@@ -52,6 +52,10 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.ml
     restart: unless-stopped
+    # Load LLM_API_KEY and other secrets from ml/.env (optional, for local dev)
+    env_file:
+      - path: ../ml/.env
+        required: false
     ports:
       - "${ML_PORT:-8000}:8000"
     healthcheck:

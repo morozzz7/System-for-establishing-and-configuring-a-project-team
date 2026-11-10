@@ -6,6 +6,11 @@ eval/reports/
 
 # Environment
 .env
+ml/.env
+**/.env
+!.env.example
+!ml/.env.example
+!**/.env.example
 
 # Python
 .venv/
