@@ -1,7 +1,7 @@
 """Team Optimizer ML Service.
 
-Implements /healthz, /readyz, and POST /v1/extract (real extraction pipeline).
-/v1/embed and /v1/optimize remain stubs (501) for phases 3.2/3.3.
+Implements /healthz, /readyz, POST /v1/extract (extraction pipeline) and
+POST /v1/optimize (CP-SAT team optimizer). /v1/embed remains a stub (501) for phase 3.2.
 All error responses conform to the Problem schema from contracts/ml-openapi.yaml.
 """
 
@@ -15,16 +15,27 @@ from fastapi.responses import JSONResponse
 
 from .extract.router import router as extract_router
 from .llm.config import get_settings
+from .optimize.router import router as optimize_router
 from .version import __version__
+
+try:
+    from .optimize.solver import SOLVER_NAME, SOLVER_VERSION
+
+    _OPTIMIZE_READY = True
+except Exception:  # pragma: no cover - ortools is a hard dependency
+    SOLVER_NAME = "ortools-cp-sat"
+    SOLVER_VERSION = "9.11.4210"
+    _OPTIMIZE_READY = False
 
 app = FastAPI(
     title="Team Optimizer ML Service",
     version=__version__,
-    description="ML service for team formation: extraction (implemented), embedding and optimization (stubs).",
+    description="ML service for team formation: extraction + optimization implemented; embedding stub.",
 )
 
-# Include the real /v1/extract router
+# Include the real /v1/extract and /v1/optimize routers
 app.include_router(extract_router)
+app.include_router(optimize_router)
 
 _start_time: float = time.time()
 
@@ -76,20 +87,21 @@ async def healthz() -> dict[str, Any]:
 @app.get("/readyz")
 async def readyz() -> dict[str, Any]:
     """Readiness probe per contracts/ml-openapi.yaml.
-    
-    Reports actual capability states based on LLM availability.
+
+    Reports actual capability states based on LLM availability and OR-Tools import.
     """
     settings = get_settings()
-    
+
     # Determine extract capability state
     extract_state = "ready" if settings.is_available else "degraded"
-    
+    optimize_state = "ready" if _OPTIMIZE_READY else "unavailable"
+
     return {
         "ready": True,
         "capabilities": {
             "extract": extract_state,
             "embed": "degraded",
-            "optimize": "degraded",
+            "optimize": optimize_state,
         },
         "models": {
             "llm": settings.model if settings.is_available else None,
@@ -98,8 +110,8 @@ async def readyz() -> dict[str, Any]:
             "spacy_pipeline": "ru_core_news_lg",
         },
         "solver": {
-            "name": "ortools-cp-sat",
-            "version": "9.11.4210",
+            "name": SOLVER_NAME,
+            "version": SOLVER_VERSION,
         },
         "limits": {
             "extract_timeout_ms": settings.timeout_ms,
@@ -113,8 +125,8 @@ async def readyz() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Stub endpoints: /v1/embed and /v1/optimize return 501 Not Implemented
-# (they belong to phases 3.2 and 3.3). /v1/extract is now real (via router).
+# Stub endpoint: /v1/embed returns 501 Not Implemented (phase 3.2).
+# /v1/extract and /v1/optimize are real (via routers).
 # ---------------------------------------------------------------------------
 
 
@@ -127,23 +139,7 @@ async def embed(request: Request) -> JSONResponse:
             status=501,
             code="NOT_IMPLEMENTED",
             title="Not implemented",
-            detail="POST /v1/embed is a stub; implementation comes in phase 3.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
-
-
-@app.post("/v1/optimize")
-async def optimize(request: Request) -> JSONResponse:
-    """Stub: team optimization not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/optimize is a stub; implementation comes in phase 3.",
+            detail="POST /v1/embed is a stub; implementation comes in phase 3.2.",
             request_id=_req_id(request),
             retryable=False,
         ),

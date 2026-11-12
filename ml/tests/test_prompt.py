@@ -1,4 +1,4 @@
-"""Tests for prompt template (extract-v3): format, security (injection guard), vocabulary with synonyms & roles."""
+"""Tests for prompt template (extract-v4): format, security, and semantic disambiguation."""
 
 from __future__ import annotations
 
@@ -16,8 +16,8 @@ def _reset():
 
 
 class TestPromptVersion:
-    def test_prompt_version_is_extract_v3(self):
-        assert PROMPT_VERSION == "extract-v3"
+    def test_prompt_version_is_extract_v4(self):
+        assert PROMPT_VERSION == "extract-v4"
 
 
 class TestPromptStructure:
@@ -47,7 +47,7 @@ class TestPromptStructure:
         assert "backend_engineer" in system_msg
         assert "frontend_engineer" in system_msg
         assert "qa_engineer" in system_msg
-        # Synonyms included in extract-v3
+        # Synonyms included in extract-v4
         assert "бэкенд" in system_msg
 
     def test_system_contains_competency_ids_synonyms_and_allowed_roles(self):
@@ -61,7 +61,7 @@ class TestPromptStructure:
         assert "roles:" in system_msg
 
     def test_no_gold_brief_001_leak_in_examples(self):
-        """Few-shot examples in extract-v3 must not contain brief_001 text."""
+        """Few-shot examples in extract-v4 must not contain brief_001 text."""
         registry = get_registry()
         messages = build_extract_prompt("test", registry, "ru")
         system_msg = messages[0]["content"]

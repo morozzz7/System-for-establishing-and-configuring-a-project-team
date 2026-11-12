@@ -169,7 +169,7 @@ class TestExtractRouterValid:
         resp = await client.post("/v1/extract", json=_valid_request())
         diag = resp.json()["diagnostics"]
         assert diag["engine"] == "llm"
-        assert diag["prompt_version"] == "extract-v3"
+        assert diag["prompt_version"] == "extract-v4"
         assert diag["temperature"] == 0
         assert diag["duration_ms"] >= 0
         assert diag["json_valid"] is True

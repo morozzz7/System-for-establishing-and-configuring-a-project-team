@@ -39,6 +39,15 @@ async def test_readyz(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_readyz_optimize_capability_and_solver_version(client: AsyncClient) -> None:
+    resp = await client.get("/readyz")
+    body = resp.json()
+    assert body["capabilities"]["optimize"] == "ready"
+    assert body["solver"]["name"] == "ortools-cp-sat"
+    assert body["solver"]["version"].count(".") >= 2
+
+
+@pytest.mark.asyncio
 async def test_extract_invalid_body_422(client: AsyncClient) -> None:
     """Real /v1/extract returns 422 on invalid request body (was 501 stub)."""
     resp = await client.post("/v1/extract", json={})
@@ -59,11 +68,15 @@ async def test_embed_stub_501(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_optimize_stub_501(client: AsyncClient) -> None:
+async def test_optimize_invalid_body_422(client: AsyncClient) -> None:
+    """Real /v1/optimize returns 422 on an empty request body (was 501 stub)."""
     resp = await client.post("/v1/optimize", json={})
-    assert resp.status_code == 501
+    assert resp.status_code == 422
     body = resp.json()
-    assert body["code"] == "NOT_IMPLEMENTED"
+    assert body["status"] == 422
+    assert body["code"] == "INVALID_REQUEST"
+    assert "request_id" in body
+    assert isinstance(body["reason_codes"], list)
 
 
 @pytest.mark.asyncio

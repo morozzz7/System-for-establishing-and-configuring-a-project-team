@@ -1,4 +1,4 @@
-"""Prompt template for LLM-first extraction (`extract-v3`).
+"""Prompt template for LLM-first extraction (`extract-v4`).
 
 Strategy (ADR-005 v2 / `tz_ml_extract_fix_v2.md` §3.5):
 - LLM is the sole source of extraction decisions; deterministic code validates
@@ -22,7 +22,7 @@ from typing import Iterable
 
 from .taxonomy import TaxonomyRegistry
 
-PROMPT_VERSION = "extract-v3"
+PROMPT_VERSION = "extract-v4"
 
 _COMPACT_OUTPUT_SCHEMA = (
     "JSON array of compact requirement objects (Enriched into ExtractedRequirement[] per contracts/ml-openapi.yaml). "
@@ -175,7 +175,7 @@ def build_extract_prompt(
     allowed_role_ids: Iterable[str] | None = None,
     allowed_competency_ids: Iterable[str] | None = None,
 ) -> list[dict[str, str]]:
-    """Build OpenAI messages for LLM-first structured extraction (`extract-v3`).
+    """Build OpenAI messages for LLM-first structured extraction (`extract-v4`).
 
     Returns a list of two messages:
     1. `system`: task instruction + closed vocabulary with synonyms & allowed roles + examples (no `brief_text`!)
@@ -243,6 +243,9 @@ def build_extract_prompt(
         "     * Business requirements, BPMN, user stories, domain analysis (`an_requirements`, `an_bpmn`, `an_user_stories`, `an_sql_analysis`) -> `business_analyst`.\n"
         "     * System integration specs, API contracts (`an_integration`) -> `system_analyst`.\n"
         "   - Never invent a role without basis in the text.\n"
+        "   - Do not infer a specific competency from a generic role noun or broad activity. For example, 'тестировщик' alone does not prove manual testing, test design, API testing, or performance testing; 'дизайнер' alone does not prove Figma; 'дата-инженер' alone does not prove ETL; 'аналитика' or 'рекомендации' alone does not prove a recommender-system competency. Use competency_id: null when the role is explicit but the competency is not.\n"
+        "   - Do not duplicate a technology under a second competency merely because it is related. Emit one requirement per distinct competency explicitly supported by the brief. In particular, do not infer React Native from a generic mobile-app mention, system design from the word 'архитектор', or microservices from a role title.\n"
+        "   - Separate ownership from technology: a phrase such as 'микросервисы' may support a backend implementation requirement, an architect requirement, or both only when the brief contains separate evidence for both responsibilities. Choose the role named in the same clause; otherwise mark the ambiguous pair for review.\n"
         "6. Implicit requirements: infer an implicit requirement ONLY from the closed policy list:\n"
         "   - Explicit mention of `PCI DSS` -> `role_id: 'security_engineer'`, `competency_id: 'sec_appsec'`, `needs_review: true`.\n"
         "   Do not invent any other unmentioned competencies.\n"

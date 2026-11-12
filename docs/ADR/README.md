@@ -10,7 +10,7 @@ that make the decision testable, so `qa-eval` and `reviewer` can check it.
 | [ADR-002](ADR-002-time-model.md) | Time model: ISO weeks, integer hours, three-point effort, explicit reserve | accepted | 2026-11-05 | availability, schedule engine, M2/M5/M6, UI duration display |
 | [ADR-003](ADR-003-availability-model.md) | Availability: one authoritative capacity matrix, computed only in Go | accepted | 2026-11-05 | G1/G2, `weekly_capacity`, absences, recalculation |
 | [ADR-004](ADR-004-ml-timeout-error-policy.md) | ML timeout and error policy: fail loudly, degrade explicitly | accepted | 2026-11-05 | ml client, readiness, UI degradation, audit |
-| [ADR-005](ADR-005-extraction-strategy.md) | Extraction: LLM-first with deterministic validation | accepted | 2026-11-08 | `/v1/extract`, prompt `extract-v3`, validator, eval |
+| [ADR-005](ADR-005-extraction-strategy.md) | Extraction: LLM-first with deterministic validation | accepted | 2026-11-08 | `/v1/extract`, prompt `extract-v4`, validator, eval |
 | [ADR-006](ADR-006-review-routing-and-mention-quality.md) | Review routing + deterministic mention-quality gates for `/v1/extract` | accepted | 2026-11-09 | `ExtractResponse.requirements_for_review`, `diagnostics.verification`, scanner, eval |
 
 ## Template

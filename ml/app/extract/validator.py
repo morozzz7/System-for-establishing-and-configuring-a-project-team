@@ -76,6 +76,27 @@ _NON_DISTINGUISHING_STEM_WORDS: frozenset[str] = frozenset(
     }
 )
 
+# Terms that describe a role or a broad activity but do not identify a
+# particular competency on their own.  These must not make an LLM assignment
+# look lexically grounded.  A generic role-only mention is useful for staffing,
+# but it is not evidence for (for example) manual testing or ETL.
+_GENERIC_COMPETENCY_TERMS: frozenset[str] = frozenset(
+    {
+        "тестирование",
+        "тестировщик",
+        "аналитика",
+        "аналитик",
+        "рекомендации",
+        "дизайнер",
+        "архитектор",
+        "архитектура",
+        "дата-инженер",
+        "инженер данных",
+        "мобильное приложение",
+        "mobile application",
+    }
+)
+
 # Closed list of implicit/contextual anchors allowed by GOLD_POLICY.md
 _IMPLICIT_COMPETENCY_ANCHORS: dict[str, tuple[str, ...]] = {
     "api_rest": ("rest", "openapi", "swagger", "2 api", "внешние api", "через api"),
@@ -233,6 +254,8 @@ def has_competency_lexical_anchor(
     for raw_term in all_terms:
         term = _safe_lower(raw_term.strip().replace("ё", "е").replace("Ё", "Е"))
         if not term or len(term) < 2:
+            continue
+        if term in _GENERIC_COMPETENCY_TERMS:
             continue
         if len(term) <= 3:
             # Require word boundary for short 2-3 char tokens ("go", "c4", "bi", "ml", "qa", "тз")

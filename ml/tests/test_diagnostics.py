@@ -21,7 +21,7 @@ class TestBuildDiagnostics:
         assert d.retries == 0
         assert d.dropped_no_evidence == 2
         assert d.duration_ms == 100
-        assert d.prompt_version == "extract-v3"
+        assert d.prompt_version == "extract-v4"
         assert d.temperature == 0
 
     def test_llm_only(self):

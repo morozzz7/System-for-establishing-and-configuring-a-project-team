@@ -56,8 +56,8 @@ We transition `/v1/extract` to an **LLM-first** architecture with **strictly det
    - Total execution across attempts respects `options.timeout_ms`.
    - LLM errors are never swallowed: when the LLM is unavailable (missing API key, connection failure, HTTP 5xx after retries) or times out, `/v1/extract` returns a `Problem` response (`503 CAPABILITY_UNAVAILABLE` with `reason_codes: ["ML_LLM_UNAVAILABLE"]` or `408 TIMEOUT` with `reason_codes: ["ML_TIMEOUT"]`, `retryable: true`) per `contracts/ml-openapi.yaml` and ADR-004. Returning HTTP 200 with an empty requirement list on LLM failure is forbidden.
 
-6. **Prompt `extract-v3` and hold-out evaluation discipline.**
-   - `extract-v3` includes role and competency synonyms and the `competency -> allowed roles` table, removes leaked gold examples, uses 2–3 examples from outside `eval/gold`, and specifies role-selection and implicit-requirement rules aligned with `eval/GOLD_POLICY.md`.
+6. **Prompt `extract-v4` and hold-out evaluation discipline.**
+   - `extract-v4` includes role and competency synonyms and the `competency -> allowed roles` table, removes leaked gold examples, uses 2–3 examples from outside `eval/gold`, and specifies role-selection, generic-role disambiguation, ownership separation, and implicit-requirement rules aligned with `eval/GOLD_POLICY.md`.
    - Evaluation (`eval/run_eval.py`) tracks competency F1, exact pair F1, relaxed pair F1 (`role_id in competency.roles`), and conditional role accuracy across stages (`rules`, `llm_raw`, `llm_validated`, `final_api`), with a dedicated hold-out split of at least 5 briefs.
 
 ## Consequences

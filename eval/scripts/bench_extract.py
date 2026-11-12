@@ -35,11 +35,11 @@ TAXONOMY_PATH = REPO_ROOT / "contracts" / "taxonomy.yaml"
 DEFAULT_EXTRACT_URL = "http://localhost:8000/v1/extract"
 DEFAULT_HEALTH_URL = "http://localhost:8000/healthz"
 LLM_MODEL = "qwen/qwen-2.5-72b-instruct"
-PROMPT_VERSION = "extract-v3"
 
 ML_DIR = REPO_ROOT / "ml"
 if str(ML_DIR) not in sys.path:
     sys.path.insert(0, str(ML_DIR))
+from app.extract.prompt import PROMPT_VERSION  # noqa: E402
 
 
 # ---------------------------------------------------------------------------

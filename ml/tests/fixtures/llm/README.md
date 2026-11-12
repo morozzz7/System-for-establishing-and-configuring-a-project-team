@@ -1,6 +1,6 @@
 # LLM Replay Fixtures
 
-These fixtures contain recorded compact-schema LLM responses (`extract-v3`) for deterministic unit and smoke testing.
+These fixtures contain recorded compact-schema LLM responses for deterministic unit and smoke testing. They remain compatible with the `extract-v4` prompt because the prompt version changes only the extraction instructions, not the compact response schema.
 
 ## Format
 

@@ -3,7 +3,7 @@
 A requirement whose evidence quote contains a generic marker (a conversational
 remark or a generic stack summary) and no concrete task cue is not a project
 requirement. The gate is deterministic and independent of the LLM: the
-`extract-v3` prompt already forbids such items, but an instruction is not a
+`extract-v4` prompt already forbids such items, but an instruction is not a
 guarantee (see `devops_engineer/cloud_docker` from «разумеется, Docker, как у
 всех»).
 

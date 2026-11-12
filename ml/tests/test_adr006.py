@@ -567,7 +567,7 @@ class TestContractConformance:
             diagnostics=ExtractDiagnostics(
                 engine="llm",
                 model="test-model",
-                prompt_version="extract-v3",
+                prompt_version="extract-v4",
                 temperature=0,
                 duration_ms=10,
                 json_valid=True,

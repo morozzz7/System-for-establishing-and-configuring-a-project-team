@@ -27,7 +27,7 @@ that ADR-005 did not cover. All numbers below are from `eval/runs/long_brief_lat
 
 3. **A passing remark became a high-confidence requirement.** `devops_engineer/cloud_docker`
    (`confidence = 0.90`, `needs_review = false`) was extracted from
-   «Контейнеризация — разумеется, Docker, как у всех». The `extract-v3` prompt already forbids this
+   «Контейнеризация — разумеется, Docker, как у всех». The `extract-v4` prompt already forbids this
    ("generic stack summary lines and conversational remarks ... do NOT create a separate requirement"),
    but an LLM instruction is not a guarantee. The gold annotation deliberately excludes it: the sentence
    contains no concrete project task. The competency is lexically anchored, so the lexical check could
@@ -110,7 +110,7 @@ A deterministic gate runs after the lexical anchor check and before deduplicatio
 | Only increase `max_tokens` for the single verification call | One large response is still fragile (truncation, provider empty-body), and one failure loses all candidates. Batching isolates failures. |
 | Keep low-confidence pairs in `requirements` and rely on `needs_review` | The optimizer input is exactly the place where the flag is ignored. A separate list makes the contract enforce the separation. |
 | Drop low-confidence pairs silently | Violates explainability: a human must be able to see and confirm them. Review list keeps the information. |
-| Let the LLM reject passing remarks (prompt-only) | Already in `extract-v3` and already failed at confidence 0.90. Instructions are not guarantees; deterministic gates are testable. |
+| Let the LLM reject passing remarks (prompt-only) | Already in `extract-v4` and already failed at confidence 0.90. Instructions are not guarantees; deterministic gates are testable. |
 | Verify every extracted pair with a second LLM pass | Doubles cost/latency and re-introduces non-determinism for the common case. Deterministic gates cover the known failure mode; verification stays for scanner candidates. |
 | New `/v2/extract` for the additive field | Additive fields are explicitly allowed by `ml-openapi.yaml` conventions; a version bump would force a coordinated Go release for no benefit. |
 
