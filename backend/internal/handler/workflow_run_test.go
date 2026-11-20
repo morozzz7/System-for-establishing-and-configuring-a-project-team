@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -126,7 +127,7 @@ const optimizeUnknownMemberFixture = `{
   "reason_codes": []
 }`
 
-func newWorkflowServer(t *testing.T, fake *fakeML) *httptest.Server {
+func newWorkflowRouter(t *testing.T, fake *fakeML) chi.Router {
 	t.Helper()
 	client := mlclient.NewWithHTTPClient("http://fixture", &http.Client{Transport: fake})
 	workflow := service.NewWorkflowService(client)
@@ -134,6 +135,12 @@ func newWorkflowServer(t *testing.T, fake *fakeML) *httptest.Server {
 	r.Route("/api/v1", func(r chi.Router) {
 		(&handler.WorkflowHandler{Svc: workflow}).Register(r)
 	})
+	return r
+}
+
+func newWorkflowServer(t *testing.T, fake *fakeML) *httptest.Server {
+	t.Helper()
+	r := newWorkflowRouter(t, fake)
 	server := httptest.NewServer(r)
 	t.Cleanup(server.Close)
 	return server
@@ -339,5 +346,38 @@ func TestRunEndpointRejectsInvalidConstraints(t *testing.T) {
 	}
 	if fake.last != nil {
 		t.Fatalf("an invalid run must not reach the solver")
+	}
+}
+
+func TestCreateBrief_MultipartUpload(t *testing.T) {
+	fake := &fakeML{extract: extractFixture, optimize: optimizeFixture}
+	r := newWorkflowRouter(t, fake)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("file", "technical_brief.txt")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _ = part.Write([]byte("Нужно разработать сервис аналитики на Go и React."))
+	_ = writer.WriteField("title", "Тестовое ТЗ из файла")
+	_ = writer.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/briefs", body)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusAccepted {
+		t.Fatalf("POST /briefs multipart = %d, want 202, body: %s", rec.Code, rec.Body.String())
+	}
+	var res map[string]any
+	_ = json.Unmarshal(rec.Body.Bytes(), &res)
+	if res["title"] != "Тестовое ТЗ из файла" {
+		t.Fatalf("expected title 'Тестовое ТЗ из файла', got %v", res["title"])
+	}
+	if res["source_type"] != "document" {
+		t.Fatalf("expected source_type 'document', got %v", res["source_type"])
 	}
 }
