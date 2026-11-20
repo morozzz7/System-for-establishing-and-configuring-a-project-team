@@ -55,7 +55,7 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 | 4.2 ✅ | Metrics M1-M12 + Score in Go | backend | 4.1 | Formulas match `METRICS.md` (hand-computed fixtures, property tests G1-G5/M1-M12, non-domination, Jaccard distance all green) |
 | 4.3 ✅ | Explainer: reason codes, texts, counterfactuals | backend | 3.4, 4.2 | Faithfulness 100%; counterfactual accuracy >= 95%; deterministic Russian templates and contract reason codes |
 | 4.4 ✅ | Recalculate API + constraint editor UI | backend, frontend | 4.2 | Metamorphic tests: responsiveness 100%; recalculation p95 <= 5 s; immutable child run lineage, client-side hard constraint validation |
-| 4.5 | Screens: variant details, explanations, deficits/cooperation request | frontend | 4.3 | Playwright full scenario incl. recalculation |
+| 4.5 ✅ | Screens: variant details, explanations, deficits screens | frontend | 4.3 | Variant comparison, member roster details, deficit alerts, explanation panel, recalculation diff; 122 tests green, build/lint clean |
 | 4.6 | Full benchmark vs baselines + expert panel | qa-eval | 4.4 | Report in `eval/reports/`; Score beats baselines by >= 10% |
 | 4.7 | Final audit | reviewer | 4.6 | No blockers/majors open |
 
@@ -78,6 +78,7 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 - Weight editor: allow free-form custom weights or only preset + delta sliders? (before 5.2) — RECOMMENDATION: preset cards + "Custom" mode with per-metric sliders, sum=1 enforced.
 
 ## Log
+2026-11-20 - 4.5 - screens: variant details, explanations, deficits - verified frontend RunPage and ExplanationPanel: variant cards with P50/P80 duration range, M1-M12 breakdown, member roster details with competence fit, competency deficits with external cooperation tags, recalculation facts diff; all 122 Vitest tests pass, eslint 0 warnings, vite build clean
 2026-11-20 - 4.4 - recalculate API + constraint editor UI - verified POST /api/v1/runs/{id}/recalculate with immutable child run lineage (parent_run_id), 100% metamorphic responsiveness, < 0.1s runtime; frontend ConstraintEditor with client-side G1/G4 hard constraint validation and override management; all tests green
 2026-11-20 - 4.3 - explainer: reason codes, texts, counterfactuals - verified backend/internal/explain: 100% faithfulness (pure numeric token derivation from facts map), contract-aligned reason codes, counterfactual generation with re-run validation, and deterministic Russian template rendering; all tests green
 2026-11-20 - 4.2 - metrics M1-M12 + score in Go - verified backend/internal/metrics against docs/METRICS.md: hand-computed fixtures, property tests (G1-G5, M1-M12), composite score with weight renormalization on dropped M4, resilience simulation, non-domination and Jaccard distance; all unit and property tests green

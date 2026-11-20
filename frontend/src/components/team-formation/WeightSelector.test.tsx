@@ -127,7 +127,7 @@ describe('WeightSelector', () => {
     expect(screen.getByText('Справочник метрик (M1–M13)')).toBeInTheDocument();
     // Expand the collapse panel
     fireEvent.click(screen.getByText('Справочник метрик (M1–M13)'));
-    expect(screen.getByText('M1')).toBeInTheDocument();
+    expect(screen.getAllByText('M1')[0]).toBeInTheDocument();
   });
 
   it('shows current weights JSON', () => {
