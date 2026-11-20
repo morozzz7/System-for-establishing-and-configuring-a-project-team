@@ -98,6 +98,10 @@ def validate_brief(brief_dir: Path, taxonomy: dict, schema: dict, common_schema:
     # Build valid role/competency sets
     valid_roles = {r["role_id"] for r in taxonomy.get("roles", [])}
     valid_competencies = {c["competency_id"] for c in taxonomy.get("competencies", [])}
+    comp_allowed_roles = {
+        c["competency_id"]: set(c.get("roles", []))
+        for c in taxonomy.get("competencies", [])
+    }
 
     # Validate each requirement
     req_ids = set()
@@ -139,6 +143,13 @@ def validate_brief(brief_dir: Path, taxonomy: dict, schema: dict, common_schema:
             needs_review = req.get("needs_review", False)
             if comp_id not in valid_competencies and not needs_review:
                 errors.append(f"{prefix}: competency_id '{comp_id}' not in taxonomy (and needs_review is false)")
+            elif comp_id in comp_allowed_roles:
+                role_id = req.get("role", {}).get("role_id", "") if isinstance(req.get("role"), dict) else ""
+                if role_id and role_id not in comp_allowed_roles[comp_id]:
+                    errors.append(
+                        f"{prefix}: pair ({role_id}, {comp_id}) invalid: "
+                        f"role_id not in competency.roles {sorted(comp_allowed_roles[comp_id])}"
+                    )
 
         # Level
         if "level" in req:

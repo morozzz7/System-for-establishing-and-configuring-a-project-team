@@ -297,6 +297,7 @@ func TestValidateAssignmentCreate(t *testing.T) {
 	t.Run("valid", func(t *testing.T) {
 		fe := domain.ValidateAssignmentCreate(domain.AssignmentCreate{
 			EmployeeID: "emp_abcd1234",
+			ProjectID:  "prj_test1234",
 			RoleID:     "backend_engineer",
 			Week:       "2026-W03",
 			Hours:      20,
@@ -304,9 +305,21 @@ func TestValidateAssignmentCreate(t *testing.T) {
 		assert.Empty(t, fe.Code)
 	})
 
+	t.Run("missing project_id", func(t *testing.T) {
+		fe := domain.ValidateAssignmentCreate(domain.AssignmentCreate{
+			EmployeeID: "emp_abcd1234",
+			RoleID:     "backend_engineer",
+			Week:       "2026-W03",
+			Hours:      20,
+		}, 0)
+		assert.Equal(t, "PATTERN_MISMATCH", fe.Code)
+		assert.Contains(t, fe.Field, "project_id")
+	})
+
 	t.Run("hours zero", func(t *testing.T) {
 		fe := domain.ValidateAssignmentCreate(domain.AssignmentCreate{
 			EmployeeID: "emp_abcd1234",
+			ProjectID:  "prj_test1234",
 			RoleID:     "backend_engineer",
 			Week:       "2026-W03",
 			Hours:      0,
@@ -317,6 +330,7 @@ func TestValidateAssignmentCreate(t *testing.T) {
 	t.Run("hours too high", func(t *testing.T) {
 		fe := domain.ValidateAssignmentCreate(domain.AssignmentCreate{
 			EmployeeID: "emp_abcd1234",
+			ProjectID:  "prj_test1234",
 			RoleID:     "backend_engineer",
 			Week:       "2026-W03",
 			Hours:      61,
@@ -327,6 +341,7 @@ func TestValidateAssignmentCreate(t *testing.T) {
 	t.Run("invalid week", func(t *testing.T) {
 		fe := domain.ValidateAssignmentCreate(domain.AssignmentCreate{
 			EmployeeID: "emp_abcd1234",
+			ProjectID:  "prj_test1234",
 			RoleID:     "backend_engineer",
 			Week:       "2026-03",
 			Hours:      20,

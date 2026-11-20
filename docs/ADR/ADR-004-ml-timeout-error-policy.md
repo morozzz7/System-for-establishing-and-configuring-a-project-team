@@ -117,3 +117,46 @@ blocked, with a reason code and an audit entry.
 - The Go client becomes a small state machine (timeout, retry, breaker, readiness) that must be
   covered by unit tests; the alternative (ad-hoc error handling at each call site) is how inconsistent
   behaviour appears.
+
+---
+
+## 7. LLM endpoint location (added 2026-11-07)
+
+### Decision
+
+For the MVP, the LLM endpoint is **OpenRouter** (`https://openrouter.ai/api/v1`), accessed via the
+`LLMClient` abstraction in `ml/app/llm/client.py`. The model used is
+`qwen/qwen-2.5-72b-instruct` (selected for strong Russian-language capability and structured-output
+quality at temperature 0).
+
+### Configuration
+
+- API key: `LLM_API_KEY` environment variable (or `ml/.env`), never committed.
+- Base URL: `LLM_BASE_BASE_URL` (default: `https://openrouter.ai/api/v1`).
+- Model: `LLM_MODEL` (default: `qwen/qwen-2.5-72b-instruct`).
+- Timeout: per-request `options.timeout_ms` from the extract request, hard ceiling 60 s.
+
+### Why OpenRouter for MVP
+
+| Criterion | OpenRouter | Direct provider API | Self-hosted |
+|---|---|---|---|
+| Setup cost | One API key, any model | Per-provider key + billing | GPU infra, model ops |
+| Model swap | Change one env var | Change code + key | Full redeploy |
+| Rate limits | Shared pool, transparent | Per-org | Self-managed |
+| Cost control | Usage dashboard | Per-provider | Fixed infra cost |
+| Latency | +50-100 ms hop | Direct | Lowest (if local GPU) |
+
+OpenRouter gives a single integration point that lets us A/B test models (Qwen, Llama, Mistral)
+without code changes. When traffic volume or latency requirements justify it, we can switch to a
+direct provider API by changing `LLM_BASE_BASE_URL` — the `LLMClient` interface does not change.
+
+### Failure behaviour (aligned with ADR-005)
+
+When `LLM_API_KEY` is not set, the endpoint is unreachable, or all retry attempts fail with HTTP 5xx, `/v1/extract` fails loudly per sections 1–3 above by returning HTTP `503` (`Problem` with `code: "CAPABILITY_UNAVAILABLE"`, `retryable: true`, `reason_codes: ["ML_LLM_UNAVAILABLE"]`). On timeout (`options.timeout_ms` exceeded), `/v1/extract` returns HTTP `408` (`Problem` with `code: "TIMEOUT"`, `retryable: true`, `reason_codes: ["ML_TIMEOUT"]`). It never silently falls back to rules-only or returns HTTP `200` with empty requirements on LLM failure. The offline evaluation harness (`eval/run_eval.py`) supports `--mode fixtures` and `--mode rules` for deterministic CI benchmarking without an API key.
+
+### Consequences
+
+- Extraction fails closed (`503`/`408` `Problem` with `retryable: true`) when the LLM endpoint is down, matching the degradation matrix in §3 (manual requirement entry remains available in the UI).
+- All LLM calls go through `LLMClient` which enforces temperature 0, seed, feedback repair retries, and the prompt-injection defence (brief text in user message only, never in system instruction).
+- Model and endpoint are configurable per environment (dev, staging, prod) without code changes.
+- Benchmark reports record `llm_model` and `prompt_version` for reproducibility.

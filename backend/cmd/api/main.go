@@ -16,6 +16,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/teamopt/backend/internal/handler"
+	"github.com/teamopt/backend/internal/mlclient"
 	"github.com/teamopt/backend/internal/platform/config"
 	"github.com/teamopt/backend/internal/repository"
 	"github.com/teamopt/backend/internal/service"
@@ -68,6 +69,10 @@ func main() {
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthz", handleHealthz)
 		r.Get("/readyz", handleReadyz(pool, cfg.MLServiceURL))
+		workflow := service.NewWorkflowService(mlclient.New(cfg.MLServiceURL))
+		(&handler.WorkflowHandler{Svc: workflow}).Register(r)
+		handler.NewTaxonomyHandler().Register(r)
+		handler.NewReferenceHandler().Register(r)
 
 		// CRUD routes (task 2.3) + capacity routes (task 2.4).
 		if pool != nil {
@@ -81,7 +86,14 @@ func main() {
 
 			capSvc := service.NewCapacityService(empRepo, asgRepo, absRepo, capRepo)
 
-			empSvc := &service.EmployeeService{EmployeeRepo: empRepo, CompRepo: compRepo, AuditRepo: audRepo}
+			empSvc := &service.EmployeeService{
+				EmployeeRepo: empRepo,
+				CompRepo:     compRepo,
+				AuditRepo:    audRepo,
+				AsgRepo:      asgRepo,
+				AbsRepo:      absRepo,
+				ProjectRepo:  prjRepo,
+			}
 			prjSvc := &service.ProjectService{ProjectRepo: prjRepo, AuditRepo: audRepo}
 			asgSvc := &service.AssignmentService{
 				AssignmentRepo: asgRepo,

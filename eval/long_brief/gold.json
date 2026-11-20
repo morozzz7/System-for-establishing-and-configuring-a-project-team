@@ -1,0 +1,457 @@
+[
+  {
+    "requirement_id": "req_long_001",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "arch_event_driven",
+      "name_ru": "Событийная архитектура",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 102.2,
+      "likely_person_days": 146.0,
+      "max_person_days": 204.4,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.79; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "проектирования событийно-ориентированной архитектуры (Event-Driven Architecture)",
+        "char_start": 10817,
+        "char_end": 10897
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_002",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "lang_go",
+      "name_ru": "Go",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 3,
+    "effort": {
+      "min_person_days": 219.9,
+      "likely_person_days": 314.2,
+      "max_person_days": 439.8,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 3; weight 1.70; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бэкенд платформы разрабатывается на языке Go (требуются 3 бэкенд-разработчика уровня senior)",
+        "char_start": 11249,
+        "char_end": 11341
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_003",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "api_rest",
+      "name_ru": "Проектирование REST API",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 3,
+    "effort": {
+      "min_person_days": 122.9,
+      "likely_person_days": 175.6,
+      "max_person_days": 245.8,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 3; weight 0.95; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "бэкенд-разработчики реализуют публичные и внутренние шлюзы по протоколу REST API",
+        "char_start": 11709,
+        "char_end": 11789
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_004",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "mq_kafka",
+      "name_ru": "Apache Kafka",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 3,
+    "effort": {
+      "min_person_days": 41.4,
+      "likely_person_days": 59.1,
+      "max_person_days": 82.8,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 3; weight 0.32; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "передаются через распределённый брокер сообщений Apache Kafka",
+        "char_start": 12133,
+        "char_end": 12194
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_005",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "db_postgresql",
+      "name_ru": "PostgreSQL",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 3,
+    "effort": {
+      "min_person_days": 41.4,
+      "likely_person_days": 59.1,
+      "max_person_days": 82.8,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 3; weight 0.32; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "используется PostgreSQL (проектирование партиционированных таблиц",
+        "char_start": 12604,
+        "char_end": 12669
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_006",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "fw_react",
+      "name_ru": "React",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 149.4,
+      "likely_person_days": 213.4,
+      "max_person_days": 298.7,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 2; weight 1.27; level factor 1.00"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "разрабатывается на React (требуются 2 фронтенд-разработчика уровня middle)",
+        "char_start": 13032,
+        "char_end": 13106
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_007",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "lang_typescript",
+      "name_ru": "TypeScript",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 176.4,
+      "likely_person_days": 252.0,
+      "max_person_days": 352.8,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 2; weight 1.50; level factor 1.00"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "кодовая база фронтенда пишется на TypeScript",
+        "char_start": 13543,
+        "char_end": 13587
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_008",
+    "role": {
+      "role_id": "ux_ui_designer",
+      "name_ru": "UX/UI-дизайнер",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "ui_figma",
+      "name_ru": "Figma",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 111.7,
+      "likely_person_days": 159.6,
+      "max_person_days": 223.4,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.95; level factor 1.00"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "UX/UI-дизайнер со знанием Figma (уровень middle)",
+        "char_start": 14024,
+        "char_end": 14072
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_009",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "an_bpmn",
+      "name_ru": "Моделирование процессов (BPMN)",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 64.7,
+      "likely_person_days": 92.4,
+      "max_person_days": 129.4,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.50; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "моделирования сквозных процессов в нотации BPMN требуется бизнес-аналитик",
+        "char_start": 14420,
+        "char_end": 14493
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_010",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "dom_logistics",
+      "name_ru": "Логистика",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 32.3,
+      "likely_person_days": 46.2,
+      "max_person_days": 64.7,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.25; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "экспертизой в предметной области логистики и управления цепями поставок (Supply Chain / WMS / TMS",
+        "char_start": 14505,
+        "char_end": 14602
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_011",
+    "role": {
+      "role_id": "system_analyst",
+      "name_ru": "Системный аналитик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "an_integration",
+      "name_ru": "Анализ интеграций",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 78.8,
+      "likely_person_days": 112.6,
+      "max_person_days": 157.6,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.67; level factor 1.00"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "системный аналитик с опытом проектирования межсистемных интеграций (уровень middle)",
+        "char_start": 14940,
+        "char_end": 15023
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_012",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "test_playwright",
+      "name_ru": "Playwright",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 83.5,
+      "likely_person_days": 119.3,
+      "max_person_days": 167.0,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.71; level factor 1.00"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "QA-инженер уровня middle) для разработки и поддержки сквозных автотестов пользовательских сценариев на Playwright",
+        "char_start": 15268,
+        "char_end": 15381
+      }
+    ]
+  },
+  {
+    "requirement_id": "req_long_013",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "cloud_kubernetes",
+      "name_ru": "Kubernetes",
+      "confidence": 0.95
+    },
+    "level": 4,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 112.5,
+      "likely_person_days": 160.8,
+      "max_person_days": 225.1,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Timeline parsed: 168 working days; team size 10; headcount 1; weight 0.87; level factor 1.10"
+    ],
+    "confidence": 0.95,
+    "needs_review": false,
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "развёртываются в отказоустойчивом кластере Kubernetes под управлением профильного DevOps-инженера (уровень senior)",
+        "char_start": 15612,
+        "char_end": 15726
+      }
+    ]
+  }
+]

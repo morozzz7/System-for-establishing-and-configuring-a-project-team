@@ -956,8 +956,32 @@ paths:
                   week: '2026-W12'
                   reason: Перенос срока заказчиком.
       responses:
+        '200':
+          description: |
+            Recalculation completed synchronously (in-process pipeline) and the new run can be read
+            immediately. Same body shape as the queued variant. If an override changes nothing, the
+            response carries `RECALC_NO_EFFECT` plus the measured `facts`.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecalculateResponse'
+              example:
+                run_id: run_9b30
+                parent_run_id: run_9b2e
+                status: succeeded
+                applied_overrides: 4
+                rejected_overrides: []
+                reason_codes: [RECALC_APPLIED]
+                facts:
+                  changed_members: 2
+                  roster_jaccard: 0.5
+                  p50_weeks_before: 11.4
+                  p50_weeks_after: 10.9
         '202':
-          description: Recalculation queued; new run id in the body.
+          description: Recalculation queued; new run id in the body (only when a queue is deployed).
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
@@ -1200,6 +1224,160 @@ paths:
       tags: [Employees]
       operationId: createEmployee
       summary: Create a pseudonymized employee profile.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeCreate'
+            example:
+              employee_id: emp_5c81
+              grade: M
+              role_profile_id: qa_engineer
+              unit_id: unt_qa
+              employment_type: internal
+              bench_flag: true
+              capacity_profile:
+                weekly_hours_norm: 40
+                reserve_ratio: 0.2
+                max_utilization_ratio: 0.95
+              cost_coefficient: 1.4
+      responses:
+        '201':
+          description: Employee created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Employee'
+              example:
+                employee_id: emp_5c81
+                grade: M
+                role_profile_id: qa_engineer
+                unit_id: unt_qa
+                employment_type: internal
+                bench_flag: true
+                capacity_profile:
+                  weekly_hours_norm: 40
+                  reserve_ratio: 0.2
+                  max_utilization_ratio: 0.95
+                cost_coefficient: 1.4
+                active: true
+        '409':
+          description: Employee id already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+              example:
+                type: https://teamopt.internal/problems/duplicate-id
+                title: Duplicate employee id
+                status: 409
+                code: CONFLICT_DUPLICATE_ID
+                detail: emp_5c81 already exists.
+                request_id: req_01HXc0
+                reason_codes: [DUPLICATE_EMPLOYEE_ID]
+        '422':
+          $ref: '#/components/responses/Problem422'
+    put:
+      tags: [Employees]
+      operationId: importEmployees
+      summary: Bulk import employee pool (profiles + competencies + optional assignments/absences).
+      description: |
+        Idempotent bulk upsert. Accepts a JSON payload with employees, their competencies, and
+        optional current assignments and absences. The `mode` field controls conflict behavior:
+        - `upsert` (default): create new, update existing (grade, role, unit, employment_type,
+          bench_flag, capacity_profile). Competencies are fully replaced per employee.
+        - `replace`: full replace - deletes employees not in the payload (use with caution).
+        Returns a summary with created/updated/unchanged counts and any validation errors per row.
+        All identifiers are pseudonyms (`emp_*`, `prj_*`). No personal data.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmployeeImportRequest'
+            example:
+              mode: upsert
+              employees:
+                - employee_id: emp_5c81
+                  grade: M
+                  role_profile_id: qa_engineer
+                  unit_id: unt_qa
+                  employment_type: internal
+                  bench_flag: true
+                  capacity_profile:
+                    weekly_hours_norm: 40
+                    reserve_ratio: 0.2
+                    max_utilization_ratio: 0.95
+                  competencies:
+                    - competency_id: qa_test_design
+                      level: 3
+                      confidence: 0.8
+                      last_used: '2026-10-01'
+                      source: manager_review
+                    - competency_id: test_playwright
+                      level: 2
+                      confidence: 0.7
+                      last_used: '2026-09-15'
+                      source: project_history
+                  assignments:
+                    - project_id: prj_0a11
+                      role_id: qa_engineer
+                      week: '2026-W02'
+                      hours: 20
+                    - project_id: prj_0a11
+                      role_id: qa_engineer
+                      week: '2026-W03'
+                      hours: 20
+                  absences:
+                    - type: vacation
+                      start_date: '2026-01-26'
+                      end_date: '2026-02-06'
+                      hours_per_day: 8
+                      approved: true
+                      source: hr_import
+              validate_only: false
+      responses:
+        '200':
+          description: Import completed (or validation result if `validate_only=true`).
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EmployeeImportResponse'
+              example:
+                request_id: req_01HXc1
+                mode: upsert
+                totals:
+                  received: 50
+                  created: 5
+                  updated: 3
+                  unchanged: 42
+                  errors: 0
+                employees:
+                  - employee_id: emp_5c81
+                    status: created
+                    competencies_upserted: 2
+                    assignments_created: 2
+                    absences_created: 1
+                    warnings: []
+                  - employee_id: emp_b31d
+                    status: updated
+                    competencies_upserted: 1
+                    assignments_created: 0
+                    absences_created: 0
+                    warnings: ["grade changed M->S, cost_coefficient updated"]
+                validation_errors: []
+        '400':
+          $ref: '#/components/responses/Problem400'
+        '422':
+          $ref: '#/components/responses/Problem422'
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
       requestBody:
@@ -1917,30 +2095,142 @@ paths:
       summary: Score weight presets (Fast / Economical / Balanced / Low-risk) from METRICS.md.
       responses:
         '200':
-          description: Presets.
+          description: Presets with metric descriptions for UI weight selection.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/WeightPreset'
+                $ref: '#/components/schemas/WeightPresetListResponse'
               example:
-                - preset: balanced
-                  label_ru: Сбалансированный
-                  weights:
-                    M1: 0.15
-                    M2: 0.13
-                    M3: 0.1
-                    M4: 0.08
-                    M5: 0.15
-                    M6: 0.1
-                    M7: 0.08
-                    M8: 0.08
-                    M9: 0.05
-                    M10: 0.04
-                    M11: 0.02
-                    M12: 0.02
-                  sum_check: 1.0
+                presets:
+                  - preset: balanced
+                    label_ru: Сбалансированный
+                    description_ru: Умеренный приоритет скорости, качества покрытия и стоимости
+                    weights:
+                      M1: 0.15
+                      M2: 0.13
+                      M3: 0.1
+                      M4: 0.08
+                      M5: 0.15
+                      M6: 0.1
+                      M7: 0.08
+                      M8: 0.08
+                      M9: 0.05
+                      M10: 0.04
+                      M11: 0.02
+                      M12: 0.02
+                    sum_check: 1.0
+                metrics:
+                  M1: {name_ru: Покрытие компетенций, name_en: Competency Coverage, description_ru: Доля требуемых компетенций, покрытых командой на нужном уровне}
+                  M2: {name_ru: Покрытие трудозатрат, name_en: Effort Coverage, description_ru: Доля плановых человеко-дней, которые команда может закрыть}
+                  M3: {name_ru: Соответствие уровней, name_en: Level Fit, description_ru: Насколько уровни сотрудников близки к требуемым (штраф за пере/недоквалификацию)}
+                  M4: {name_ru: Релевантность опыта, name_en: Experience Relevance, description_ru: Семантическая близость прошлых проектов сотрудников к текущему ТЗ}
+                  M5: {name_ru: График, name_en: Schedule, description_ru: Вероятность уложиться в дедлайн или относительная скорость (P50)}
+                  M6: {name_ru: Стоимость, name_en: Cost, description_ru: Относительная стоимость команды (чем ниже — тем лучше)}
+                  M7: {name_ru: Здоровье нагрузки, name_en: Load Health, description_ru: Отсутствие перегрузов (>90% утилизации) и простоев}
+                  M8: {name_ru: Влияние на портфель, name_en: Portfolio Impact, description_ru: Задержки других проектов из-за вытягивания людей}
+                  M9: {name_ru: Bus-factor, name_en: Bus Factor, description_ru: Доля must-компетенций, закрытых минимум 2 людьми}
+                  M10: {name_ru: Фокус, name_en: Focus, description_ru: Низкая фрагментация, мало параллельных проектов, оптимальный размер команды}
+                  M11: {name_ru: Использование бенча, name_en: Bench Utilization, description_ru: Доля часов сотрудников с bench_flag, вовлеченных в проект}
+                  M12: {name_ru: Устойчивость, name_en: Resilience, description_ru: Способность команды сохранить выполнимость при отвале любого участника на 2 недели}
+
+  /reference/metrics:
+    get:
+      tags: [Reference]
+      operationId: listMetricDefinitions
+      summary: Metric definitions with formulas and interpretation (for weight-selection UI).
+      responses:
+        '200':
+          description: Metric catalog.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricDefinitionsResponse'
+              example:
+                metrics:
+                  - id: M1
+                    name_ru: Покрытие компетенций
+                    name_en: Competency Coverage
+                    formula_ru: "Σ(w_r × min(1, lvl_ir / L_r)) / Σ(w_r)"
+                    interpretation_ru: "1.0 = все компетенции закрыты на требуемом уровне"
+                    is_core: true
+                    typical_weight_range: [0.10, 0.20]
+                  - id: M2
+                    name_ru: Покрытие трудозатрат
+                    name_en: Effort Coverage
+                    formula_ru: "Σ(min(E_r, Σ(a_irw × q_ir × d_w))) / Σ(E_r)"
+                    interpretation_ru: "Доля закрытых человеко-дней; дефициты видны в деталях варианта"
+                    is_core: true
+                    typical_weight_range: [0.10, 0.15]
+                  - id: M3
+                    name_ru: Соответствие уровней
+                    name_en: Level Fit
+                    formula_ru: "1 - |lvl - L| / 4 (недоуровень ×1.5, переуровень ≥2 ×1.0)"
+                    interpretation_ru: "Штраф за недоквалификацию выше, чем за переквалификацию"
+                    is_core: true
+                    typical_weight_range: [0.05, 0.12]
+                  - id: M4
+                    name_ru: Релевантность опыта
+                    name_en: Experience Relevance
+                    formula_ru: "cosine(brief_embedding, project_descriptions) взвешено по часам"
+                    interpretation_ru: "Требует истории проектов; при отсутствии — вес переносится на остальные"
+                    is_core: false
+                    typical_weight_range: [0.05, 0.10]
+                  - id: M5
+                    name_ru: График
+                    name_en: Schedule
+                    formula_ru: "P(T ≤ D) при дедлайне; иначе T_best / T50"
+                    interpretation_ru: "Монте-Карло P50/P80 по трёхточечной оценке усилий"
+                    is_core: true
+                    typical_weight_range: [0.08, 0.30]
+                  - id: M6
+                    name_ru: Стоимость
+                    name_en: Cost
+                    formula_ru: "1 - (C - C_min) / (C_ref - C_min)"
+                    interpretation_ru: "Относительная дешевизна; C_min — самый дешевый feasible вариант"
+                    is_core: true
+                    typical_weight_range: [0.04, 0.27]
+                  - id: M7
+                    name_ru: Здоровье нагрузки
+                    name_en: Load Health
+                    formula_ru: "1 - mean(min(1, max(0, u - 0.9) / 0.1))"
+                    interpretation_ru: "Штраф за утилизацию >90%; идеально 60-90%"
+                    is_core: true
+                    typical_weight_range: [0.05, 0.12]
+                  - id: M8
+                    name_ru: Влияние на портфель
+                    name_en: Portfolio Impact
+                    formula_ru: "exp(-Σ(slip_p) / τ), τ=10 рабочих дней"
+                    interpretation_ru: "Экспоненциальный штраф за суммарные задержки других проектов"
+                    is_core: true
+                    typical_weight_range: [0.05, 0.10]
+                  - id: M9
+                    name_ru: Bus-factor
+                    name_en: Bus Factor
+                    formula_ru: "|{r ∈ must: N_r ≥ 2}| / |must|"
+                    interpretation_ru: "Доля must-компетенций с резервом ≥2 человек"
+                    is_core: true
+                    typical_weight_range: [0.03, 0.10]
+                  - id: M10
+                    name_ru: Фокус
+                    name_en: Focus
+                    formula_ru: "1 - (0.4×frag + 0.3×ctx + 0.3×size_pen)"
+                    interpretation_ru: "Штрафы за фрагментацию (<20%), контекст-свитчинг, избыточный размер"
+                    is_core: true
+                    typical_weight_range: [0.03, 0.05]
+                  - id: M11
+                    name_ru: Использование бенча
+                    name_en: Bench Utilization
+                    formula_ru: "bench_hours_assigned / bench_hours_available"
+                    interpretation_ru: "Прямо связано с проблемой «скамейки» из паспорта проекта"
+                    is_core: true
+                    typical_weight_range: [0.01, 0.03]
+                  - id: M12
+                    name_ru: Устойчивость
+                    name_en: Resilience
+                    formula_ru: "Доля сценариев drop-out 2 нед., где Gate=1 и ΔT80 ≤ 20%"
+                    interpretation_ru: "Симуляция потери каждого участника"
+                    is_core: true
+                    typical_weight_range: [0.01, 0.10]
 
   /reference/planning-params:
     get:
@@ -2220,6 +2510,7 @@ components:
         - COUNTERFACTUAL_TEAM_SIZE
         - COUNTERFACTUAL_DEADLINE
         - COUNTERFACTUAL_CAPACITY
+        - COUNTERFACTUAL_OVERRIDE
         - REQ_LOW_CONFIDENCE
         - REQ_NEEDS_REVIEW
         - REQ_EFFORT_WIDE_RANGE
@@ -2245,6 +2536,7 @@ components:
         - ML_LLM_UNAVAILABLE
         - FALLBACK_SOLVER_USED
         - RECALC_QUEUED
+        - RECALC_APPLIED
         - RECALC_NO_EFFECT
         - OVERRIDE_VIOLATES_G1
         - OVERRIDE_VIOLATES_G2
@@ -2581,12 +2873,79 @@ components:
           enum: [fast, economical, balanced, low_risk]
         label_ru:
           type: string
+        description_ru:
+          type: string
+          maxLength: 300
+          description: Human-readable description for UI weight-selection card.
         weights:
           $ref: '#/components/schemas/Weights'
         sum_check:
           type: number
           description: Sum of the published weights; must be exactly 1.0 (METRICS "sum(lambda) = 1").
           const: 1
+    WeightPresetListResponse:
+      type: object
+      additionalProperties: false
+      required: [presets, metrics]
+      properties:
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeightPreset'
+        metrics:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/MetricInfo'
+          description: Metric id -> {name_ru, name_en, description_ru} for UI weight editor.
+    MetricInfo:
+      type: object
+      additionalProperties: false
+      required: [name_ru, name_en, description_ru]
+      properties:
+        name_ru:
+          type: string
+        name_en:
+          type: string
+        description_ru:
+          type: string
+    MetricDefinition:
+      type: object
+      additionalProperties: false
+      required: [id, name_ru, name_en, formula_ru, interpretation_ru, is_core, typical_weight_range]
+      properties:
+        id:
+          type: string
+          pattern: '^M[1-9]|M1[0-3]$'
+        name_ru:
+          type: string
+        name_en:
+          type: string
+        formula_ru:
+          type: string
+          description: LaTeX-like formula for documentation.
+        interpretation_ru:
+          type: string
+        is_core:
+          type: boolean
+          description: True for M1-M12; false for M4 (optional) and M13 (experimental).
+        typical_weight_range:
+          type: array
+          minItems: 2
+          maxItems: 2
+          items:
+            type: number
+            minimum: 0
+            maximum: 1
+          description: Typical min/max weight across the 4 presets.
+    MetricDefinitionsResponse:
+      type: object
+      additionalProperties: false
+      required: [metrics]
+      properties:
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/MetricDefinition'
     PlanningParams:
       type: object
       additionalProperties: false
@@ -3061,6 +3420,146 @@ components:
             $ref: '#/components/schemas/Employee'
         meta:
           $ref: '#/components/schemas/PageMeta'
+    EmployeeImportItem:
+      type: object
+      additionalProperties: false
+      required: [employee_id, grade, role_profile_id, unit_id, employment_type]
+      properties:
+        employee_id:
+          type: string
+          pattern: '^emp_[a-z0-9]{4,12}$'
+        grade:
+          $ref: '#/components/schemas/Grade'
+        role_profile_id:
+          type: string
+        unit_id:
+          type: string
+          pattern: '^unt_[a-z0-9]{2,12}$'
+        employment_type:
+          $ref: '#/components/schemas/EmploymentType'
+        bench_flag:
+          type: boolean
+          default: false
+        capacity_profile:
+          $ref: '#/components/schemas/CapacityProfile'
+        competencies:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/EmployeeCompetencyUpsert'
+        assignments:
+          type: array
+          maxItems: 500
+          items:
+            $ref: '#/components/schemas/AssignmentCreate'
+        absences:
+          type: array
+          maxItems: 200
+          items:
+            $ref: '#/components/schemas/AbsenceCreate'
+    EmployeeImportRequest:
+      type: object
+      additionalProperties: false
+      required: [employees]
+      properties:
+        mode:
+          type: string
+          enum: [upsert, replace]
+          default: upsert
+          description: "upsert = create/update; replace = full sync (deletes employees not in payload)"
+        employees:
+          type: array
+          minItems: 1
+          maxItems: 2000
+          items:
+            $ref: '#/components/schemas/EmployeeImportItem'
+        validate_only:
+          type: boolean
+          default: false
+          description: If true, only validate and return errors; do not persist.
+    EmployeeImportResultItem:
+      type: object
+      additionalProperties: false
+      required: [employee_id, status]
+      properties:
+        employee_id:
+          type: string
+          pattern: '^emp_[a-z0-9]{4,12}$'
+        status:
+          type: string
+          enum: [created, updated, unchanged, error]
+        competencies_upserted:
+          type: integer
+          minimum: 0
+          default: 0
+        assignments_created:
+          type: integer
+          minimum: 0
+          default: 0
+        absences_created:
+          type: integer
+          minimum: 0
+          default: 0
+        warnings:
+          type: array
+          items:
+            type: string
+            maxLength: 300
+        error:
+          type: string
+          maxLength: 500
+    EmployeeImportTotals:
+      type: object
+      additionalProperties: false
+      required: [received, created, updated, unchanged, errors]
+      properties:
+        received:
+          type: integer
+          minimum: 0
+        created:
+          type: integer
+          minimum: 0
+        updated:
+          type: integer
+          minimum: 0
+        unchanged:
+          type: integer
+          minimum: 0
+        errors:
+          type: integer
+          minimum: 0
+    EmployeeImportResponse:
+      type: object
+      additionalProperties: false
+      required: [request_id, mode, totals, employees, validation_errors]
+      properties:
+        request_id:
+          type: string
+          pattern: '^req_[A-Za-z0-9-]{6,32}$'
+        mode:
+          type: string
+          enum: [upsert, replace]
+        totals:
+          $ref: '#/components/schemas/EmployeeImportTotals'
+        employees:
+          type: array
+          items:
+            $ref: '#/components/schemas/EmployeeImportResultItem'
+        validation_errors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required: [employee_id, field, code, detail]
+            properties:
+              employee_id:
+                type: string
+              field:
+                type: string
+              code:
+                type: string
+              detail:
+                type: string
     CompetencySource:
       type: string
       enum: [self_assessment, manager_review, project_history, certification, hr_import]
@@ -3466,6 +3965,35 @@ components:
         contract_version:
           type: string
           enum: [v1]
+    VariantSetDiagnostics:
+      type: object
+      additionalProperties: false
+      description: |
+        Run-level checks of the "2-3 variants" rules from METRICS.md: all variants pass the gate,
+        variants are non-dominated and differ in roster (Jaccard >= 0.25). Computed by Go from the
+        authoritative metric vectors, never trusted from the solver.
+      properties:
+        pairwise_jaccard:
+          type: object
+          description: Roster Jaccard distance keyed by "variant_a|variant_b".
+          additionalProperties:
+            type: number
+            minimum: 0
+            maximum: 1
+        min_pairwise_jaccard:
+          type: number
+          minimum: 0
+          maximum: 1
+        dominated_variant_ids:
+          type: array
+          items:
+            type: string
+        gate_failed_variant_ids:
+          type: array
+          items:
+            type: string
+        diversity_rule_ok:
+          type: boolean
     RunInputCandidate:
       type: object
       additionalProperties: false
@@ -3577,6 +4105,8 @@ components:
           maxItems: 3
           items:
             $ref: '#/components/schemas/VariantSummary'
+        variant_set:
+          $ref: '#/components/schemas/VariantSetDiagnostics'
         reason_codes:
           type: array
           items:
@@ -4061,6 +4591,13 @@ components:
             $ref: '#/components/schemas/ReasonCode'
         verified_by: {type: string, enum: [rerun, estimated]}
         run_id: {type: string}
+        facts:
+          type: object
+          additionalProperties: true
+          description: |
+            Numbers the sentence is built from (e.g. `p50_weeks_before`, `p50_weeks_after`,
+            `delta_weeks`, `changed_members`). The server always emits it so the faithfulness checker
+            can re-derive every number in `text` (METRICS 3.5).
       allOf:
         - if:
             properties:
@@ -4085,6 +4622,11 @@ components:
         headline:
           type: string
           maxLength: 400
+        headline_reason_codes:
+          type: array
+          description: Codes the headline is rendered from; the server always emits them.
+          items:
+            $ref: '#/components/schemas/ReasonCode'
         tradeoff:
           $ref: '#/components/schemas/Tradeoff'
         included:
@@ -4137,7 +4679,11 @@ components:
       properties:
         base_variant_id:
           type: string
-          description: Freeze the rest of this variant and vary only the overrides.
+          description: |
+            The manager's starting point for the edit (used for diffing in the UI). It does NOT freeze
+            the roster: only the explicit `overrides` change the constraint set, so the recalculation
+            can actually respond to the edit (METRICS 3.6 responsiveness). Lineage is recorded in
+            `parent_run_id` and `audit_log`; the original run and its inputs stay immutable.
         preset:
           $ref: '#/components/schemas/PresetName'
         weights:
@@ -4198,6 +4744,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ReasonCode'
+        facts:
+          type: object
+          additionalProperties: true
+          description: |
+            Measured effect of the overrides (e.g. `changed_members`, `roster_jaccard`,
+            `p50_weeks_before`, `p50_weeks_after`). The server emits it for every recalculation so a
+            `RECALC_APPLIED` / `RECALC_NO_EFFECT` claim always has a numeric source.
 
     # ------------------------------------------------------------- decisions
     DecisionRequest:

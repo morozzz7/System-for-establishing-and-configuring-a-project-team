@@ -1,5 +1,5 @@
 # ML service: Python 3.12-slim + FastAPI + uvicorn.
-# Phase 1.3: stub endpoints only. No heavy ML libs yet.
+# Phase 3.1: extraction pipeline with LLM integration.
 
 FROM python:3.12-slim AS runtime
 
@@ -11,6 +11,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code.
 COPY ml/ .
+
+# Copy taxonomy (required for extraction).
+COPY contracts/taxonomy.yaml /app/contracts/taxonomy.yaml
+
+# Set taxonomy path for the app.
+ENV TAXONOMY_PATH=/app/contracts/taxonomy.yaml
 
 EXPOSE 8000
 

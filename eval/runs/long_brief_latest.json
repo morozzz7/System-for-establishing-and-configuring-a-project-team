@@ -1,0 +1,1543 @@
+{
+  "brief_path": "eval/long_brief2/brief.md",
+  "brief_chars": 4801,
+  "brief_words": 642,
+  "ratio_vs_17_gold_briefs": 0.69,
+  "mode": "live",
+  "runs": 1,
+  "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
+  "prompt_version": "extract-v3",
+  "duration_ms": 286179,
+  "llm_stats": {
+    "tokens_in": 71111,
+    "tokens_out": 26853,
+    "retries": 2,
+    "dropped_no_evidence": 0,
+    "post_processor_dropped": 0,
+    "ensemble_runs_completed": 3,
+    "candidate_competencies_found": 14,
+    "candidate_competencies_confirmed": 0,
+    "candidate_competencies_rejected": 0,
+    "candidate_competencies_skipped": 14,
+    "missing_roles_found": 0,
+    "missing_roles_recovered": 0,
+    "missing_roles_rejected": 0,
+    "missing_roles_skipped": 0,
+    "flagged_no_lexical_anchor": 3,
+    "verification_log": [
+      {
+        "kind": "competency",
+        "id": "an_user_stories",
+        "matched_text": "Критерии приёмки",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "api_graphql",
+        "matched_text": "GraphQL",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "cloud_aws",
+        "matched_text": "AWS",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "db_mysql",
+        "matched_text": "MySQL",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "dom_telecom",
+        "matched_text": "Телеком",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "fw_angular",
+        "matched_text": "Angular",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "lang_csharp",
+        "matched_text": "C#",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "lang_javascript",
+        "matched_text": "JavaScript",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "lang_python",
+        "matched_text": "Python",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "mq_rabbitmq",
+        "matched_text": "RabbitMQ",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "proc_agile_scrum",
+        "matched_text": "Scrum",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "sec_siem",
+        "matched_text": "SIEM",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "test_performance",
+        "matched_text": "нагрузку",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      },
+      {
+        "kind": "competency",
+        "id": "test_selenium",
+        "matched_text": "Selenium",
+        "status": "skipped",
+        "reason": "verification response JSON parse error: Empty response from LLM"
+      }
+    ]
+  },
+  "hallucination_count": 0,
+  "metrics": {
+    "role": {
+      "tp": 8,
+      "fp": 3,
+      "fn": 0,
+      "precision": 0.7273,
+      "recall": 1.0,
+      "f1": 0.8421
+    },
+    "competency": {
+      "tp": 19,
+      "fp": 4,
+      "fn": 0,
+      "precision": 0.8261,
+      "recall": 1.0,
+      "f1": 0.9048
+    },
+    "pair": {
+      "tp": 19,
+      "fp": 4,
+      "fn": 0,
+      "precision": 0.8261,
+      "recall": 1.0,
+      "f1": 0.9048
+    },
+    "pair_relaxed": {
+      "tp": 19,
+      "fp": 4,
+      "fn": 0,
+      "precision": 0.8261,
+      "recall": 1.0,
+      "f1": 0.9048
+    },
+    "role_accuracy": {
+      "tp": 19,
+      "fp": 0,
+      "fn": 0,
+      "matched_comps": 19,
+      "correct_roles": 19,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "headcount_accuracy": {
+      "tp": 19,
+      "fp": 0,
+      "fn": 0,
+      "matched_comps": 19,
+      "correct_roles": 19,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "headcount_multi": {
+      "tp": 2,
+      "fp": 0,
+      "fn": 0,
+      "matched_comps": 2,
+      "correct_roles": 2,
+      "accuracy": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0
+    },
+    "traps": {
+      "total_traps": 10,
+      "triggered_count": 0,
+      "triggered_ids": [],
+      "trap_rate": 0.0
+    },
+    "role_only_count": 4
+  },
+  "pair_hit_rates": [
+    {
+      "role_id": "backend_engineer",
+      "competency_id": "fw_spring",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "backend_engineer",
+      "competency_id": "lang_java",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "backend_engineer",
+      "competency_id": "mq_kafka",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "business_analyst",
+      "competency_id": "an_requirements",
+      "in_gold": false,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "data_engineer",
+      "competency_id": "db_clickhouse",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "cloud_docker",
+      "in_gold": false,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "cloud_kubernetes",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "cloud_yandex",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "db_postgresql",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "iac_terraform",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "devops_engineer",
+      "competency_id": "obs_grafana",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "frontend_engineer",
+      "competency_id": "fw_react",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "frontend_engineer",
+      "competency_id": "lang_typescript",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "frontend_engineer",
+      "competency_id": "test_playwright",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "frontend_engineer",
+      "competency_id": "web_accessibility",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "project_manager",
+      "competency_id": "proc_kanban",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "security_engineer",
+      "competency_id": "sec_iam",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "security_engineer",
+      "competency_id": "sec_owasp",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "solution_architect",
+      "competency_id": "arch_c4",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "solution_architect",
+      "competency_id": "arch_event_driven",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "system_analyst",
+      "competency_id": "an_integration",
+      "in_gold": true,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "ux_ui_designer",
+      "competency_id": "ui_figma",
+      "in_gold": false,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    },
+    {
+      "role_id": "ux_ui_designer",
+      "competency_id": "ui_wireframing",
+      "in_gold": false,
+      "hits": 1,
+      "num_runs": 1,
+      "hit_rate": 1.0
+    }
+  ],
+  "requirements": [
+    {
+      "requirement_id": "req_001",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "fw_react",
+        "name_ru": "React",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "fw_react",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 3,
+      "effort": {
+        "min_person_days": 130.7,
+        "likely_person_days": 186.7,
+        "max_person_days": 261.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/fw_react",
+        "Timeline parsed: 147 working days; team size 23; headcount 3; weight 1.27; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 1816,
+          "char_end": 1878,
+          "quote": "Веб-кабинет разрабатывают трое фронтенд-разработчиков на React"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_002",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_typescript",
+        "name_ru": "TypeScript",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_typescript",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 3,
+      "effort": {
+        "min_person_days": 154.3,
+        "likely_person_days": 220.5,
+        "max_person_days": 308.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/lang_typescript",
+        "Timeline parsed: 147 working days; team size 23; headcount 3; weight 1.50; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 1880,
+          "char_end": 1915,
+          "quote": "Код фронтенда пишется на TypeScript"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_003",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "test_playwright",
+        "name_ru": "Playwright",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "test_playwright",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 3,
+      "effort": {
+        "min_person_days": 51.4,
+        "likely_person_days": 73.5,
+        "max_person_days": 102.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/test_playwright",
+        "Timeline parsed: 147 working days; team size 23; headcount 3; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 1974,
+          "char_end": 2035,
+          "quote": "Сквозные тесты пишут сами фронтенд-разработчики на Playwright"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_004",
+      "role": {
+        "role_id": "frontend_engineer",
+        "name_ru": "Фронтенд-разработчик",
+        "match": "llm",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "web_accessibility",
+        "name_ru": "Доступность веб-интерфейсов",
+        "match": "llm",
+        "confidence": 0.8,
+        "candidates": [
+          {
+            "competency_id": "web_accessibility",
+            "score": 0.8
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "nice",
+      "headcount": 3,
+      "effort": {
+        "min_person_days": 16.5,
+        "likely_person_days": 23.5,
+        "max_person_days": 32.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for frontend_engineer/web_accessibility",
+        "Timeline parsed: 147 working days; team size 24; headcount 3; weight 0.16; level factor 1.00"
+      ],
+      "confidence": 0.8,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2078,
+          "char_end": 2149,
+          "quote": "Желательно, чтобы интерфейс отвечал требованиям доступности WCAG 2.1 AA"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_005",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "llm",
+        "confidence": 0.56
+      },
+      "competency": {
+        "competency_id": "ui_figma",
+        "name_ru": "Figma",
+        "match": "llm",
+        "confidence": 0.56,
+        "candidates": [
+          {
+            "competency_id": "ui_figma",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 97.8,
+        "likely_person_days": 139.7,
+        "max_person_days": 195.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ux_ui_designer/ui_figma",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.95; level factor 1.00",
+        "Ensemble union: found in 1/3 parallel runs; marked needs_review",
+        "Lexical check: competency 'Figma' (ui_figma) and its synonyms were not found near quote; confidence lowered and marked needs_review"
+      ],
+      "confidence": 0.56,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2241,
+          "char_end": 2281,
+          "quote": "Дизайн интерфейсов делает UX/UI-дизайнер"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_006",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "llm",
+        "confidence": 0.56
+      },
+      "competency": {
+        "competency_id": "ui_wireframing",
+        "name_ru": "Прототипирование",
+        "match": "llm",
+        "confidence": 0.56,
+        "candidates": [
+          {
+            "competency_id": "ui_wireframing",
+            "score": 0.85
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 49.4,
+        "likely_person_days": 70.6,
+        "max_person_days": 98.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ux_ui_designer/ui_wireframing",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.48; level factor 1.00",
+        "Ensemble union: found in 1/3 parallel runs; marked needs_review",
+        "Lexical check: competency 'Прототипирование' (ui_wireframing) and its synonyms were not found near quote; confidence lowered and marked needs_review"
+      ],
+      "confidence": 0.56,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2241,
+          "char_end": 2281,
+          "quote": "Дизайн интерфейсов делает UX/UI-дизайнер"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_007",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "lang_java",
+        "name_ru": "Java",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "lang_java",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 107.5,
+        "likely_person_days": 153.6,
+        "max_person_days": 215.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/lang_java",
+        "Timeline parsed: 147 working days; team size 23; headcount 2; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2341,
+          "char_end": 2410,
+          "quote": "Серверную часть пара бэкенд-разработчиков уровня senior пишет на Java"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_008",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "fw_spring",
+        "name_ru": "Spring Boot",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "fw_spring",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 107.5,
+        "likely_person_days": 153.6,
+        "max_person_days": 215.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/fw_spring",
+        "Timeline parsed: 147 working days; team size 24; headcount 2; weight 0.95; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2412,
+          "char_end": 2480,
+          "quote": "Основной фреймворк — Spring Boot, бэкенд-разработчики работают в нём"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_009",
+      "role": {
+        "role_id": "backend_engineer",
+        "name_ru": "Бэкенд-разработчик",
+        "match": "llm",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "mq_kafka",
+        "name_ru": "Apache Kafka",
+        "match": "llm",
+        "confidence": 0.8,
+        "candidates": [
+          {
+            "competency_id": "mq_kafka",
+            "score": 0.8
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 2,
+      "effort": {
+        "min_person_days": 36.2,
+        "likely_person_days": 51.7,
+        "max_person_days": 72.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for backend_engineer/mq_kafka",
+        "Timeline parsed: 147 working days; team size 23; headcount 2; weight 0.32; level factor 1.10"
+      ],
+      "confidence": 0.8,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2482,
+          "char_end": 2547,
+          "quote": "Для обмена событиями между сервисами, скорее всего, возьмём Kafka"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_010",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "arch_c4",
+        "name_ru": "Документирование архитектуры (C4)",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "arch_c4",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 56.6,
+        "likely_person_days": 80.9,
+        "max_person_days": 113.2,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for solution_architect/arch_c4",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.50; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2634,
+          "char_end": 2757,
+          "quote": "Архитектор решения уровня senior проектирует взаимодействие сервисов через события и документирует архитектуру по модели C4"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_011",
+      "role": {
+        "role_id": "system_analyst",
+        "name_ru": "Системный аналитик",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "an_integration",
+        "name_ru": "Анализ интеграций",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "an_integration",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 68.9,
+        "likely_person_days": 98.5,
+        "max_person_days": 137.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for system_analyst/an_integration",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.67; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2864,
+          "char_end": 2931,
+          "quote": "Системный аналитик описывает интеграцию с биллингом и CRM оператора"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_012",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "db_postgresql",
+        "name_ru": "PostgreSQL",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "db_postgresql",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 30.9,
+        "likely_person_days": 44.1,
+        "max_person_days": 61.7,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/db_postgresql",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.30; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2994,
+          "char_end": 3090,
+          "quote": "Эксплуатацию PostgreSQL — резервные копии, репликацию, обновления — берёт на себя DevOps-инженер"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_013",
+      "role": {
+        "role_id": "data_engineer",
+        "name_ru": "Дата-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "db_clickhouse",
+        "name_ru": "ClickHouse",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "db_clickhouse",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "should",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 24.7,
+        "likely_person_days": 35.3,
+        "max_person_days": 49.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for data_engineer/db_clickhouse",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3109,
+          "char_end": 3180,
+          "quote": "витрины для отдела маркетинга в ClickHouse; проектирует их дата-инженер"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_014",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "cloud_yandex",
+        "name_ru": "Yandex Cloud",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "cloud_yandex",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 28.8,
+        "likely_person_days": 41.2,
+        "max_person_days": 57.6,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_yandex",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.28; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3205,
+          "char_end": 3289,
+          "quote": "Размещение — Yandex Cloud, так требует политика компании по хранению данных в России"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_015",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "cloud_kubernetes",
+        "name_ru": "Kubernetes",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "cloud_kubernetes",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 89.5,
+        "likely_person_days": 127.9,
+        "max_person_days": 179.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_kubernetes",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.87; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3291,
+          "char_end": 3336,
+          "quote": "Все сервисы запускаются в кластере Kubernetes"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_016",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "iac_terraform",
+        "name_ru": "Terraform",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "iac_terraform",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 44.2,
+        "likely_person_days": 63.2,
+        "max_person_days": 88.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/iac_terraform",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.43; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3338,
+          "char_end": 3425,
+          "quote": "Инфраструктура описывается кодом на Terraform, окружения воспроизводятся одной командой"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_017",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": {
+        "competency_id": "cloud_docker",
+        "name_ru": "Docker",
+        "match": "llm",
+        "confidence": 0.9,
+        "candidates": [
+          {
+            "competency_id": "cloud_docker",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 49.4,
+        "likely_person_days": 70.6,
+        "max_person_days": 98.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/cloud_docker",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.48; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3427,
+          "char_end": 3475,
+          "quote": "Контейнеризация — разумеется, Docker, как у всех"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_018",
+      "role": {
+        "role_id": "devops_engineer",
+        "name_ru": "DevOps-инженер",
+        "match": "llm",
+        "confidence": 0.8
+      },
+      "competency": {
+        "competency_id": "obs_grafana",
+        "name_ru": "Grafana",
+        "match": "llm",
+        "confidence": 0.8,
+        "candidates": [
+          {
+            "competency_id": "obs_grafana",
+            "score": 0.8
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "nice",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 24.7,
+        "likely_person_days": 35.3,
+        "max_person_days": 49.4,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for devops_engineer/obs_grafana",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.24; level factor 1.00"
+      ],
+      "confidence": 0.8,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3477,
+          "char_end": 3519,
+          "quote": "Дашборды по возможности собираем в Grafana"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_019",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "sec_iam",
+        "name_ru": "Управление доступом (IAM)",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "sec_iam",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 41.2,
+        "likely_person_days": 58.8,
+        "max_person_days": 82.3,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for security_engineer/sec_iam",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.40; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3543,
+          "char_end": 3662,
+          "quote": "Инженер по информационной безопасности настраивает единый вход абонентов и сотрудников по OIDC и ролевую модель доступа"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_020",
+      "role": {
+        "role_id": "security_engineer",
+        "name_ru": "Инженер по безопасности",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "sec_owasp",
+        "name_ru": "OWASP Top 10",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "sec_owasp",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 36.0,
+        "likely_person_days": 51.4,
+        "max_person_days": 72.0,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for security_engineer/sec_owasp",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.35; level factor 1.00"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3664,
+          "char_end": 3716,
+          "quote": "Перед релизом приложения проверяются по OWASP Top 10"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_021",
+      "role": {
+        "role_id": "project_manager",
+        "name_ru": "Руководитель проекта",
+        "match": "llm",
+        "confidence": 0.95
+      },
+      "competency": {
+        "competency_id": "proc_kanban",
+        "name_ru": "Kanban",
+        "match": "llm",
+        "confidence": 0.95,
+        "candidates": [
+          {
+            "competency_id": "proc_kanban",
+            "score": 0.95
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 90.6,
+        "likely_person_days": 129.4,
+        "max_person_days": 181.1,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for project_manager/proc_kanban",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.80; level factor 1.10"
+      ],
+      "confidence": 0.95,
+      "needs_review": false,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3859,
+          "char_end": 3944,
+          "quote": "работа ведётся по Kanban: доска, ограничение числа задач в работе, еженедельный обзор"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_022",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "llm",
+        "confidence": 0.56
+      },
+      "competency": {
+        "competency_id": "an_requirements",
+        "name_ru": "Работа с требованиями",
+        "match": "llm",
+        "confidence": 0.56,
+        "candidates": [
+          {
+            "competency_id": "an_requirements",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 49.4,
+        "likely_person_days": 70.6,
+        "max_person_days": 98.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for business_analyst/an_requirements",
+        "Timeline parsed: 147 working days; team size 23; headcount 1; weight 0.48; level factor 1.00",
+        "Ensemble union: found in 1/3 parallel runs; marked needs_review",
+        "Lexical check: competency 'Работа с требованиями' (an_requirements) and its synonyms were not found near quote; confidence lowered and marked needs_review"
+      ],
+      "confidence": 0.56,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 4037,
+          "char_end": 4083,
+          "quote": "На этапе обследования работает бизнес-аналитик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_024",
+      "role": {
+        "role_id": "qa_engineer",
+        "name_ru": "Тестировщик",
+        "match": "llm",
+        "confidence": 0.9
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 51.4,
+        "likely_person_days": 73.5,
+        "max_person_days": 102.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for qa_engineer (role-only)",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.9,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 4085,
+          "char_end": 4135,
+          "quote": "На втором этапе в команду подключается тестировщик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_025",
+      "role": {
+        "role_id": "ux_ui_designer",
+        "name_ru": "UX/UI-дизайнер",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 61.7,
+        "likely_person_days": 88.2,
+        "max_person_days": 123.5,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for ux_ui_designer (role-only)",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.60; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2241,
+          "char_end": 2314,
+          "quote": "Дизайн интерфейсов делает UX/UI-дизайнер, он подключается на первом этапе"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_023",
+      "role": {
+        "role_id": "business_analyst",
+        "name_ru": "Бизнес-аналитик",
+        "match": "llm",
+        "confidence": 0.85
+      },
+      "competency": null,
+      "level": 3,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 51.4,
+        "likely_person_days": 73.5,
+        "max_person_days": 102.9,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for business_analyst (role-only)",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.50; level factor 1.00"
+      ],
+      "confidence": 0.85,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 4037,
+          "char_end": 4083,
+          "quote": "На этапе обследования работает бизнес-аналитик"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_026",
+      "role": {
+        "role_id": "solution_architect",
+        "name_ru": "Архитектор решения",
+        "match": "llm",
+        "confidence": 0.58
+      },
+      "competency": {
+        "competency_id": "arch_event_driven",
+        "name_ru": "Событийная архитектура",
+        "match": "llm",
+        "confidence": 0.58,
+        "candidates": [
+          {
+            "competency_id": "arch_event_driven",
+            "score": 0.9
+          }
+        ]
+      },
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 89.4,
+        "likely_person_days": 127.7,
+        "max_person_days": 178.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for solution_architect/arch_event_driven",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.79; level factor 1.10",
+        "Ensemble union: found in 1/3 parallel runs; marked needs_review"
+      ],
+      "confidence": 0.58,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 2634,
+          "char_end": 2716,
+          "quote": "Архитектор решения уровня senior проектирует взаимодействие сервисов через события"
+        }
+      ]
+    },
+    {
+      "requirement_id": "req_027",
+      "role": {
+        "role_id": "project_manager",
+        "name_ru": "Руководитель проекта",
+        "match": "llm",
+        "confidence": 0.58
+      },
+      "competency": null,
+      "level": 4,
+      "criticality": "must",
+      "headcount": 1,
+      "effort": {
+        "min_person_days": 67.9,
+        "likely_person_days": 97.0,
+        "max_person_days": 135.8,
+        "unit": "person_days"
+      },
+      "assumptions": [
+        "Extracted via LLM from brief evidence for project_manager (role-only)",
+        "Timeline parsed: 147 working days; team size 24; headcount 1; weight 0.60; level factor 1.10",
+        "Ensemble union: found in 1/3 parallel runs; marked needs_review"
+      ],
+      "confidence": 0.58,
+      "needs_review": true,
+      "evidence": [
+        {
+          "kind": "brief_span",
+          "char_start": 3813,
+          "char_end": 3857,
+          "quote": "Проектом руководит один руководитель проекта"
+        }
+      ]
+    }
+  ]
+}

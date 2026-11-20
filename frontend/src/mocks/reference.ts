@@ -11,6 +11,7 @@ import type {
   PlanningParams,
   Employee,
 } from '../types';
+import type { MetricDefinition, MetricInfo } from '../types/reference';
 
 // ──── Roles (from contracts/taxonomy.yaml) ────
 
@@ -254,6 +255,7 @@ export const mockWeightPresets: WeightPreset[] = [
   {
     preset: 'fast',
     label_ru: 'Быстрый',
+    description_ru: 'Приоритет скорости доставки (M5=0.28), компетенции и трудозатраты важны, стоимость вторична',
     weights: {
       M1: 0.15,
       M2: 0.15,
@@ -272,6 +274,7 @@ export const mockWeightPresets: WeightPreset[] = [
   {
     preset: 'economical',
     label_ru: 'Экономичный',
+    description_ru: 'Приоритет минимизации стоимости (M6=0.27), приемлемое покрытие компетенций и уровней',
     weights: {
       M1: 0.15,
       M2: 0.12,
@@ -290,6 +293,7 @@ export const mockWeightPresets: WeightPreset[] = [
   {
     preset: 'balanced',
     label_ru: 'Сбалансированный',
+    description_ru: 'Умеренный приоритет скорости, качества покрытия и стоимости (рекомендуемый по умолчанию)',
     weights: {
       M1: 0.15,
       M2: 0.13,
@@ -308,6 +312,7 @@ export const mockWeightPresets: WeightPreset[] = [
   {
     preset: 'low_risk',
     label_ru: 'Низкий риск',
+    description_ru: 'Акцент на устойчивость (M12=0.1), bus-factor (M9=0.1), здоровье нагрузки и портфеле',
     weights: {
       M1: 0.12,
       M2: 0.1,
@@ -689,3 +694,142 @@ export const mockEmployees: Employee[] = [
     active: true,
   },
 ];
+
+// ──── Metric definitions (from METRICS.md) ────
+
+export const mockMetricDefinitions: MetricDefinition[] = [
+  {
+    id: 'M1',
+    name_ru: 'Покрытие компетенций',
+    name_en: 'Competency Coverage',
+    formula_ru: 'Σ(w_r × min(1, lvl_ir / L_r)) / Σ(w_r)',
+    interpretation_ru: '1.0 = все компетенции закрыты на требуемом уровне',
+    is_core: true,
+    typical_weight_range: [0.10, 0.20],
+  },
+  {
+    id: 'M2',
+    name_ru: 'Покрытие трудозатрат',
+    name_en: 'Effort Coverage',
+    formula_ru: 'Σ(min(E_r, Σ(a_irw × q_ir × d_w))) / Σ(E_r)',
+    interpretation_ru: 'Доля закрытых человеко-дней; дефициты видны в деталях варианта',
+    is_core: true,
+    typical_weight_range: [0.10, 0.15],
+  },
+  {
+    id: 'M3',
+    name_ru: 'Соответствие уровней',
+    name_en: 'Level Fit',
+    formula_ru: '1 - |lvl - L| / 4 (недоуровень ×1.5, переуровень ≥2 ×1.0)',
+    interpretation_ru: 'Штраф за недоквалификацию выше, чем за переквалификацию',
+    is_core: true,
+    typical_weight_range: [0.05, 0.12],
+  },
+  {
+    id: 'M4',
+    name_ru: 'Релевантность опыта',
+    name_en: 'Experience Relevance',
+    formula_ru: 'cosine(brief_embedding, project_descriptions) взвешено по часам',
+    interpretation_ru: 'Требует истории проектов; при отсутствии — вес переносится на остальные',
+    is_core: false,
+    typical_weight_range: [0.05, 0.10],
+  },
+  {
+    id: 'M5',
+    name_ru: 'График',
+    name_en: 'Schedule',
+    formula_ru: 'P(T ≤ D) при дедлайне; иначе T_best / T50',
+    interpretation_ru: 'Монте-Карло P50/P80 по трёхточечной оценке усилий',
+    is_core: true,
+    typical_weight_range: [0.08, 0.30],
+  },
+  {
+    id: 'M6',
+    name_ru: 'Стоимость',
+    name_en: 'Cost',
+    formula_ru: '1 - (C - C_min) / (C_ref - C_min)',
+    interpretation_ru: 'Относительная дешевизна; C_min — самый дешевый feasible вариант',
+    is_core: true,
+    typical_weight_range: [0.04, 0.27],
+  },
+  {
+    id: 'M7',
+    name_ru: 'Здоровье нагрузки',
+    name_en: 'Load Health',
+    formula_ru: '1 - mean(min(1, max(0, u - 0.9) / 0.1))',
+    interpretation_ru: 'Штраф за утилизацию >90%; идеально 60-90%',
+    is_core: true,
+    typical_weight_range: [0.05, 0.12],
+  },
+  {
+    id: 'M8',
+    name_ru: 'Влияние на портфель',
+    name_en: 'Portfolio Impact',
+    formula_ru: 'exp(-Σ(slip_p) / τ), τ=10 рабочих дней',
+    interpretation_ru: 'Экспоненциальный штраф за суммарные задержки других проектов',
+    is_core: true,
+    typical_weight_range: [0.05, 0.10],
+  },
+  {
+    id: 'M9',
+    name_ru: 'Bus-factor',
+    name_en: 'Bus Factor',
+    formula_ru: '|{r ∈ must: N_r ≥ 2}| / |must|',
+    interpretation_ru: 'Доля must-компетенций с резервом ≥2 человек',
+    is_core: true,
+    typical_weight_range: [0.03, 0.10],
+  },
+  {
+    id: 'M10',
+    name_ru: 'Фокус',
+    name_en: 'Focus',
+    formula_ru: '1 - (0.4×frag + 0.3×ctx + 0.3×size_pen)',
+    interpretation_ru: 'Штрафы за фрагментацию (<20%), контекст-свитчинг, избыточный размер',
+    is_core: true,
+    typical_weight_range: [0.03, 0.05],
+  },
+  {
+    id: 'M11',
+    name_ru: 'Использование бенча',
+    name_en: 'Bench Utilization',
+    formula_ru: 'bench_hours_assigned / bench_hours_available',
+    interpretation_ru: 'Прямо связано с проблемой «скамейки» из паспорта проекта',
+    is_core: true,
+    typical_weight_range: [0.01, 0.03],
+  },
+  {
+    id: 'M12',
+    name_ru: 'Устойчивость',
+    name_en: 'Resilience',
+    formula_ru: 'Доля сценариев drop-out 2 нед., где Gate=1 и ΔT80 ≤ 20%',
+    interpretation_ru: 'Симуляция потери каждого участника',
+    is_core: true,
+    typical_weight_range: [0.01, 0.10],
+  },
+  {
+    id: 'M13',
+    name_ru: 'Слоеность',
+    name_en: 'Cohesion',
+    formula_ru: 'Доля пар, работавших вместе ≥4 нед.',
+    interpretation_ru: 'Экспериментальная метрика, требует истории совместной работы',
+    is_core: false,
+    typical_weight_range: [0.00, 0.05],
+  },
+];
+
+// ──── Short metric info for weight presets response ────
+
+export const mockWeightPresetMetrics: Record<string, MetricInfo> = {
+  M1: { name_ru: 'Покрытие компетенций', name_en: 'Competency Coverage', description_ru: 'Доля требуемых компетенций, покрытых командой на нужном уровне' },
+  M2: { name_ru: 'Покрытие трудозатрат', name_en: 'Effort Coverage', description_ru: 'Доля плановых человеко-дней, которые команда может закрыть' },
+  M3: { name_ru: 'Соответствие уровней', name_en: 'Level Fit', description_ru: 'Насколько уровни сотрудников близки к требуемым (штраф за пере/недоквалификацию)' },
+  M4: { name_ru: 'Релевантность опыта', name_en: 'Experience Relevance', description_ru: 'Семантическая близость прошлых проектов сотрудников к текущему ТЗ' },
+  M5: { name_ru: 'График', name_en: 'Schedule', description_ru: 'Вероятность уложиться в дедлайн или относительная скорость (P50)' },
+  M6: { name_ru: 'Стоимость', name_en: 'Cost', description_ru: 'Относительная стоимость команды (чем ниже — тем лучше)' },
+  M7: { name_ru: 'Здоровье нагрузки', name_en: 'Load Health', description_ru: 'Отсутствие перегрузов (>90% утилизации) и простоев' },
+  M8: { name_ru: 'Влияние на портфель', name_en: 'Portfolio Impact', description_ru: 'Задержки других проектов из-за вытягивания людей' },
+  M9: { name_ru: 'Bus-factor', name_en: 'Bus Factor', description_ru: 'Доля must-компетенций, закрытых минимум 2 людьми' },
+  M10: { name_ru: 'Фокус', name_en: 'Focus', description_ru: 'Низкая фрагментация, мало параллельных проектов, оптимальный размер команды' },
+  M11: { name_ru: 'Использование бенча', name_en: 'Bench Utilization', description_ru: 'Доля часов сотрудников с bench_flag, вовлеченных в проект' },
+  M12: { name_ru: 'Устойчивость', name_en: 'Resilience', description_ru: 'Способность команды сохранить выполнимость при отвале любого участника на 2 недели' },
+};

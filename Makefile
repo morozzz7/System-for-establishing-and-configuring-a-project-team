@@ -42,7 +42,7 @@ status: ## docker compose ps + health probes
 	@echo ""
 	@echo -n "ML healthz:      "; curl -sf http://localhost:$${ML_PORT:-18000}/healthz || echo "UNREACHABLE"
 	@echo ""
-	@echo -n "Gateway:         "; curl -sf -o /dev/null -w "HTTP %{http_code}" http://localhost:$${GATEWAY_PORT:-10080}/ || echo "UNREACHABLE"
+	@echo -n "Gateway:         "; curl -sf -o /dev/null -w "HTTP %{http_code}" http://localhost:$${GATEWAY_PORT:-9080}/ || echo "UNREACHABLE"
 	@echo ""
 
 # ----------------------------------------------------------- lint

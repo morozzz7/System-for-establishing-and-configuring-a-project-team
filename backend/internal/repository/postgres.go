@@ -51,6 +51,10 @@ type EmployeeRepo interface {
 	Create(ctx context.Context, e domain.Employee) error
 	Update(ctx context.Context, e domain.Employee) error
 	Exists(ctx context.Context, id string) (bool, error)
+	// Delete removes an employee (used in replace mode full sync).
+	Delete(ctx context.Context, id string) error
+	// ListIDs returns all employee IDs (for replace mode diff).
+	ListIDs(ctx context.Context) ([]string, error)
 }
 
 // EmployeeCompetencyRepo defines competency CRUD operations.
@@ -76,6 +80,7 @@ type AssignmentRepo interface {
 	ListByProject(ctx context.Context, projectID string, fromWeek, toWeek string) ([]domain.Assignment, error)
 	ListByFilter(ctx context.Context, f domain.AssignmentFilter) ([]domain.Assignment, error)
 	Create(ctx context.Context, a domain.Assignment) error
+	CreateBatch(ctx context.Context, assignments []domain.Assignment) error
 	// TotalAssignedHours returns the total assigned hours for an employee in a given week
 	// across all projects (for G2 check).
 	TotalAssignedHours(ctx context.Context, employeeID, week string) (float64, error)
@@ -88,6 +93,7 @@ type AbsenceRepo interface {
 	List(ctx context.Context, f domain.AbsenceFilter) ([]domain.Absence, int, error)
 	Get(ctx context.Context, id string) (domain.Absence, error)
 	Create(ctx context.Context, a domain.Absence) error
+	CreateBatch(ctx context.Context, absences []domain.Absence) error
 	SoftDelete(ctx context.Context, id string) error
 	// HasOverlap checks whether the employee has any active absence that overlaps [start, end].
 	HasOverlap(ctx context.Context, employeeID string, start, end time.Time) (bool, error)
@@ -268,6 +274,38 @@ func (r *PgEmployeeRepo) Exists(ctx context.Context, id string) (bool, error) {
 	var exists bool
 	err := r.Pool.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM employee WHERE employee_id=$1)", id).Scan(&exists)
 	return exists, err
+}
+
+func (r *PgEmployeeRepo) Delete(ctx context.Context, id string) error {
+	tag, err := r.Pool.Exec(ctx, "DELETE FROM employee WHERE employee_id = $1", id)
+	if err != nil {
+		return fmt.Errorf("delete employee: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("%w: employee %s", ErrNotFound, id)
+	}
+	return nil
+}
+
+func (r *PgEmployeeRepo) ListIDs(ctx context.Context) ([]string, error) {
+	rows, err := r.Pool.Query(ctx, "SELECT employee_id FROM employee ORDER BY employee_id")
+	if err != nil {
+		return nil, fmt.Errorf("list employee IDs: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("scan employee ID: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	if ids == nil {
+		ids = []string{}
+	}
+	return ids, nil
 }
 
 // ---------- PgEmployeeCompetencyRepo ----------
@@ -576,6 +614,40 @@ func (r *PgAssignmentRepo) Create(ctx context.Context, a domain.Assignment) erro
 	return nil
 }
 
+func (r *PgAssignmentRepo) CreateBatch(ctx context.Context, assignments []domain.Assignment) error {
+	if len(assignments) == 0 {
+		return nil
+	}
+	tx, err := r.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, a := range assignments {
+		hoursMin := int(a.Hours * 60)
+		if hoursMin < 1 {
+			hoursMin = 1
+		}
+		_, err := tx.Exec(ctx,
+			`INSERT INTO assignment (assignment_id, project_id, employee_id, role_id, week, hours_minutes, source)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+			a.AssignmentID, a.ProjectID, a.EmployeeID, a.RoleID, a.Week, hoursMin, a.Source,
+		)
+		if err != nil {
+			if IsDuplicate(err) {
+				return fmt.Errorf("%w: duplicate assignment for employee %s, project %s, week %s",
+					ErrConflict, a.EmployeeID, a.ProjectID, a.Week)
+			}
+			if IsFKViolation(err) {
+				return fmt.Errorf("foreign key violation: %w", err)
+			}
+			return fmt.Errorf("create assignment: %w", err)
+		}
+	}
+	return tx.Commit(ctx)
+}
+
 func (r *PgAssignmentRepo) TotalAssignedHours(ctx context.Context, employeeID, week string) (float64, error) {
 	var totalMin int
 	err := r.Pool.QueryRow(ctx,
@@ -701,6 +773,35 @@ func (r *PgAbsenceRepo) Create(ctx context.Context, a domain.Absence) error {
 		return fmt.Errorf("create absence: %w", err)
 	}
 	return nil
+}
+
+func (r *PgAbsenceRepo) CreateBatch(ctx context.Context, absences []domain.Absence) error {
+	if len(absences) == 0 {
+		return nil
+	}
+	tx, err := r.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	for _, a := range absences {
+		_, err := tx.Exec(ctx,
+			`INSERT INTO absence (absence_id, employee_id, type, start_date, end_date, hours_per_day, approved, source)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			a.AbsenceID, a.EmployeeID, a.Type, a.StartDate, a.EndDate, a.HoursPerDay, a.Approved, a.Source,
+		)
+		if err != nil {
+			if IsDuplicate(err) {
+				return fmt.Errorf("%w: duplicate absence", ErrConflict)
+			}
+			if IsFKViolation(err) {
+				return fmt.Errorf("employee not found: %w", err)
+			}
+			return fmt.Errorf("create absence: %w", err)
+		}
+	}
+	return tx.Commit(ctx)
 }
 
 func (r *PgAbsenceRepo) SoftDelete(ctx context.Context, id string) error {

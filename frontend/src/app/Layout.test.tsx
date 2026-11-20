@@ -21,6 +21,7 @@ describe('Layout', () => {
     // Check for main menu items
     expect(screen.getByText('Дашборд')).toBeDefined();
     expect(screen.getByText('Сотрудники')).toBeDefined();
+    expect(screen.getByText('Настроить расчёт')).toBeDefined();
     expect(screen.getByText('Проекты')).toBeDefined();
     expect(screen.getByText('Назначения')).toBeDefined();
     expect(screen.getByText('Отсутствия')).toBeDefined();

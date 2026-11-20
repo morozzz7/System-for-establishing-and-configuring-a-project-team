@@ -1,0 +1,508 @@
+[
+  {
+    "requirement_id": "req_014_001",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "arch_microservices",
+      "name_ru": "Микросервисы",
+      "confidence": 0.9
+    },
+    "level": 5,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 168,
+      "likely_person_days": 240,
+      "max_person_days": 336,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "12 months × 21 days ≈ 252pd; architect = level 5 (expert)",
+      "Part-time ~60% = ~150pd actual"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Архитектор (микросервисы",
+        "char_start": 146,
+        "char_end": 170
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_002",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "db_postgresql",
+      "name_ru": "PostgreSQL",
+      "confidence": 0.8
+    },
+    "level": 4,
+    "criticality": "should",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 42,
+      "likely_person_days": 60,
+      "max_person_days": 84,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "PostgreSQL as main database; architect designs data model"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "PostgreSQL",
+        "char_start": 172,
+        "char_end": 182
+      }
+    ],
+    "confidence": 0.8,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_003",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "backend_engineer",
+      "name_ru": "Бэкенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "lang_go",
+      "name_ru": "Go",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 3,
+    "effort": {
+      "min_person_days": 336,
+      "likely_person_days": 480,
+      "max_person_days": 672,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "12 months × 21 days × 3 = 756pd max; middle+ = level 3"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "3 бэкенд-разработчика (Go, middle+",
+        "char_start": 186,
+        "char_end": 220
+      }
+    ],
+    "confidence": 0.95,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_004",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик",
+      "confidence": 0.95
+    },
+    "competency": {
+      "competency_id": "fw_react",
+      "name_ru": "React",
+      "confidence": 0.95
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 224,
+      "likely_person_days": 320,
+      "max_person_days": 448,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "12 months × 21 days × 2 = 504pd max"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "2 фронтенд-разработчика (React + TypeScript)",
+        "char_start": 224,
+        "char_end": 268
+      }
+    ],
+    "confidence": 0.95,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_005",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "lang_typescript",
+      "name_ru": "TypeScript",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 224,
+      "likely_person_days": 320,
+      "max_person_days": 448,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "TypeScript as primary frontend language"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "TypeScript",
+        "char_start": 257,
+        "char_end": 267
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_006",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "ux_ui_designer",
+      "name_ru": "UX/UI-дизайнер",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "ui_figma",
+      "name_ru": "Figma",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 168,
+      "likely_person_days": 240,
+      "max_person_days": 336,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "UX/UI designer for portal design; Figma as main tool"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "UX/UI-дизайнер (Figma",
+        "char_start": 271,
+        "char_end": 292
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_007",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "ux_ui_designer",
+      "name_ru": "UX/UI-дизайнер",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "ui_wireframing",
+      "name_ru": "Прототипирование",
+      "confidence": 0.85
+    },
+    "level": 3,
+    "criticality": "should",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 84,
+      "likely_person_days": 120,
+      "max_person_days": 168,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Prototyping for portal screens"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "прототипы",
+        "char_start": 294,
+        "char_end": 303
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_008",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "test_playwright",
+      "name_ru": "Playwright",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 224,
+      "likely_person_days": 320,
+      "max_person_days": 448,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "2 QA engineers; Playwright for automated E2E testing"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "2 тестировщика (автотесты Playwright",
+        "char_start": 307,
+        "char_end": 343
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_009",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "qa_engineer",
+      "name_ru": "Тестировщик",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "qa_manual",
+      "name_ru": "Ручное тестирование",
+      "confidence": 0.85
+    },
+    "level": 2,
+    "criticality": "should",
+    "headcount": 2,
+    "effort": {
+      "min_person_days": 112,
+      "likely_person_days": 160,
+      "max_person_days": 224,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Manual testing alongside automated"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "ручное тестирование",
+        "char_start": 345,
+        "char_end": 364
+      }
+    ],
+    "confidence": 0.85,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_010",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "business_analyst",
+      "name_ru": "Бизнес-аналитик",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "an_requirements",
+      "name_ru": "Работа с требованиями",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 168,
+      "likely_person_days": 240,
+      "max_person_days": 336,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "BA gathers requirements from HR department"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Бизнес-аналитик (требования от HR-отдела)",
+        "char_start": 368,
+        "char_end": 409
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_011",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "project_manager",
+      "name_ru": "Руководитель проекта",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "proc_agile_scrum",
+      "name_ru": "Agile / Scrum",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 168,
+      "likely_person_days": 240,
+      "max_person_days": 336,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "PM for Scrum process management"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "Project manager (Agile/Scrum)",
+        "char_start": 412,
+        "char_end": 441
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_012",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.9
+    },
+    "competency": {
+      "competency_id": "cloud_kubernetes",
+      "name_ru": "Kubernetes",
+      "confidence": 0.9
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 126,
+      "likely_person_days": 180,
+      "max_person_days": 252,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "Kubernetes for portal deployment"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "DevOps (Kubernetes",
+        "char_start": 444,
+        "char_end": 462
+      }
+    ],
+    "confidence": 0.9,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_013",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
+      "confidence": 0.85
+    },
+    "competency": {
+      "competency_id": "cicd_gitlab",
+      "name_ru": "GitLab CI",
+      "confidence": 0.8
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 84,
+      "likely_person_days": 120,
+      "max_person_days": 168,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "CI/CD pipelines"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "CI/CD",
+        "char_start": 464,
+        "char_end": 469
+      }
+    ],
+    "confidence": 0.8,
+    "needs_review": false
+  },
+  {
+    "requirement_id": "req_014_014",
+    "brief_id": "brf_014",
+    "role": {
+      "role_id": "frontend_engineer",
+      "name_ru": "Фронтенд-разработчик",
+      "confidence": 0.75
+    },
+    "competency": {
+      "competency_id": "web_accessibility",
+      "name_ru": "Доступность веб-интерфейсов",
+      "confidence": 0.75
+    },
+    "level": 3,
+    "criticality": "must",
+    "headcount": 1,
+    "effort": {
+      "min_person_days": 28,
+      "likely_person_days": 40,
+      "max_person_days": 56,
+      "unit": "person_days"
+    },
+    "assumptions": [
+      "WCAG 2.1 AA compliance requires accessibility expertise",
+      "Part of frontend work but separate competency"
+    ],
+    "evidence": [
+      {
+        "kind": "brief_span",
+        "quote": "WCAG 2.1 AA",
+        "char_start": 525,
+        "char_end": 536
+      }
+    ],
+    "confidence": 0.75,
+    "needs_review": false
+  }
+]

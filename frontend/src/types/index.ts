@@ -96,6 +96,7 @@ export type PresetName = 'fast' | 'economical' | 'balanced' | 'low_risk';
 export interface WeightPreset {
   preset: PresetName;
   label_ru: string;
+  description_ru: string;
   weights: Weights;
   sum_check: number;
 }
@@ -176,6 +177,468 @@ export interface CapacityWeek {
   free_hours: number;
   load_ratio: number;
   unavailable: boolean;
+}
+
+export type BriefStatus = 'uploaded' | 'extracting' | 'extracted' | 'needs_review' | 'confirmed' | 'failed';
+export interface Brief { 
+  brief_id: string; 
+  title: string; 
+  source_type: 'text' | 'docx' | 'pdf' | 'txt'; 
+  language: 'ru' | 'en'; 
+  status: BriefStatus; 
+  created_at: string; 
+  requirement_count: number; 
+  needs_review_count: number; 
+  reason_codes: ReasonCode[];
+  requested_start_week?: WeekKey;
+  deadline_week?: WeekKey;
+}
+export interface Evidence { kind: string; quote: string; char_start?: number; char_end?: number; }
+export interface Requirement { requirement_id: string; brief_id: string; role: { role_id: string; name_ru: string; confidence: number }; competency_id: string; competency_name_ru: string; level: Level; criticality: 'must' | 'should' | 'nice'; headcount: number; confidence: number; needs_review: boolean; effort: { min_person_days: number; likely_person_days: number; max_person_days: number; unit: 'person_days' }; assumptions: string[]; evidence: Evidence[]; }
+
+// ──── errors (RFC 9457 shape, contracts/openapi.yaml#Problem) ────
+
+export interface FieldError {
+  field: string;
+  code: string;
+  detail: string;
+}
+
+export interface Problem {
+  type: string;
+  title: string;
+  status: number;
+  code: string;
+  detail: string;
+  request_id: string;
+  retryable?: boolean;
+  reason_codes: ReasonCode[];
+  errors?: FieldError[];
+}
+
+// ──── reason codes (canonical list, contracts/README.md#reason-codes) ────
+
+export type ReasonCode =
+  | 'INCLUDE_HIGH_COMPETENCE'
+  | 'INCLUDE_AVAILABLE_CAPACITY'
+  | 'INCLUDE_COST_EFFICIENT'
+  | 'INCLUDE_REQUIRED_ROLE'
+  | 'INCLUDE_BUS_FACTOR'
+  | 'INCLUDE_BENCH'
+  | 'INCLUDE_EXPERIENCE_RELEVANT'
+  | 'INCLUDE_USER_FORCE'
+  | 'EXCLUDE_OVERLOADED'
+  | 'EXCLUDE_ABSENT'
+  | 'EXCLUDE_BELOW_REQUIRED_LEVEL'
+  | 'EXCLUDE_EXPENSIVE'
+  | 'EXCLUDE_USER_FORCE'
+  | 'EXCLUDE_TEAM_SIZE_LIMIT'
+  | 'EXCLUDE_NO_FREE_CAPACITY'
+  | 'EXCLUDE_PORTFOLIO_PROTECTION'
+  | 'EXCLUDE_DATA_INCOMPLETE'
+  | 'DEFICIT_MUST_ROLE'
+  | 'DEFICIT_EXTERNAL_CONTRACTOR'
+  | 'DEFICIT_UPSKILL_INTERNAL'
+  | 'DEFICIT_DEADLINE_SHIFT'
+  | 'DEFICIT_DESCOPE'
+  | 'CONSTRAINT_ACTIVE_TEAM_SIZE'
+  | 'CONSTRAINT_ACTIVE_BUDGET'
+  | 'CONSTRAINT_ACTIVE_DEADLINE'
+  | 'CONSTRAINT_ACTIVE_FORCE_INCLUDE'
+  | 'CONSTRAINT_ACTIVE_FORCE_EXCLUDE'
+  | 'CONSTRAINT_ACTIVE_BUS_FACTOR'
+  | 'CONSTRAINT_BINDING_CAPACITY'
+  | 'VARIANT_FASTEST'
+  | 'VARIANT_CHEAPEST'
+  | 'VARIANT_LOWEST_RISK'
+  | 'VARIANT_BALANCED'
+  | 'VARIANT_DOMINATED_REPLACED'
+  | 'TRADEOFF_SPEED_VS_DEFICIT'
+  | 'TRADEOFF_COST_VS_SKILL'
+  | 'TRADEOFF_LOAD_VS_SPEED'
+  | 'COUNTERFACTUAL_TEAM_SIZE'
+  | 'COUNTERFACTUAL_DEADLINE'
+  | 'COUNTERFACTUAL_CAPACITY'
+  | 'COUNTERFACTUAL_OVERRIDE'
+  | 'REQ_LOW_CONFIDENCE'
+  | 'REQ_NEEDS_REVIEW'
+  | 'REQ_EFFORT_WIDE_RANGE'
+  | 'REQ_EVIDENCE_MISSING'
+  | 'REQ_TAXONOMY_LOW_CONFIDENCE'
+  | 'NORMALIZE_TOP1_STRONG'
+  | 'NORMALIZE_TOP1_WEAK'
+  | 'BRIEF_NOT_CONFIRMED'
+  | 'BRIEF_STATE_CONFLICT'
+  | 'G1_UNAVAILABLE_ASSIGNED'
+  | 'G2_OVERLOAD'
+  | 'G3_UNCOVERED_MUST'
+  | 'G4_USER_CONSTRAINT_VIOLATED'
+  | 'G5_INVALID_DATA'
+  | 'VARIANT_REJECTED_BY_VALIDATOR'
+  | 'VARIANT_DIVERSITY_TOO_LOW'
+  | 'SOLVER_INFEASIBLE'
+  | 'SOLVER_TIMEOUT'
+  | 'SOLVER_UNKNOWN'
+  | 'ML_UNAVAILABLE'
+  | 'ML_TIMEOUT'
+  | 'ML_SCHEMA_INVALID'
+  | 'ML_LLM_UNAVAILABLE'
+  | 'FALLBACK_SOLVER_USED'
+  | 'RECALC_QUEUED'
+  | 'RECALC_APPLIED'
+  | 'RECALC_NO_EFFECT'
+  | 'OVERRIDE_VIOLATES_G1'
+  | 'OVERRIDE_VIOLATES_G2'
+  | 'OVERRIDE_VIOLATES_G4'
+  | 'OVERRIDE_REJECTED'
+  | 'DECISION_IMMUTABLE'
+  | 'VALIDATION_FAILED'
+  | 'DUPLICATE_EMPLOYEE_ID'
+  | 'ABSENCE_OVERLAP'
+  | 'AUDIT_TRUNCATED';
+
+// ──── runs (contracts/openapi.yaml#TeamRun, #Variant, #RunInputs, #Recalculate*) ────
+
+export interface Horizon {
+  start_week: WeekKey;
+  end_week: WeekKey;
+}
+
+export type RunStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed';
+export type SolverStatus = 'OPTIMAL' | 'FEASIBLE' | 'INFEASIBLE' | 'UNKNOWN' | 'TIMEOUT' | 'MODEL_INVALID' | 'ERROR';
+export type MlStatus = 'ok' | 'degraded' | 'timeout' | 'unavailable' | 'schema_invalid';
+
+export interface RunDiagnostics {
+  solver_status: SolverStatus;
+  solve_time_ms: number;
+  ml_status: MlStatus;
+  ml_attempts: number;
+  validator_rejected: number;
+  fallback_used: boolean;
+  fallback_reason?: ReasonCode;
+  metrics_version: string;
+  contract_version: 'v1';
+}
+
+export interface VariantSetDiagnostics {
+  pairwise_jaccard?: Record<string, number>;
+  min_pairwise_jaccard?: number;
+  dominated_variant_ids?: string[];
+  gate_failed_variant_ids?: string[];
+  diversity_rule_ok?: boolean;
+}
+
+export interface MetricValues {
+  M1: number;
+  M2: number;
+  M3: number;
+  M4?: number;
+  M5: number;
+  M6: number;
+  M7: number;
+  M8: number;
+  M9: number;
+  M10: number;
+  M11: number;
+  M12: number;
+  M13?: number;
+  score: number;
+}
+
+/** Open record: new diagnostics must not break the contract (see MetricDetails in openapi.yaml). */
+export interface MetricDetails {
+  must_coverage?: number;
+  overqualified_share?: number;
+  peak_utilization?: number;
+  mean_utilization?: number;
+  utilization_band_60_90_share?: number;
+  projects_affected?: number;
+  critical_projects_affected?: number;
+  min_bus_factor?: number;
+  single_points_of_failure?: string[];
+  fragmentation_share?: number;
+  concurrent_projects_mean?: number;
+  n_opt?: number;
+  bench_hours_assigned?: number;
+  resilience_score?: number;
+  bench_hours_available?: number;
+  cost_min_units?: number;
+  cost_ref_units?: number;
+  t_best_weeks?: number;
+  portfolio_slip_days?: number;
+  dropped_metrics?: string[];
+  [key: string]: unknown;
+}
+
+export interface MonteCarloInfo {
+  runs: number;
+  seed: number;
+}
+
+export interface VariantDuration {
+  p50_weeks: number;
+  p80_weeks: number;
+  p50_working_days: number;
+  p80_working_days: number;
+  slack_weeks?: number;
+  deadline_week?: WeekKey;
+  p_on_time?: number;
+  monte_carlo?: MonteCarloInfo;
+}
+
+export interface VariantSummary {
+  variant_id: string;
+  label: string;
+  gate_pass: boolean;
+  score: number;
+  team_size: number;
+  duration: VariantDuration;
+  cost_units: number;
+  metric_values: MetricValues;
+  deficit_count: number;
+  reason_codes: ReasonCode[];
+}
+
+// ──── explainability (GET /runs/{runId}/variants/{variantId}/explanation) ────
+
+/** Raw numbers/ids an explanation sentence is built from (METRICS 3.5 faithfulness). */
+export type ExplanationFacts = Record<string, unknown>;
+
+export interface ExplanationFactor {
+  employee_id?: string;
+  competency_id?: string;
+  /** Localized sentence rendered strictly from `reason_codes` + `facts`. */
+  text: string;
+  reason_codes: ReasonCode[];
+  facts: ExplanationFacts;
+}
+
+export interface Tradeoff {
+  text: string;
+  reason_codes: ReasonCode[];
+  facts: ExplanationFacts;
+}
+
+export type CounterfactualVerification = 'rerun' | 'estimated';
+
+export interface Counterfactual {
+  text: string;
+  reason_codes: ReasonCode[];
+  verified_by: CounterfactualVerification;
+  /** Required when `verified_by === 'rerun'` (the child run the resolver actually re-ran). */
+  run_id?: string;
+  facts?: ExplanationFacts;
+}
+
+export interface Explanation {
+  variant_id: string;
+  run_id: string;
+  locale: 'ru' | 'en';
+  headline: string;
+  /** Codes the headline is rendered from; the server always emits them. */
+  headline_reason_codes: ReasonCode[];
+  tradeoff: Tradeoff;
+  included: ExplanationFactor[];
+  excluded: ExplanationFactor[];
+  deficits: ExplanationFactor[];
+  counterfactuals: Counterfactual[];
+}
+
+export interface GateViolations {
+  G1: number;
+  G2: number;
+  G3: number;
+  G4: number;
+  G5: number;
+  max_overload_pct?: number;
+  uncovered_must_not_in_deficit?: number;
+}
+
+export interface VariantMember {
+  employee_id: string;
+  role_id: string;
+  grade: Grade;
+  allocated_hours: number;
+  assignment_share: number;
+  competence_fit: number;
+  reason_codes: ReasonCode[];
+  explanation_id?: string;
+}
+
+export interface WeeklyAssignment {
+  employee_id: string;
+  requirement_id: string;
+  week: WeekKey;
+  hours: number;
+  share: number;
+}
+
+export type ActionType = 'hire' | 'contractor' | 'move_deadline' | 'upskill' | 'reallocate' | 'descope';
+
+export interface RecommendedAction {
+  action: ActionType;
+  estimated_cost_units?: number;
+  time_to_start_weeks?: number;
+  from_project_id?: string;
+  reason_codes: ReasonCode[];
+}
+
+export interface Deficit {
+  competency_id: string;
+  competency_name_ru: string;
+  requirement_ids: string[];
+  person_days: number;
+  weeks?: number;
+  external_cooperation_flag: boolean;
+  recommended_actions: RecommendedAction[];
+}
+
+export type ConstraintType =
+  | 'force_include'
+  | 'force_exclude'
+  | 'max_team_size'
+  | 'min_team_size'
+  | 'budget_cap'
+  | 'deadline'
+  | 'forbid_external'
+  | 'freeze_members'
+  | 'min_bus_factor'
+  | 'max_utilization';
+
+export type ConstraintSource = 'user' | 'brief' | 'policy';
+
+export interface ActiveConstraint {
+  type: ConstraintType;
+  value?: number | boolean | string | string[];
+  source: ConstraintSource;
+  reason_codes: ReasonCode[];
+}
+
+export interface ExcludedCandidate {
+  employee_id: string;
+  reason_codes: ReasonCode[];
+  detail?: Record<string, unknown>;
+}
+
+export interface Variant {
+  variant_id: string;
+  run_id: string;
+  label: string;
+  gate_pass: boolean;
+  gate_violations: GateViolations;
+  score: number;
+  team_size: number;
+  cost_units: number;
+  duration: VariantDuration;
+  metric_values: MetricValues;
+  metric_details?: MetricDetails;
+  members: VariantMember[];
+  weekly_assignments: WeeklyAssignment[];
+  deficits: Deficit[];
+  active_constraints: ActiveConstraint[];
+  excluded_candidates?: ExcludedCandidate[];
+  diversity_jaccard?: Record<string, number>;
+  reason_codes: ReasonCode[];
+}
+
+export interface TeamRun {
+  run_id: string;
+  brief_id: string;
+  parent_run_id?: string;
+  snapshot_id?: string;
+  status: RunStatus;
+  preset: PresetName;
+  k: number;
+  seed: number;
+  time_limit_ms: number;
+  horizon: Horizon;
+  created_at: string;
+  finished_at?: string;
+  diagnostics?: RunDiagnostics;
+  variants: VariantSummary[];
+  variant_set?: VariantSetDiagnostics;
+  reason_codes: ReasonCode[];
+}
+
+// ──── run inputs (immutable snapshot, GET /runs/{runId}/inputs) ────
+
+export interface RunInputCandidate {
+  employee_id: string;
+  grade: Grade;
+  cost_coefficient: number;
+  competency_ids: string[];
+  capacity_digest: string;
+  capacity_weeks: number;
+}
+
+export interface RunConstraints {
+  force_include?: string[];
+  force_exclude?: string[];
+  max_team_size?: number;
+  min_team_size?: number;
+  budget_cap_units?: number;
+  deadline_week?: WeekKey;
+  forbid_external?: boolean;
+  freeze_members?: string[];
+  min_bus_factor?: number;
+  max_utilization_ratio?: number;
+}
+
+export interface RunInputs {
+  run_id: string;
+  snapshot_id: string;
+  created_at: string;
+  snapshot_sha256: string;
+  horizon: Horizon;
+  weights: Weights;
+  constraints?: RunConstraints;
+  requirement_count: number;
+  candidate_count: number;
+  capacity_rows: number;
+  candidates: RunInputCandidate[];
+}
+
+// ──── recalculation (POST /runs/{runId}/recalculate) ────
+
+/**
+ * One manual edit of the manager (contract `ConstraintOverride`).
+ * The contract exposes only a numeric `value`, so boolean constraints (`forbid_external`)
+ * travel as 1 / 0 and `max_utilization` as a ratio in [0.5, 1].
+ */
+export interface ConstraintOverride {
+  type: ConstraintType;
+  employee_id?: string;
+  requirement_id?: string;
+  value?: number;
+  week?: WeekKey;
+  employee_ids?: string[];
+  reason?: string;
+}
+
+export interface RecalculateRequest {
+  base_variant_id?: string;
+  preset?: PresetName;
+  weights?: Weights;
+  k?: number;
+  seed?: number;
+  time_limit_ms?: number;
+  overrides: ConstraintOverride[];
+}
+
+export interface RejectedOverride {
+  index: number;
+  reason_codes: ReasonCode[];
+  detail?: string;
+}
+
+export interface RecalculateResponse {
+  run_id: string;
+  parent_run_id?: string;
+  status: RunStatus;
+  applied_overrides: number;
+  rejected_overrides: RejectedOverride[];
+  reason_codes: ReasonCode[];
+  facts?: Record<string, unknown>;
 }
 
 // ──── projects ────

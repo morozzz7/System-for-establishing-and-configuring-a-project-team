@@ -39,44 +39,54 @@ async def test_readyz(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_extract_stub_501(client: AsyncClient) -> None:
-    resp = await client.post("/v1/extract", json={})
-    assert resp.status_code == 501
+async def test_readyz_optimize_capability_and_solver_version(client: AsyncClient) -> None:
+    resp = await client.get("/readyz")
     body = resp.json()
-    # Must conform to Problem schema from ml-openapi.yaml.
-    assert body["status"] == 501
-    assert body["code"] == "NOT_IMPLEMENTED"
+    assert body["capabilities"]["optimize"] == "ready"
+    assert body["solver"]["name"] == "ortools-cp-sat"
+    assert body["solver"]["version"].count(".") >= 2
+
+
+@pytest.mark.asyncio
+async def test_extract_invalid_body_422(client: AsyncClient) -> None:
+    """Real /v1/extract returns 422 on invalid request body (was 501 stub)."""
+    resp = await client.post("/v1/extract", json={})
+    assert resp.status_code == 422
+    body = resp.json()
+    assert body["status"] == 422
+    assert body["code"] == "INVALID_REQUEST"
     assert "request_id" in body
     assert isinstance(body["reason_codes"], list)
-    assert "retryable" in body
-    assert "type" in body
-    assert "title" in body
-    assert "detail" in body
 
 
 @pytest.mark.asyncio
-async def test_embed_stub_501(client: AsyncClient) -> None:
+async def test_embed_validation_error(client: AsyncClient) -> None:
     resp = await client.post("/v1/embed", json={})
-    assert resp.status_code == 501
+    assert resp.status_code == 422
     body = resp.json()
-    assert body["code"] == "NOT_IMPLEMENTED"
+    assert body["code"] == "VALIDATION_FAILED"
 
 
 @pytest.mark.asyncio
-async def test_optimize_stub_501(client: AsyncClient) -> None:
+async def test_optimize_invalid_body_422(client: AsyncClient) -> None:
+    """Real /v1/optimize returns 422 on an empty request body (was 501 stub)."""
     resp = await client.post("/v1/optimize", json={})
-    assert resp.status_code == 501
+    assert resp.status_code == 422
     body = resp.json()
-    assert body["code"] == "NOT_IMPLEMENTED"
+    assert body["status"] == 422
+    assert body["code"] == "INVALID_REQUEST"
+    assert "request_id" in body
+    assert isinstance(body["reason_codes"], list)
 
 
 @pytest.mark.asyncio
-async def test_stub_respects_request_id_header(client: AsyncClient) -> None:
+async def test_embed_validation_respects_request_id_header(client: AsyncClient) -> None:
+    """Embed validation errors echo X-Request-Id in the Problem response."""
     resp = await client.post(
-        "/v1/extract",
+        "/v1/embed",
         json={},
         headers={"X-Request-Id": "req_test00000001"},
     )
-    assert resp.status_code == 501
+    assert resp.status_code == 422
     body = resp.json()
     assert body["request_id"] == "req_test00000001"

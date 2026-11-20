@@ -1,7 +1,7 @@
-"""Team Optimizer ML Service stub (phase 1.3).
+"""Team Optimizer ML Service.
 
-Implements /healthz, /readyz and returns 501 for the three optimizer endpoints
-(/v1/extract, /v1/embed, /v1/optimize) which will be implemented in phase 3.
+Implements /healthz, /readyz, POST /v1/extract, POST /v1/embed and
+POST /v1/optimize (CP-SAT team optimizer).
 All error responses conform to the Problem schema from contracts/ml-openapi.yaml.
 """
 
@@ -12,14 +12,32 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
+from .extract.router import router as extract_router
+from .embed import EMBED_DIM, EMBED_MODEL, EmbedRequest, embed as embed_request
+from .llm.config import get_settings
+from .optimize.router import router as optimize_router
 from .version import __version__
+
+try:
+    from .optimize.solver import SOLVER_NAME, SOLVER_VERSION
+
+    _OPTIMIZE_READY = True
+except Exception:  # pragma: no cover - ortools is a hard dependency
+    SOLVER_NAME = "ortools-cp-sat"
+    SOLVER_VERSION = "9.11.4210"
+    _OPTIMIZE_READY = False
 
 app = FastAPI(
     title="Team Optimizer ML Service",
     version=__version__,
-    description="Stub for phase 1.3. Optimizer endpoints return 501.",
+    description="ML service for team formation: extraction, embeddings and optimization.",
 )
+
+# Include the real /v1/extract and /v1/optimize routers
+app.include_router(extract_router)
+app.include_router(optimize_router)
 
 _start_time: float = time.time()
 
@@ -72,29 +90,33 @@ async def healthz() -> dict[str, Any]:
 async def readyz() -> dict[str, Any]:
     """Readiness probe per contracts/ml-openapi.yaml.
 
-    In the stub phase all capabilities are 'degraded' because the underlying
-    models/solver are not yet loaded. The service itself is ready to receive
-    traffic (it answers), so HTTP 200 is returned with degraded capability states.
+    Reports actual capability states based on LLM availability and OR-Tools import.
     """
+    settings = get_settings()
+
+    # Determine extract capability state
+    extract_state = "ready" if settings.is_available else "degraded"
+    optimize_state = "ready" if _OPTIMIZE_READY else "unavailable"
+
     return {
         "ready": True,
         "capabilities": {
-            "extract": "degraded",
-            "embed": "degraded",
-            "optimize": "degraded",
+            "extract": extract_state,
+            "embed": "ready",
+            "optimize": optimize_state,
         },
         "models": {
-            "llm": None,
-            "embedding": "multilingual-e5-large",
-            "embedding_dim": 1024,
+            "llm": settings.model if settings.is_available else None,
+            "embedding": EMBED_MODEL,
+            "embedding_dim": EMBED_DIM,
             "spacy_pipeline": "ru_core_news_lg",
         },
         "solver": {
-            "name": "ortools-cp-sat",
-            "version": "9.11.4210",
+            "name": SOLVER_NAME,
+            "version": SOLVER_VERSION,
         },
         "limits": {
-            "extract_timeout_ms": 20000,
+            "extract_timeout_ms": settings.timeout_ms,
             "embed_timeout_ms": 5000,
             "optimize_max_time_limit_ms": 60000,
             "max_requirements": 60,
@@ -105,53 +127,21 @@ async def readyz() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Stub endpoints: return 501 Not Implemented per contracts/ml-openapi.yaml
-# Problem schema. Will be replaced by real implementations in phase 3.
+# /v1/extract, /v1/embed and /v1/optimize are real endpoints.
 # ---------------------------------------------------------------------------
-
-@app.post("/v1/extract")
-async def extract(request: Request) -> JSONResponse:
-    """Stub: brief extraction not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/extract is a stub; implementation comes in phase 3.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
 
 
 @app.post("/v1/embed")
 async def embed(request: Request) -> JSONResponse:
-    """Stub: text embedding not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/embed is a stub; implementation comes in phase 3.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
-
-
-@app.post("/v1/optimize")
-async def optimize(request: Request) -> JSONResponse:
-    """Stub: team optimization not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/optimize is a stub; implementation comes in phase 3.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
+    """Embed a bounded batch in the deterministic shared vector space."""
+    rid = _req_id(request)
+    try:
+        body = EmbedRequest.model_validate(await request.json())
+        result = embed_request(body)
+    except ValidationError as exc:
+        return JSONResponse(status_code=422, content=_problem(422, "VALIDATION_FAILED", "Invalid request", str(exc), rid))
+    except ValueError as exc:
+        return JSONResponse(status_code=422, content=_problem(422, "UNSUPPORTED_MODEL", "Unsupported model", str(exc), rid))
+    response = JSONResponse(status_code=200, content=result.model_dump())
+    response.headers["X-Request-Id"] = rid
+    return response

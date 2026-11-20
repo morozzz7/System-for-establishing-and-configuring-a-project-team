@@ -13,13 +13,19 @@ import {
   Descriptions,
   Card,
   Tag,
+  Modal,
+  Alert,
+  Upload,
+  message,
 } from 'antd';
-import { EyeOutlined } from '@ant-design/icons';
+import { EyeOutlined, InboxOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Employee } from '../types';
 import { useEmployees, useEmployee, useEmployeeCompetencies, useEmployeeCapacity } from '../hooks';
 import { Loading, Empty, ErrorDisplay, GradeTag, LevelBar } from '../components/shared';
 import { mockRoles } from '../mocks/reference';
+import { importEmployees } from '../api/client';
+import type { EmployeeImportPayload } from '../api/client';
 
 const { Title, Text } = Typography;
 
@@ -30,6 +36,9 @@ export default function EmployeesPage() {
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
   const [benchFilter, setBenchFilter] = useState<boolean | undefined>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importPayload, setImportPayload] = useState<EmployeeImportPayload | null>(null);
+  const [importing, setImporting] = useState(false);
 
   if (employees.loading) return <Loading />;
   if (employees.error) return <ErrorDisplay error={employees.error} />;
@@ -94,7 +103,10 @@ export default function EmployeesPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Title level={2}>Сотрудники</Title>
+      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
+        <Title level={2} style={{ margin: 0 }}>Сотрудники</Title>
+        <Button onClick={() => setImportOpen(true)}>Загрузить данные</Button>
+      </Space>
       <Space wrap>
         <Input.Search
           placeholder="Поиск по ID"
@@ -143,6 +155,62 @@ export default function EmployeesPage() {
         rowKey="employee_id"
         pagination={{ pageSize: 10 }}
       />
+      <Modal
+        title="Загрузка сотрудников"
+        open={importOpen}
+        onCancel={() => setImportOpen(false)}
+        onOk={async () => {
+          if (!importPayload) return;
+          setImporting(true);
+          try {
+            const result = await importEmployees(importPayload);
+            message.success(`Обработано: ${result.totals.received}, создано: ${result.totals.created}, обновлено: ${result.totals.updated}, ошибок: ${result.totals.errors}`);
+            setImportOpen(false);
+            setImportPayload(null);
+            employees.refetch();
+          } catch (error) {
+            message.error(error instanceof Error ? error.message : 'Не удалось загрузить сотрудников');
+          } finally {
+            setImporting(false);
+          }
+        }}
+        okText="Импортировать"
+        cancelText="Отмена"
+        okButtonProps={{ disabled: !importPayload, loading: importing }}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Alert
+            type="info"
+            showIcon
+            message="Загрузите JSON по схеме EmployeeImportRequest из OpenAPI. Импорт выполняется в режиме upsert."
+            description="Файл должен содержать объект с массивом employees. Персональные данные в файлах не используйте; идентификаторы сотрудников должны быть псевдонимами."
+          />
+          <Upload.Dragger
+            accept=".json,application/json"
+            maxCount={1}
+            beforeUpload={async (file) => {
+              try {
+                const parsed: unknown = JSON.parse(await file.text());
+                if (typeof parsed !== 'object' || parsed === null || !Array.isArray((parsed as { employees?: unknown }).employees) || (parsed as { employees: unknown[] }).employees.length === 0) {
+                  throw new Error('Ожидается JSON-объект с непустым массивом employees');
+                }
+                setImportPayload(parsed as EmployeeImportPayload);
+                message.success(`Файл прочитан: ${(parsed as EmployeeImportPayload).employees.length} записей`);
+              } catch (error) {
+                setImportPayload(null);
+                message.error(error instanceof Error ? error.message : 'Некорректный JSON-файл');
+              }
+              return false;
+            }}
+            onRemove={() => setImportPayload(null)}
+            showUploadList={{ showRemoveIcon: true }}
+          >
+            <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+            <p className="ant-upload-text">Перетащите JSON-файл или нажмите для выбора</p>
+            <p className="ant-upload-hint">Формат: {`{ "employees": [...] }`}</p>
+          </Upload.Dragger>
+        </Space>
+      </Modal>
       {selectedId && <EmployeeDetailDrawer employeeId={selectedId} onClose={() => setSelectedId(null)} />}
     </Space>
   );

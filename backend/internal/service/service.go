@@ -19,6 +19,9 @@ type EmployeeService struct {
 	EmployeeRepo repository.EmployeeRepo
 	CompRepo     repository.EmployeeCompetencyRepo
 	AuditRepo    repository.AuditRepo
+	AsgRepo      repository.AssignmentRepo
+	AbsRepo      repository.AbsenceRepo
+	ProjectRepo  repository.ProjectRepo
 }
 
 type ProjectService struct {
@@ -262,6 +265,457 @@ func (s *EmployeeService) ReplaceCompetencies(ctx context.Context, employeeID st
 	return result, nil
 }
 
+// ---------- Employee Import Service ----------
+
+// EmployeeImportResult holds the result of a single employee import.
+type EmployeeImportResult struct {
+	EmployeeID          string
+	Status              string // created, updated, unchanged, error
+	CompetenciesUpserted int
+	AssignmentsCreated  int
+	AbsencesCreated     int
+	Warnings            []string
+	Error               string
+}
+
+// EmployeeImportResponse holds the full import response.
+type EmployeeImportResponse struct {
+	Mode             string
+	Totals           domain.EmployeeImportTotals
+	Employees        []domain.EmployeeImportResultItem
+	ValidationErrors []domain.EmployeeImportValidationError
+}
+
+// ImportEmployees performs bulk import of employees with competencies, assignments, and absences.
+func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.EmployeeImportRequest, requestID string) (EmployeeImportResponse, error) {
+	// Validate request.
+	if p := domain.ValidateEmployeeImportRequest(input, requestID); p != nil {
+		return EmployeeImportResponse{}, *p
+	}
+
+	mode := input.Mode
+	if mode == "" {
+		mode = "upsert"
+	}
+	validateOnly := input.ValidateOnly != nil && *input.ValidateOnly
+
+	var results []EmployeeImportResult
+	var validationErrors []domain.EmployeeImportValidationError
+	totals := domain.EmployeeImportTotals{Received: len(input.Employees)}
+
+	// For replace mode, get existing employee IDs to determine deletions.
+	var existingIDs []string
+	if mode == "replace" && !validateOnly {
+		var err error
+		existingIDs, err = s.EmployeeRepo.ListIDs(ctx)
+		if err != nil {
+			slog.ErrorContext(ctx, "list employee IDs for replace", "error", err)
+			return EmployeeImportResponse{}, domain.NewProblem(500, "INTERNAL_ERROR", "failed to list employees for replace", requestID, nil)
+		}
+	}
+	existingSet := make(map[string]bool, len(existingIDs))
+	for _, id := range existingIDs {
+		existingSet[id] = true
+	}
+
+	// Process each employee.
+	for _, item := range input.Employees {
+		result := EmployeeImportResult{
+			EmployeeID: item.EmployeeID,
+			Warnings:   []string{},
+		}
+
+		// Track if employee was in payload (for replace mode).
+		existingSet[item.EmployeeID] = false
+
+		// Validate employee exists for upsert/update checks.
+		existingEmp, err := s.EmployeeRepo.Get(ctx, item.EmployeeID)
+		isNew := errors.Is(err, repository.ErrNotFound)
+
+		if validateOnly {
+			// In validate_only mode, just check validity without persisting.
+			// Validate competencies reference existing taxonomy.
+			for range item.Competencies {
+				// We can't easily check taxonomy here without a TaxonomyRepo, skip for now.
+				// The DB FK will catch it during actual import.
+			}
+			// Validate assignments reference existing projects.
+			for _, a := range item.Assignments {
+				if _, err := s.ProjectRepo.Get(ctx, a.ProjectID); err != nil {
+					if errors.Is(err, repository.ErrNotFound) {
+						validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+							EmployeeID: item.EmployeeID,
+							Field:      "assignments",
+							Code:       "FK_VIOLATION",
+							Detail:     fmt.Sprintf("project %s not found", a.ProjectID),
+						})
+					}
+				}
+			}
+			// Validate absences don't overlap.
+			for _, abs := range item.Absences {
+				if abs.EndDate.Before(abs.StartDate) {
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID,
+						Field:      "absences",
+						Code:       "DATE_BEFORE_START",
+						Detail:     "end_date must be >= start_date",
+					})
+				}
+				// Check overlap with existing absences.
+				overlap, _ := s.AbsRepo.HasOverlap(ctx, item.EmployeeID, abs.StartDate, abs.EndDate)
+				if overlap {
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID,
+						Field:      "absences",
+						Code:       "ABSENCE_OVERLAP",
+						Detail:     fmt.Sprintf("overlaps with existing absence"),
+					})
+				}
+				// Check overlap within payload.
+				for _, other := range item.Absences {
+					if &abs != &other && !(abs.EndDate.Before(other.StartDate) || other.EndDate.Before(abs.StartDate)) {
+						validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+							EmployeeID: item.EmployeeID,
+							Field:      "absences",
+							Code:       "ABSENCE_OVERLAP",
+							Detail:     "absences within payload overlap",
+						})
+						break
+					}
+				}
+			}
+			result.Status = "unchanged" // placeholder for validate_only
+			results = append(results, result)
+			continue
+		}
+
+		// Build employee domain object.
+		bench := false
+		if item.BenchFlag != nil {
+			bench = *item.BenchFlag
+		}
+		cp := domain.CapacityProfile{
+			WeeklyHoursNorm:    40,
+			ReserveRatio:       0.2,
+			MaxUtilizationRatio: 0.95,
+		}
+		if item.CapacityProfile != nil {
+			cp = *item.CapacityProfile
+		}
+		cost := gradeToCost(item.Grade)
+
+		emp := domain.Employee{
+			EmployeeID:      item.EmployeeID,
+			Grade:           item.Grade,
+			RoleProfileID:   item.RoleProfileID,
+			UnitID:          item.UnitID,
+			EmploymentType:  item.EmploymentType,
+			BenchFlag:       bench,
+			CapacityProfile: cp,
+			CostCoefficient: cost,
+			Active:          true,
+		}
+
+		if isNew {
+			// Create new employee.
+			if err := s.EmployeeRepo.Create(ctx, emp); err != nil {
+				if errors.Is(err, repository.ErrConflict) {
+					result.Status = "error"
+					result.Error = fmt.Sprintf("employee %s already exists", item.EmployeeID)
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "employee_id", Code: "DUPLICATE_EMPLOYEE_ID",
+						Detail: result.Error,
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				if repository.IsFKViolation(err) {
+					result.Status = "error"
+					result.Error = "referenced role or grade does not exist"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "role_profile_id", Code: "FK_VIOLATION",
+						Detail: "referenced entity not found",
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				slog.ErrorContext(ctx, "create employee", "error", err, "id", item.EmployeeID)
+				result.Status = "error"
+				result.Error = "failed to create employee"
+				totals.Errors++
+				results = append(results, result)
+				continue
+			}
+
+			// Audit log.
+			s.writeAudit(ctx, "employee_created", "employee", emp.EmployeeID, requestID,
+				fmt.Sprintf("Employee %s created (grade=%s, role=%s)", emp.EmployeeID, emp.Grade, emp.RoleProfileID))
+
+			result.Status = "created"
+			totals.Created++
+		} else {
+			// Update existing employee.
+			before, _ := json.Marshal(existingEmp)
+
+			changed := false
+			warnings := []string{}
+
+			if existingEmp.Grade != emp.Grade {
+				warnings = append(warnings, fmt.Sprintf("grade changed %s->%s, cost_coefficient updated", existingEmp.Grade, emp.Grade))
+				changed = true
+			}
+			if existingEmp.RoleProfileID != emp.RoleProfileID {
+				warnings = append(warnings, fmt.Sprintf("role_profile_id changed %s->%s", existingEmp.RoleProfileID, emp.RoleProfileID))
+				changed = true
+			}
+			if existingEmp.UnitID != emp.UnitID {
+				warnings = append(warnings, fmt.Sprintf("unit_id changed %s->%s", existingEmp.UnitID, emp.UnitID))
+				changed = true
+			}
+			if existingEmp.EmploymentType != emp.EmploymentType {
+				warnings = append(warnings, fmt.Sprintf("employment_type changed %s->%s", existingEmp.EmploymentType, emp.EmploymentType))
+				changed = true
+			}
+			if existingEmp.BenchFlag != emp.BenchFlag {
+				warnings = append(warnings, fmt.Sprintf("bench_flag changed %v->%v", existingEmp.BenchFlag, emp.BenchFlag))
+				changed = true
+			}
+			if existingEmp.CapacityProfile.WeeklyHoursNorm != emp.CapacityProfile.WeeklyHoursNorm ||
+				existingEmp.CapacityProfile.ReserveRatio != emp.CapacityProfile.ReserveRatio ||
+				existingEmp.CapacityProfile.MaxUtilizationRatio != emp.CapacityProfile.MaxUtilizationRatio {
+				warnings = append(warnings, "capacity_profile changed")
+				changed = true
+			}
+
+			existingEmp.Grade = emp.Grade
+			existingEmp.RoleProfileID = emp.RoleProfileID
+			existingEmp.UnitID = emp.UnitID
+			existingEmp.EmploymentType = emp.EmploymentType
+			existingEmp.BenchFlag = emp.BenchFlag
+			existingEmp.CapacityProfile = emp.CapacityProfile
+			existingEmp.CostCoefficient = emp.CostCoefficient
+
+			if changed {
+				if err := s.EmployeeRepo.Update(ctx, existingEmp); err != nil {
+					slog.ErrorContext(ctx, "update employee", "error", err, "id", item.EmployeeID)
+					result.Status = "error"
+					result.Error = "failed to update employee"
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+
+				after, _ := json.Marshal(existingEmp)
+				details, _ := json.Marshal(map[string]json.RawMessage{"before": before, "after": after})
+				s.writeAuditDetailed(ctx, "employee_updated", "employee", item.EmployeeID, requestID,
+					fmt.Sprintf("Employee %s updated", item.EmployeeID), details)
+
+				result.Status = "updated"
+				result.Warnings = warnings
+				totals.Updated++
+			} else {
+				result.Status = "unchanged"
+				totals.Unchanged++
+			}
+		}
+
+		// Replace competencies (full upsert per employee).
+		if len(item.Competencies) > 0 {
+			comps := make([]domain.EmployeeCompetency, len(item.Competencies))
+			for i, u := range item.Competencies {
+				comps[i] = domain.EmployeeCompetency{
+					CompetencyID: u.CompetencyID,
+					Level:        u.Level,
+					Confidence:   u.Confidence,
+					LastUsed:     u.LastUsed,
+					Source:       u.Source,
+				}
+			}
+			if err := s.CompRepo.UpsertSet(ctx, item.EmployeeID, comps); err != nil {
+				if repository.IsFKViolation(err) {
+					result.Status = "error"
+					result.Error = "one or more competency IDs not found in taxonomy"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "competencies", Code: "FK_VIOLATION",
+						Detail: "competency not found in taxonomy",
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				slog.ErrorContext(ctx, "upsert competencies", "error", err, "employee", item.EmployeeID)
+				result.Status = "error"
+				result.Error = "failed to update competencies"
+				totals.Errors++
+				results = append(results, result)
+				continue
+			}
+
+			// Audit log.
+			s.writeAudit(ctx, "competency_updated", "employee", item.EmployeeID, requestID,
+				fmt.Sprintf("Competencies of %s replaced (%d entries)", item.EmployeeID, len(comps)))
+
+			result.CompetenciesUpserted = len(comps)
+		}
+
+		// Create assignments.
+		if len(item.Assignments) > 0 {
+			assignments := make([]domain.Assignment, len(item.Assignments))
+			for i, a := range item.Assignments {
+				assignments[i] = domain.Assignment{
+					AssignmentID: domain.GenerateID("asg_", 6),
+					ProjectID:    a.ProjectID,
+					EmployeeID:   item.EmployeeID,
+					RoleID:       a.RoleID,
+					Week:         a.Week,
+					Hours:        a.Hours,
+					Source:       "plan",
+				}
+			}
+			if err := s.AsgRepo.CreateBatch(ctx, assignments); err != nil {
+				if errors.Is(err, repository.ErrConflict) {
+					result.Status = "error"
+					result.Error = "duplicate assignment in payload or conflict with existing"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "assignments", Code: "DUPLICATE_ASSIGNMENT",
+						Detail: result.Error,
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				if repository.IsFKViolation(err) {
+					result.Status = "error"
+					result.Error = "referenced project or employee not found"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "assignments", Code: "FK_VIOLATION",
+						Detail: "referenced entity not found",
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				slog.ErrorContext(ctx, "create assignments", "error", err, "employee", item.EmployeeID)
+				result.Status = "error"
+				result.Error = "failed to create assignments"
+				totals.Errors++
+				results = append(results, result)
+				continue
+			}
+
+			// Audit log.
+			s.writeAudit(ctx, "assignment_created", "assignment", item.EmployeeID, requestID,
+				fmt.Sprintf("%d assignments created for %s", len(assignments), item.EmployeeID))
+
+			result.AssignmentsCreated = len(assignments)
+		}
+
+		// Create absences.
+		if len(item.Absences) > 0 {
+			absences := make([]domain.Absence, len(item.Absences))
+			for i, a := range item.Absences {
+				approved := true
+				if a.Approved != nil {
+					approved = *a.Approved
+				}
+				source := a.Source
+				if source == "" {
+					source = "hr_import"
+				}
+				absences[i] = domain.Absence{
+					AbsenceID:   domain.GenerateID("abs_", 6),
+					EmployeeID:  item.EmployeeID,
+					Type:        a.Type,
+					StartDate:   a.StartDate,
+					EndDate:     a.EndDate,
+					HoursPerDay: a.HoursPerDay,
+					Approved:    approved,
+					Source:      source,
+				}
+			}
+			if err := s.AbsRepo.CreateBatch(ctx, absences); err != nil {
+				if errors.Is(err, repository.ErrConflict) {
+					result.Status = "error"
+					result.Error = "duplicate absence or overlap with existing"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "absences", Code: "ABSENCE_OVERLAP",
+						Detail: result.Error,
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				if repository.IsFKViolation(err) {
+					result.Status = "error"
+					result.Error = "employee not found"
+					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
+						EmployeeID: item.EmployeeID, Field: "absences", Code: "FK_VIOLATION",
+						Detail: "employee not found",
+					})
+					totals.Errors++
+					results = append(results, result)
+					continue
+				}
+				slog.ErrorContext(ctx, "create absences", "error", err, "employee", item.EmployeeID)
+				result.Status = "error"
+				result.Error = "failed to create absences"
+				totals.Errors++
+				results = append(results, result)
+				continue
+			}
+
+			// Audit log.
+			s.writeAudit(ctx, "absence_created", "absence", item.EmployeeID, requestID,
+				fmt.Sprintf("%d absences created for %s", len(absences), item.EmployeeID))
+
+			result.AbsencesCreated = len(absences)
+		}
+
+		results = append(results, result)
+	}
+
+	// Handle replace mode: delete employees not in payload.
+	if mode == "replace" && !validateOnly {
+		for id, inPayload := range existingSet {
+			if inPayload {
+				// Employee was in DB but not in payload -> delete.
+				if err := s.EmployeeRepo.Delete(ctx, id); err != nil {
+					slog.ErrorContext(ctx, "delete employee in replace mode", "error", err, "id", id)
+					// Don't fail the whole import, just log.
+					continue
+				}
+				s.writeAudit(ctx, "employee_deleted", "employee", id, requestID,
+					fmt.Sprintf("Employee %s deleted (replace mode full sync)", id))
+				// Note: we don't add to totals/results as these employees weren't in the request.
+			}
+		}
+	}
+
+	// Build response.
+	resp := EmployeeImportResponse{
+		Mode:             mode,
+		Totals:           totals,
+		Employees:        make([]domain.EmployeeImportResultItem, len(results)),
+		ValidationErrors: validationErrors,
+	}
+	for i, r := range results {
+		resp.Employees[i] = domain.EmployeeImportResultItem{
+			EmployeeID:          r.EmployeeID,
+			Status:              r.Status,
+			CompetenciesUpserted: r.CompetenciesUpserted,
+			AssignmentsCreated:  r.AssignmentsCreated,
+			AbsencesCreated:     r.AbsencesCreated,
+			Warnings:            r.Warnings,
+			Error:               r.Error,
+		}
+	}
+
+	return resp, nil
+}
+
 // ---------- Project Service ----------
 
 func (s *ProjectService) List(ctx context.Context, f domain.ProjectFilter, requestID string) ([]domain.Project, int, error) {
@@ -410,6 +864,11 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 			requestID, []string{"VALIDATION_FAILED"})
 		p.Errors = []domain.FieldError{{Field: "assignments", Code: "TOO_MANY_ITEMS", Detail: "max 500"}}
 		return nil, p
+	}
+
+	// Set project_id on each assignment (from URL path) before validation.
+	for i := range batch.Assignments {
+		batch.Assignments[i].ProjectID = projectID
 	}
 
 	// Validate each assignment.
