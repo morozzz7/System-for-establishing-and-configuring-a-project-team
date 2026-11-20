@@ -1,0 +1,169 @@
+# Reference data and planning parameters, v1 (task 1.2).
+# Loaded at startup by Go; served read-only via GET /api/v1/reference/*.
+# Nothing here is personal data: grades, coefficients, weights, timeouts and NFR targets only.
+schema_version: 1.0.0
+contract_version: v1
+updated: '2026-11-05'
+source_of_truth: [docs/METRICS.md, contracts/taxonomy.yaml]
+notes: |
+  Cost is dimensionless: one "cost unit" = one person-hour at grade J. M6 (Cost) is a relative
+  metric, so absolute currency is never needed and never stored (privacy rule 2 in AGENTS.md).
+
+grades:
+  - grade: J
+    label_ru: Джуниор
+    label_en: Junior
+    cost_coefficient: 1.0
+    typical_level_range: [1, 2]
+  - grade: M
+    label_ru: Мидл
+    label_en: Middle
+    cost_coefficient: 1.4
+    typical_level_range: [2, 3]
+  - grade: S
+    label_ru: Сеньор
+    label_en: Senior
+    cost_coefficient: 1.9
+    typical_level_range: [3, 4]
+  - grade: L
+    label_ru: Лид
+    label_en: Lead
+    cost_coefficient: 2.6
+    typical_level_range: [4, 5]
+  - grade: P
+    label_ru: Принципал
+    label_en: Principal
+    cost_coefficient: 3.4
+    typical_level_range: [5, 5]
+
+# Composite Score weights, copied 1:1 from docs/METRICS.md (sum = 1.000 for every preset).
+# M4 is renormalized away when no project history exists; M13 is not part of the presets.
+weights_presets:
+  - preset: fast
+    label_ru: Быстрый
+    weights: {M1: 0.15, M2: 0.15, M3: 0.08, M4: 0.07, M5: 0.28, M6: 0.04, M7: 0.05, M8: 0.06, M9: 0.03, M10: 0.03, M11: 0.02, M12: 0.04}
+    sum: 1.0
+  - preset: economical
+    label_ru: Экономичный
+    weights: {M1: 0.15, M2: 0.12, M3: 0.10, M4: 0.05, M5: 0.08, M6: 0.27, M7: 0.06, M8: 0.06, M9: 0.03, M10: 0.04, M11: 0.03, M12: 0.01}
+    sum: 1.0
+  - preset: balanced
+    label_ru: Сбалансированный
+    weights: {M1: 0.15, M2: 0.13, M3: 0.10, M4: 0.08, M5: 0.15, M6: 0.10, M7: 0.08, M8: 0.08, M9: 0.05, M10: 0.04, M11: 0.02, M12: 0.02}
+    sum: 1.0
+  - preset: low_risk
+    label_ru: Низкий риск
+    weights: {M1: 0.12, M2: 0.10, M3: 0.08, M4: 0.07, M5: 0.10, M6: 0.05, M7: 0.12, M8: 0.10, M9: 0.10, M10: 0.04, M11: 0.02, M12: 0.10}
+    sum: 1.0
+
+criticality_weights:
+  must: 1.0
+  should: 0.5
+  nice: 0.2
+
+time_model:
+  week_start: monday
+  time_zone: Europe/Moscow
+  week_key_format: ISO-8601 (YYYY-Www)
+  working_days_per_week: 5
+  hours_per_day: 8
+  weekly_hours_norm: 40
+  reserve_ratio: 0.2
+  reserve_purpose: meetings, support, code review, unplanned work
+  calendar: RU-production-calendar
+  calendar_source: производственный календарь РФ (holidays and transferred days per year)
+  rounding:
+    hours: integer (no float drift in the capacity matrix)
+    person_days: 8 hours per person-day
+  planning_horizon_default_weeks: 16
+  planning_horizon_max_weeks: 104
+
+schedule:
+  monte_carlo_runs: 2000
+  monte_carlo_seed: 42
+  distribution: piecewise-linear-triangular-on-three-point-estimate
+  report: [P50, P80, P_on_time_when_deadline_set]
+  portfolio_tau_working_days: 10
+
+solver:
+  name: ortools-cp-sat
+  location: ml-service (ADR-001)
+  default_time_limit_ms: 10000
+  recalc_time_limit_ms: 5000
+  max_time_limit_ms: 60000
+  num_search_workers: 1
+  deterministic: true
+  k_default: 3
+  k_min: 2
+  k_max: 3
+  min_jaccard_diversity: 0.25
+  objective_scale: 10000
+  integer_tolerance: 1.0e-6
+
+variant_set_rules:
+  all_pass_gate: true
+  non_dominated: true
+  min_jaccard_diversity: 0.25
+  max_variants: 3
+  min_variants: 2
+  on_shortage: return fewer variants with explicit deficits instead of duplicates
+
+limits:
+  max_employees: 500
+  max_requirements: 30
+  max_candidates_sent_to_ml: 500
+  max_team_size: 50
+  max_weeks: 104
+  max_absences_per_employee: 200
+  brief_text_max_chars: 200000
+  upload_max_mb: 10
+
+# ADR-004 numbers. Go owns retries; the ML service owns its own request deadline.
+ml_policy:
+  extract:
+    timeout_ms: 20000
+    retries: 1
+    retry_on: [timeout, http_5xx, malformed_json]
+    on_failure: brief.status = failed with reason code ML_UNAVAILABLE; requirements may be entered manually
+  embed:
+    timeout_ms: 5000
+    retries: 1
+    retry_on: [timeout, http_5xx]
+    on_failure: fall back to exact-synonym matching only (degraded, flagged in the UI)
+  optimize:
+    timeout_ms: 10000
+    grace_ms: 2000
+    retries: 0
+    retry_on: []
+    on_failure: run.status = failed with SOLVER_TIMEOUT; user may retry with a longer time_limit or fewer candidates
+  circuit_breaker:
+    failure_threshold: 5
+    window_s: 30
+    open_for_s: 60
+    half_open_probes: 1
+
+nfr:
+  availability:
+    core_api_target: "99.5% monthly"
+    ml_service_target: "99.0% monthly"
+  latency_p95_ms:
+    read_endpoints: 300
+    create_run_ack: 500
+    optimize_500_employees_30_requirements: 10000
+    recalculate: 5000
+    extract: 20000
+    embed: 300
+  scale:
+    employees: 500
+    requirements: 30
+    variants: 3
+    weeks: 104
+    concurrent_users: 20
+  audit:
+    event_retention_months: 12
+    immutable: true
+    required_events: [brief_created, brief_extracted, requirement_edited, requirements_confirmed, run_started, run_finished, variant_rejected, constraint_override_added, recalculation_started, decision_recorded, absence_created, absence_cancelled, employee_updated, competency_updated]
+  privacy:
+    personal_data_in_contracts: none
+    identifiers: pseudonyms only (emp_*, brf_*, run_*, var_*, req_*, prj_*)
+    llm_input: de-identified brief text only
