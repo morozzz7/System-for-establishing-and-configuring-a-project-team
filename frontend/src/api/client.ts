@@ -31,6 +31,7 @@ import type {
   RecalculateResponse,
   Problem,
   FieldError,
+  ReasonCode,
 } from '../types';
 import type { MetricDefinition, MetricDefinitionsResponse, WeightPresetListResponse } from '../types/reference';
 import { ApiError } from './errors';
@@ -137,6 +138,51 @@ export async function createBrief(input: { title: string; text: string; language
   if (API_BASE) return backend<Brief>('/briefs', { method: 'POST', body: JSON.stringify({ ...input, language: input.language ?? 'ru', source_type: 'text' }) });
   await delay();
   const brief: Brief = { brief_id: `brf_${Math.random().toString(36).slice(2, 8)}`, title: input.title, source_type: 'text', language: input.language ?? 'ru', status: 'needs_review', created_at: new Date().toISOString(), requirement_count: 0, needs_review_count: 0, reason_codes: [] };
+  mockBriefs.unshift(brief);
+  mockRequirements[brief.brief_id] = [];
+  return brief;
+}
+
+export async function createBriefFromFile(file: File, title?: string, language?: 'ru' | 'en'): Promise<Brief> {
+  const briefTitle = title || file.name.replace(/\.[^/.]+$/, '') || 'Без названия';
+  if (API_BASE) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('title', briefTitle);
+    formData.append('language', language ?? 'ru');
+    const response = await fetch(`${API_BASE}/briefs`, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ detail: 'Ошибка загрузки файла' }));
+      throw new ApiError({
+        status: response.status,
+        code: (err as { code?: string }).code ?? 'UPLOAD_FAILED',
+        detail: (err as { detail?: string }).detail ?? 'Не удалось загрузить файл ТЗ',
+        reasonCodes: (err as { reason_codes?: ReasonCode[] }).reason_codes ?? [],
+      });
+    }
+    return (await response.json()) as Brief;
+  }
+  await delay();
+  const fileExt = file.name.toLowerCase();
+  const srcType: 'text' | 'docx' | 'pdf' | 'txt' = fileExt.endsWith('.docx')
+    ? 'docx'
+    : fileExt.endsWith('.pdf')
+    ? 'pdf'
+    : 'txt';
+  const brief: Brief = {
+    brief_id: `brf_${Math.random().toString(36).slice(2, 8)}`,
+    title: briefTitle,
+    source_type: srcType,
+    language: language ?? 'ru',
+    status: 'needs_review',
+    created_at: new Date().toISOString(),
+    requirement_count: 0,
+    needs_review_count: 0,
+    reason_codes: [],
+  };
   mockBriefs.unshift(brief);
   mockRequirements[brief.brief_id] = [];
   return brief;
@@ -259,13 +305,40 @@ export interface EmployeeImportResponse {
 }
 
 export async function importEmployees(payload: EmployeeImportPayload): Promise<EmployeeImportResponse> {
-  if (!API_BASE) {
-    throw new ApiError({ status: 501, code: 'NOT_IMPLEMENTED', detail: 'Импорт доступен при подключении backend', reasonCodes: [] });
+  if (API_BASE) {
+    return backend<EmployeeImportResponse>('/employees', {
+      method: 'PUT',
+      body: JSON.stringify({ ...payload, mode: payload.mode ?? 'upsert' }),
+    });
   }
-  return backend<EmployeeImportResponse>('/employees', {
-    method: 'PUT',
-    body: JSON.stringify({ ...payload, mode: 'upsert' }),
-  });
+  await delay();
+  const total = payload.employees.length;
+  const invalid = payload.employees.filter((e) => !e.employee_id || !e.grade || !e.role_profile_id);
+  const errors = invalid.map((e, idx) => ({
+    employee_id: String(e.employee_id || `row_${idx + 1}`),
+    field: !e.employee_id ? 'employee_id' : !e.grade ? 'grade' : 'role_profile_id',
+    code: 'REQUIRED_FIELD_MISSING',
+    detail: 'Обязательное поле не заполнено',
+  }));
+  const validCount = total - invalid.length;
+  return {
+    request_id: `req_mock_${Date.now()}`,
+    mode: payload.mode ?? 'upsert',
+    totals: {
+      received: total,
+      created: payload.validate_only ? 0 : Math.round(validCount * 0.7),
+      updated: payload.validate_only ? 0 : Math.round(validCount * 0.3),
+      unchanged: 0,
+      errors: invalid.length,
+    },
+    employees: payload.employees.map((e, idx) => ({
+      employee_id: String(e.employee_id || `emp_${idx + 1}`),
+      status: invalid.some((inv) => inv === e) ? 'error' : 'ok',
+      warnings: [],
+      error: invalid.some((inv) => inv === e) ? 'Пропущено обязательное поле' : undefined,
+    })),
+    validation_errors: errors,
+  };
 }
 
 export async function getEmployee(employeeId: string): Promise<Employee | null> {

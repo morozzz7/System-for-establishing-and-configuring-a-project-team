@@ -1,7 +1,7 @@
 /**
- * Main application layout with side navigation.
+ * Main application layout with side navigation in Humblytics dark slate aesthetic.
  */
-import { Layout, Menu, Typography, Space } from 'antd';
+import { Layout, Menu, Typography, Space, Button, Badge } from 'antd';
 import {
   DashboardOutlined,
   TeamOutlined,
@@ -11,16 +11,18 @@ import {
   BookOutlined,
   FileTextOutlined,
   SettingOutlined,
+  PlusOutlined,
+  CloudUploadOutlined,
+  ThunderboltFilled,
 } from '@ant-design/icons';
 import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 /**
  * Leaf menu keys that map 1:1 to registered routes (see `src/App.tsx`).
- * The collapsed group key (`reference`) is intentionally absent: it only toggles the submenu.
  */
 const MENU_LEAF_KEYS: ReadonlySet<string> = new Set([
   '/',
@@ -65,55 +67,124 @@ export default function AppLayout() {
   const [openKeys, setOpenKeys] = useState<string[]>(['reference']);
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider breakpoint="lg" collapsedWidth={80} theme="dark">
-        <div style={{ padding: '16px 16px 8px', textAlign: 'center' }}>
-          <Space direction="vertical" size={0}>
-            <TeamOutlined style={{ fontSize: 24, color: '#fff' }} />
-            <Title level={5} style={{ color: '#fff', margin: 0, fontSize: 12 }}>
-              Формирование команды
-            </Title>
+    <Layout style={{ minHeight: '100vh', background: '#090d16' }}>
+      <Sider
+        breakpoint="lg"
+        collapsedWidth={80}
+        theme="dark"
+        width={240}
+        style={{
+          background: '#0b101c',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+        }}
+      >
+        <div style={{ padding: '20px 16px 14px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+          <Space direction="horizontal" align="center" style={{ width: '100%' }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 8,
+                background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 0 12px rgba(59, 130, 246, 0.4)',
+              }}
+            >
+              <ThunderboltFilled style={{ fontSize: 18, color: '#fff' }} />
+            </div>
+            <div>
+              <Title level={5} style={{ color: '#f8fafc', margin: 0, fontSize: 14, fontWeight: 600, letterSpacing: '-0.01em' }}>
+                КомандаОпт
+              </Title>
+              <div style={{ display: 'flex', alignItems: 'center', marginTop: 2 }}>
+                <span className="status-dot status-dot-green" />
+                <Text style={{ color: '#94a3b8', fontSize: 11 }}>CP-SAT v2 • Онлайн</Text>
+              </div>
+            </div>
           </Space>
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          selectedKeys={[location.pathname]}
-          openKeys={openKeys}
-          onOpenChange={(keys) => setOpenKeys(keys.map((key) => String(key)))}
-          items={menuItems}
-          onClick={({ key }) => {
-            const normalized = key !== undefined ? String(key) : '';
-            // Only leaf routes are navigable; the reference group toggles its submenu.
-            if (MENU_LEAF_KEYS.has(normalized)) {
-              // Keep an expanded submenu open when a child route is chosen.
-              if (normalized.startsWith('/reference/')) {
-                setOpenKeys((prev) => (prev.includes('reference') ? prev : [...prev, 'reference']));
+        <div style={{ padding: '12px 8px' }}>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={[location.pathname]}
+            openKeys={openKeys}
+            onOpenChange={(keys) => setOpenKeys(keys.map((key) => String(key)))}
+            items={menuItems}
+            style={{ background: 'transparent', borderRight: 0 }}
+            onClick={({ key }) => {
+              const normalized = key !== undefined ? String(key) : '';
+              if (MENU_LEAF_KEYS.has(normalized)) {
+                if (normalized.startsWith('/reference/')) {
+                  setOpenKeys((prev) => (prev.includes('reference') ? prev : [...prev, 'reference']));
+                }
+                navigate(normalized);
+                return;
               }
-              navigate(normalized);
-              return;
-            }
-            if (normalized === 'reference') {
-              setOpenKeys((prev) => (prev.includes('reference') ? prev.filter((k) => k !== 'reference') : [...prev, 'reference']));
-            }
-          }}
-        />
+              if (normalized === 'reference') {
+                setOpenKeys((prev) =>
+                  prev.includes('reference') ? prev.filter((k) => k !== 'reference') : [...prev, 'reference'],
+                );
+              }
+            }}
+          />
+        </div>
       </Sider>
-      <Layout>
+      <Layout style={{ background: '#090d16' }}>
         <Header
           style={{
-            background: '#fff',
-            padding: '0 24px',
+            background: '#0b101c',
+            padding: '0 28px',
             display: 'flex',
             alignItems: 'center',
-            borderBottom: '1px solid #f0f0f0',
+            justifyContent: 'space-between',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+            height: 64,
           }}
         >
-          <Title level={4} style={{ margin: 0 }}>
-            Система формирования проектной команды
-          </Title>
+          <Space align="center" size="middle">
+            <Title level={4} style={{ margin: 0, color: '#f8fafc', fontSize: 16, fontWeight: 600 }}>
+              Система формирования проектной команды
+            </Title>
+            <Badge
+              count="2026-W47"
+              style={{
+                backgroundColor: 'rgba(59, 130, 246, 0.15)',
+                color: '#60a5fa',
+                borderColor: 'rgba(59, 130, 246, 0.3)',
+                fontSize: 11,
+              }}
+            />
+          </Space>
+          <Space size="middle">
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate('/briefs')}
+              style={{
+                background: '#3b82f6',
+                borderColor: '#3b82f6',
+                fontWeight: 500,
+              }}
+            >
+              Новое ТЗ
+            </Button>
+            <Button
+              icon={<CloudUploadOutlined />}
+              onClick={() => navigate('/employees')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                borderColor: 'rgba(255, 255, 255, 0.12)',
+                color: '#f8fafc',
+              }}
+            >
+              Импорт пула
+            </Button>
+          </Space>
         </Header>
-        <Content style={{ margin: 24, padding: 24, background: '#fff', borderRadius: 8 }}>
+        <Content style={{ margin: 24, padding: 0, minHeight: 280 }}>
           <Outlet />
         </Content>
       </Layout>
