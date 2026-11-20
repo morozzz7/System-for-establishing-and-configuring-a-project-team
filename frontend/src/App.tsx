@@ -15,6 +15,11 @@ import {
   WeightPresetsPage,
   PlanningParamsPage,
 } from './pages/ReferencePages';
+import BriefsPage from './pages/BriefsPage';
+import BriefReviewPage from './pages/BriefReviewPage';
+import RunPage from './pages/RunPage';
+import RunConfigPage from './pages/RunConfigPage';
+import NotFoundPage from './pages/NotFoundPage';
 
 export default function App() {
   return (
@@ -22,6 +27,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="briefs" element={<BriefsPage />} />
+          <Route path="briefs/:briefId/review" element={<BriefReviewPage />} />
+          <Route path="runs/new/:briefId" element={<RunPage />} />
+          <Route path="runs/config" element={<RunConfigPage />} />
+          <Route path="runs/config/:briefId" element={<RunConfigPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="projects" element={<ProjectsPage />} />
           <Route path="assignments" element={<AssignmentsPage />} />
@@ -31,6 +41,8 @@ export default function App() {
           <Route path="reference/grades" element={<GradesPage />} />
           <Route path="reference/weight-presets" element={<WeightPresetsPage />} />
           <Route path="reference/planning-params" element={<PlanningParamsPage />} />
+          {/* Catch-all: any unmatched path renders the in-app 404 screen instead of a blank view. */}
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

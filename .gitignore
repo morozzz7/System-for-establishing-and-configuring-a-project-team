@@ -28,4 +28,7 @@ dist/
 .vscode/
 *.swp
 *.swo
+.codex
+.aws
+.agents
 

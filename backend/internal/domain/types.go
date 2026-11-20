@@ -182,6 +182,7 @@ type Assignment struct {
 
 type AssignmentCreate struct {
 	EmployeeID string  `json:"employee_id"`
+	ProjectID  string  `json:"project_id"`
 	RoleID     string  `json:"role_id"`
 	Week       string  `json:"week"`
 	Hours      float64 `json:"hours"`
@@ -246,6 +247,60 @@ type AuditEntry struct {
 	RequestID  string          `json:"request_id"`
 	Summary    string          `json:"summary"`
 	Details    json.RawMessage `json:"details,omitempty"`
+}
+
+// ---------- Employee Import ----------
+
+type EmployeeImportItem struct {
+	EmployeeID      string                    `json:"employee_id"`
+	Grade           string                    `json:"grade"`
+	RoleProfileID   string                    `json:"role_profile_id"`
+	UnitID          string                    `json:"unit_id"`
+	EmploymentType  string                    `json:"employment_type"`
+	BenchFlag       *bool                     `json:"bench_flag"`
+	CapacityProfile *CapacityProfile          `json:"capacity_profile"`
+	Competencies    []EmployeeCompetencyUpsert `json:"competencies"`
+	Assignments     []AssignmentCreate        `json:"assignments"`
+	Absences        []AbsenceCreate           `json:"absences"`
+}
+
+type EmployeeImportRequest struct {
+	Mode          string                  `json:"mode"`
+	Employees     []EmployeeImportItem    `json:"employees"`
+	ValidateOnly  *bool                   `json:"validate_only"`
+}
+
+type EmployeeImportResultItem struct {
+	EmployeeID         string   `json:"employee_id"`
+	Status             string   `json:"status"`
+	CompetenciesUpserted int     `json:"competencies_upserted"`
+	AssignmentsCreated int     `json:"assignments_created"`
+	AbsencesCreated    int     `json:"absences_created"`
+	Warnings           []string `json:"warnings"`
+	Error              string   `json:"error,omitempty"`
+}
+
+type EmployeeImportTotals struct {
+	Received int `json:"received"`
+	Created  int `json:"created"`
+	Updated  int `json:"updated"`
+	Unchanged int `json:"unchanged"`
+	Errors   int `json:"errors"`
+}
+
+type EmployeeImportValidationError struct {
+	EmployeeID string `json:"employee_id"`
+	Field      string `json:"field"`
+	Code       string `json:"code"`
+	Detail     string `json:"detail"`
+}
+
+type EmployeeImportResponse struct {
+	RequestID       string                      `json:"request_id"`
+	Mode            string                      `json:"mode"`
+	Totals          EmployeeImportTotals        `json:"totals"`
+	Employees       []EmployeeImportResultItem  `json:"employees"`
+	ValidationErrors []EmployeeImportValidationError `json:"validation_errors"`
 }
 
 // ---------- Page ----------

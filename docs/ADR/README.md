@@ -12,6 +12,7 @@ that make the decision testable, so `qa-eval` and `reviewer` can check it.
 | [ADR-004](ADR-004-ml-timeout-error-policy.md) | ML timeout and error policy: fail loudly, degrade explicitly | accepted | 2026-11-05 | ml client, readiness, UI degradation, audit |
 | [ADR-005](ADR-005-extraction-strategy.md) | Extraction: LLM-first with deterministic validation | accepted | 2026-11-08 | `/v1/extract`, prompt `extract-v4`, validator, eval |
 | [ADR-006](ADR-006-review-routing-and-mention-quality.md) | Review routing + deterministic mention-quality gates for `/v1/extract` | accepted | 2026-11-09 | `ExtractResponse.requirements_for_review`, `diagnostics.verification`, scanner, eval |
+| [ADR-007](ADR-007-metrics-explanation-recalculation.md) | Authoritative metrics in Go, deterministic explanations, linear recalculation lineage | accepted | 2026-11-17 | `internal/metrics`, `internal/explain`, recalculate API, `variant_set`, METRICS 3.5/3.6 |
 
 ## Template
 

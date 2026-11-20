@@ -19,6 +19,9 @@ func NewRouter(
 	r.Route("/employees", func(r chi.Router) {
 		h := &EmployeeHandler{Svc: empSvc}
 		h.Register(r)
+		// Import handler for PUT /employees
+		ih := &EmployeeImportHandler{Svc: empSvc}
+		ih.Register(r)
 		if capSvc != nil {
 			ch := &CapacityHandler{Svc: capSvc}
 			ch.Register(r)

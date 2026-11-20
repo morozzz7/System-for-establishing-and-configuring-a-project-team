@@ -1,4 +1,9 @@
 # Multi-stage: build the React SPA with Vite, then serve with nginx.
+#
+# The SPA is served behind the gateway (nginx on port 80).
+# API calls use relative URLs (/api/v1/...) which the gateway proxies to backend.
+# VITE_API_BASE_URL can be empty (relative) or /api/v1 — both work through gateway.
+# Override at build time if needed: docker build --build-arg VITE_API_BASE_URL=""
 
 FROM node:20-alpine AS builder
 
@@ -8,6 +13,8 @@ COPY frontend/package.json frontend/package-lock.json* ./
 RUN npm install
 
 COPY frontend/ .
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build
 
 # --- runtime ---

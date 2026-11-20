@@ -66,6 +66,22 @@ func (m *mockEmployeeRepo) Exists(ctx context.Context, id string) (bool, error) 
 	return ok, nil
 }
 
+func (m *mockEmployeeRepo) Delete(ctx context.Context, id string) error {
+	if _, ok := m.employees[id]; !ok {
+		return fmt.Errorf("%w: %s", repository.ErrNotFound, id)
+	}
+	delete(m.employees, id)
+	return nil
+}
+
+func (m *mockEmployeeRepo) ListIDs(ctx context.Context) ([]string, error) {
+	ids := make([]string, 0, len(m.employees))
+	for id := range m.employees {
+		ids = append(ids, id)
+	}
+	return ids, nil
+}
+
 type mockCompRepo struct {
 	data map[string][]domain.EmployeeCompetency
 }
@@ -177,6 +193,11 @@ func (m *mockAssignmentRepo) TotalAssignedHours(ctx context.Context, employeeID,
 	return total, nil
 }
 
+func (m *mockAssignmentRepo) CreateBatch(ctx context.Context, assignments []domain.Assignment) error {
+	m.assignments = append(m.assignments, assignments...)
+	return nil
+}
+
 type mockAbsenceRepo struct {
 	absences  []domain.Absence
 	overlaps  map[string]bool // employee_id -> has overlap
@@ -224,6 +245,11 @@ func (m *mockAbsenceRepo) HasOverlap(ctx context.Context, employeeID string, sta
 
 func (m *mockAbsenceRepo) IsAbsentInWeek(ctx context.Context, employeeID, week string) (bool, error) {
 	return m.absentIn[employeeID+"|"+week], nil
+}
+
+func (m *mockAbsenceRepo) CreateBatch(ctx context.Context, absences []domain.Absence) error {
+	m.absences = append(m.absences, absences...)
+	return nil
 }
 
 // ---------- Employee Service Tests ----------

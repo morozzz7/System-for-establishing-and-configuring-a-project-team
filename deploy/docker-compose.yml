@@ -54,6 +54,8 @@ services:
     restart: unless-stopped
     # Load LLM_API_KEY and other secrets from ml/.env (optional, for local dev)
     env_file:
+      - path: ../.env
+        required: false
       - path: ../ml/.env
         required: false
     ports:

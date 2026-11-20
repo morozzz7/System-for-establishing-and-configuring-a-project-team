@@ -86,7 +86,7 @@ func ValidateEmployeeCreate(e EmployeeCreate, requestID string) *Problem {
 		errs = append(errs, FieldError{"employment_type", "INVALID_ENUM", "must be one of internal, contractor, external_partner"})
 	}
 	if e.CapacityProfile != nil {
-		errs = append(errs, validateCapacityProfile(*e.CapacityProfile)...)
+		errs = append(errs, validateCapacityProfile(*e.CapacityProfile, "capacity_profile")...)
 	}
 	if e.CostCoefficient != nil {
 		c := *e.CostCoefficient
@@ -116,7 +116,7 @@ func ValidateEmployeeUpdate(e EmployeeUpdate, requestID string) *Problem {
 		errs = append(errs, FieldError{"employment_type", "INVALID_ENUM", "must be one of internal, contractor, external_partner"})
 	}
 	if e.CapacityProfile != nil {
-		errs = append(errs, validateCapacityProfile(*e.CapacityProfile)...)
+		errs = append(errs, validateCapacityProfile(*e.CapacityProfile, "capacity_profile")...)
 	}
 	if len(errs) > 0 {
 		p := NewValidationProblem(fmt.Sprintf("%d field(s) failed validation", len(errs)), requestID, errs)
@@ -125,16 +125,16 @@ func ValidateEmployeeUpdate(e EmployeeUpdate, requestID string) *Problem {
 	return nil
 }
 
-func validateCapacityProfile(cp CapacityProfile) []FieldError {
+func validateCapacityProfile(cp CapacityProfile, prefix string) []FieldError {
 	var errs []FieldError
 	if cp.WeeklyHoursNorm < 1 || cp.WeeklyHoursNorm > 60 {
-		errs = append(errs, FieldError{"capacity_profile.weekly_hours_norm", "VALUE_OUT_OF_RANGE", "must be between 1 and 60"})
+		errs = append(errs, FieldError{prefix + ".weekly_hours_norm", "VALUE_OUT_OF_RANGE", "must be between 1 and 60"})
 	}
 	if cp.ReserveRatio < 0 || cp.ReserveRatio > 0.5 {
-		errs = append(errs, FieldError{"capacity_profile.reserve_ratio", "VALUE_OUT_OF_RANGE", "must be between 0 and 0.5"})
+		errs = append(errs, FieldError{prefix + ".reserve_ratio", "VALUE_OUT_OF_RANGE", "must be between 0 and 0.5"})
 	}
 	if cp.MaxUtilizationRatio < 0.5 || cp.MaxUtilizationRatio > 1.0 {
-		errs = append(errs, FieldError{"capacity_profile.max_utilization_ratio", "VALUE_OUT_OF_RANGE", "must be between 0.5 and 1.0"})
+		errs = append(errs, FieldError{prefix + ".max_utilization_ratio", "VALUE_OUT_OF_RANGE", "must be between 0.5 and 1.0"})
 	}
 	return errs
 }
@@ -212,6 +212,13 @@ func ValidateAssignmentCreate(a AssignmentCreate, idx int) FieldError {
 			Detail: "must match emp_[a-z0-9]{4,12}",
 		}
 	}
+	if !ProjectIDRe.MatchString(a.ProjectID) {
+		return FieldError{
+			Field:  fmt.Sprintf("assignments[%d].project_id", idx),
+			Code:   "PATTERN_MISMATCH",
+			Detail: "must match prj_[a-z0-9]{4,12}",
+		}
+	}
 	if !RoleIDRe.MatchString(a.RoleID) {
 		return FieldError{
 			Field:  fmt.Sprintf("assignments[%d].role_id", idx),
@@ -270,6 +277,87 @@ func FormatDate(t time.Time) string {
 // ParseDate parses YYYY-MM-DD into a time.Time (UTC, midnight).
 func ParseDate(s string) (time.Time, error) {
 	return time.Parse("2006-01-02", s)
+}
+
+// ---------- Employee Import Validation ----------
+
+func ValidateEmployeeImportItem(item EmployeeImportItem, idx int) []FieldError {
+	var errs []FieldError
+	prefix := fmt.Sprintf("employees[%d]", idx)
+
+	if !EmployeeIDRe.MatchString(item.EmployeeID) {
+		errs = append(errs, FieldError{prefix + ".employee_id", "PATTERN_MISMATCH", "must match emp_[a-z0-9]{4,12}"})
+	}
+	if !Grades[item.Grade] {
+		errs = append(errs, FieldError{prefix + ".grade", "INVALID_ENUM", "must be one of J, M, S, L, P"})
+	}
+	if !RoleIDRe.MatchString(item.RoleProfileID) {
+		errs = append(errs, FieldError{prefix + ".role_profile_id", "PATTERN_MISMATCH", "invalid role_id format"})
+	}
+	if !UnitIDRe.MatchString(item.UnitID) {
+		errs = append(errs, FieldError{prefix + ".unit_id", "PATTERN_MISMATCH", "must match unt_[a-z0-9]{2,12}"})
+	}
+	if !EmploymentTypes[item.EmploymentType] {
+		errs = append(errs, FieldError{prefix + ".employment_type", "INVALID_ENUM", "must be one of internal, contractor, external_partner"})
+	}
+	if item.CapacityProfile != nil {
+		errs = append(errs, validateCapacityProfile(*item.CapacityProfile, prefix+".capacity_profile")...)
+	}
+	for i, c := range item.Competencies {
+		if fe := ValidateCompetencyUpsert(c, i); fe.Code != "" {
+			errs = append(errs, FieldError{prefix + ".competencies[" + fmt.Sprint(i) + "]." + fe.Field, fe.Code, fe.Detail})
+		}
+	}
+	for i, a := range item.Assignments {
+		if fe := ValidateAssignmentCreate(a, i); fe.Code != "" {
+			errs = append(errs, FieldError{prefix + ".assignments[" + fmt.Sprint(i) + "]." + fe.Field, fe.Code, fe.Detail})
+		}
+	}
+	for i, a := range item.Absences {
+		if p := ValidateAbsenceCreate(a, ""); p != nil {
+			for _, fe := range p.Errors {
+				errs = append(errs, FieldError{prefix + ".absences[" + fmt.Sprint(i) + "]." + fe.Field, fe.Code, fe.Detail})
+			}
+		}
+	}
+	return errs
+}
+
+func ValidateEmployeeImportRequest(req EmployeeImportRequest, requestID string) *Problem {
+	var errs []FieldError
+
+	if req.Mode != "" && req.Mode != "upsert" && req.Mode != "replace" {
+		errs = append(errs, FieldError{"mode", "INVALID_ENUM", "must be 'upsert' or 'replace'"})
+	}
+	if len(req.Employees) == 0 {
+		errs = append(errs, FieldError{"employees", "EMPTY_ARRAY", "at least 1 employee required"})
+	}
+	if len(req.Employees) > 2000 {
+		errs = append(errs, FieldError{"employees", "TOO_MANY_ITEMS", "maximum 2000 employees per import"})
+	}
+
+	// Check for duplicate employee_ids in the same request
+	seen := make(map[string]int)
+	for i, emp := range req.Employees {
+		if prev, ok := seen[emp.EmployeeID]; ok {
+			errs = append(errs, FieldError{
+				fmt.Sprintf("employees[%d].employee_id", i),
+				"DUPLICATE_IN_REQUEST",
+				fmt.Sprintf("duplicate employee_id %s (also at index %d)", emp.EmployeeID, prev),
+			})
+		}
+		seen[emp.EmployeeID] = i
+	}
+
+	for i, item := range req.Employees {
+		errs = append(errs, ValidateEmployeeImportItem(item, i)...)
+	}
+
+	if len(errs) > 0 {
+		p := NewValidationProblem(fmt.Sprintf("%d field(s) failed validation", len(errs)), requestID, errs)
+		return &p
+	}
+	return nil
 }
 
 // ---------- Week helpers ----------

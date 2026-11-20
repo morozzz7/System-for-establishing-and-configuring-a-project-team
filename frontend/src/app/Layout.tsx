@@ -9,14 +9,38 @@ import {
   ScheduleOutlined,
   CalendarOutlined,
   BookOutlined,
+  FileTextOutlined,
+  SettingOutlined,
 } from '@ant-design/icons';
+import { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
 
+/**
+ * Leaf menu keys that map 1:1 to registered routes (see `src/App.tsx`).
+ * The collapsed group key (`reference`) is intentionally absent: it only toggles the submenu.
+ */
+const MENU_LEAF_KEYS: ReadonlySet<string> = new Set([
+  '/',
+  '/briefs',
+  '/runs/config',
+  '/employees',
+  '/projects',
+  '/assignments',
+  '/absences',
+  '/reference/roles',
+  '/reference/competencies',
+  '/reference/grades',
+  '/reference/weight-presets',
+  '/reference/planning-params',
+]);
+
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Дашборд' },
+  { key: '/briefs', icon: <FileTextOutlined />, label: 'Технические задания' },
+  { key: '/runs/config', icon: <SettingOutlined />, label: 'Настроить расчёт' },
   { key: '/employees', icon: <TeamOutlined />, label: 'Сотрудники' },
   { key: '/projects', icon: <ProjectOutlined />, label: 'Проекты' },
   { key: '/assignments', icon: <ScheduleOutlined />, label: 'Назначения' },
@@ -38,6 +62,7 @@ const menuItems = [
 export default function AppLayout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [openKeys, setOpenKeys] = useState<string[]>(['reference']);
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -54,9 +79,24 @@ export default function AppLayout() {
           theme="dark"
           mode="inline"
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={['reference']}
+          openKeys={openKeys}
+          onOpenChange={(keys) => setOpenKeys(keys.map((key) => String(key)))}
           items={menuItems}
-          onClick={({ key }) => navigate(key)}
+          onClick={({ key }) => {
+            const normalized = key !== undefined ? String(key) : '';
+            // Only leaf routes are navigable; the reference group toggles its submenu.
+            if (MENU_LEAF_KEYS.has(normalized)) {
+              // Keep an expanded submenu open when a child route is chosen.
+              if (normalized.startsWith('/reference/')) {
+                setOpenKeys((prev) => (prev.includes('reference') ? prev : [...prev, 'reference']));
+              }
+              navigate(normalized);
+              return;
+            }
+            if (normalized === 'reference') {
+              setOpenKeys((prev) => (prev.includes('reference') ? prev.filter((k) => k !== 'reference') : [...prev, 'reference']));
+            }
+          }}
         />
       </Sider>
       <Layout>

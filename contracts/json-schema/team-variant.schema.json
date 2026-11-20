@@ -72,7 +72,7 @@
     "metric_values": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["M1", "M2", "M3", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "score"],
+      "required": ["M1", "M2", "M3", "M5", "M6", "M7", "M8", "M9", "M10", "M11", "M12", "score"],
       "properties": {
         "M1": { "type": "number", "minimum": 0, "maximum": 1 },
         "M2": { "type": "number", "minimum": 0, "maximum": 1 },
@@ -89,6 +89,16 @@
         "M13": { "type": "number", "minimum": 0, "maximum": 1 },
         "score": { "type": "number", "minimum": 0, "maximum": 1 }
       }
+    },
+    "metric_details": {
+      "type": "object",
+      "description": "Diagnostic sub-metrics from METRICS.md (open set: new diagnostics must not break the contract).",
+      "additionalProperties": true
+    },
+    "diversity_jaccard": {
+      "type": "object",
+      "description": "Roster Jaccard distance to every other variant of the run, keyed by variant_id.",
+      "additionalProperties": { "type": "number", "minimum": 0, "maximum": 1 }
     },
     "members": {
       "type": "array",

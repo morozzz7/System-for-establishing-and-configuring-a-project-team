@@ -87,6 +87,14 @@ export function useWeightPresets() {
   return useAsync(() => api.listWeightPresets(), []);
 }
 
+export function useWeightPresetsWithMetrics() {
+  return useAsync(() => api.getWeightPresetsWithMetrics(), []);
+}
+
+export function useMetricDefinitions() {
+  return useAsync(() => api.listMetricDefinitions(), []);
+}
+
 export function usePlanningParams() {
   return useAsync(() => api.getPlanningParams(), []);
 }

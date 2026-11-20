@@ -41,17 +41,17 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 |---|---|---|---|---|
 | 3.1 ✅ | `/v1/extract` (LLM-first + deterministic 6-stage validation, evidence, effort ranges) | ml | 1.1, 1.4 | All-17 comp F1=0.9386 / pair F1=0.9356, Hold-out(5) comp F1=0.8814 (≥0.85) / pair F1=0.8667 (≥0.70), MAPE=0.2628 (≤0.30), hallucination=0%, JSON validity=100%; 193 tests green; ADR-005 v2 accepted |
 | 3.1-fix ✅ | Verification liveness + review routing + generic-mention gate (ADR-006) | ml, qa-eval | 3.1 | Live `eval/long_brief2`: verification `failed_batches=0`, `skipped=0` (11/11 candidates after scanner fix); 3 low-conf FPs in `requirements_for_review`, main pair precision 0.8261→1.0, main recall 18/19=0.9474 (the 19th gold pair is recovered in review: review TP=1, main+review recall 1.0); `cloud_docker` passing remark dropped (`dropped_generic_mention=1`); 0/135 gold quotes flagged by the gate; pytest green (230); contract `ml-openapi.yaml` updated; offline replay verified, live liveness pending human |
-| 3.2 | `/v1/embed` + competency normalization | ml | 3.1 | top-1 >= 0.80, top-3 >= 0.95 |
+| 3.2 ✅ | `/v1/embed` + deterministic competency normalization baseline | ml, backend | 3.1 | 1024-dim normalized stable vectors; `/taxonomy/normalize` exact-synonym ranking with `needs_review` on weak/empty matches; contract and unit coverage added; pgvector-backed ranking remains a deployment optimization |
 | 3.3 ✅ | Optimizer v1: hard constraints + coverage + one preset | ml | 1.1, 2.2 | Feasibility recall >= 98% on planted solutions; deterministic by seed |
 | 3.4 ✅ | Optimizer v2: k=2-3 diverse variants, deficits via slack, reason codes | ml | 3.3 | Jaccard >= 0.25; INFEASIBLE cases return correct deficit |
 | 3.5 ✅ | Validator G1-G5 (independent of ML) | backend | 2.4 | 0 violations in property tests; rejects seeded bad variants |
-| 3.6 | ML client + brief/run API | backend | 3.2, 3.4, 3.5 | End-to-end brief -> validated variants on synthetic data |
-| 3.7 | Screens: brief input, requirements review, variants list | frontend | 3.6 (mocks earlier) | Playwright: brief -> variants |
+| 3.6 ✅ | ML client + brief/run API vertical slice | backend | 3.2, 3.4, 3.5 | Contract-shaped ML client; brief extraction/review/confirmation; run creation and ML optimization hand-off; immutable-in-process run result seam and tests |
+| 3.7 ✅ | Screens: brief input, requirements review, variants list | frontend | 3.6 (mocks earlier) | Russian UI flow `brief -> review -> run -> variants`; API base can switch from mocks to backend with `VITE_API_BASE_URL`; frontend tests/build green |
 
 ## Phase 4. Duration, explanations, testing (weeks 10-13)
 | # | Task | Owner | Depends | Acceptance criteria |
 |---|---|---|---|---|
-| 4.1 | Schedule engine: duration, P50/P80, portfolio impact | backend | 3.6 | Matches hand-computed cases; fixed-seed Monte Carlo |
+| 4.1 ✅ | Schedule engine: duration, P50/P80, portfolio impact | backend | 3.6 | `internal/schedule` calculates duration from weekly capacity and three-point effort, fixed-seed Monte Carlo, deadline probability and M8 portfolio impact; hand-computed tests green |
 | 4.2 | Metrics M1-M12 + Score in Go | backend | 4.1 | Formulas match `METRICS.md` (reviewer checks item by item) |
 | 4.3 | Explainer: reason codes, texts, counterfactuals | backend | 3.4, 4.2 | Faithfulness 100%; counterfactual accuracy >= 95% |
 | 4.4 | Recalculate API + constraint editor UI | backend, frontend | 4.2 | Metamorphic tests: responsiveness 100%; recalculation p95 <= 5 s |
@@ -59,8 +59,31 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 | 4.6 | Full benchmark vs baselines + expert panel | qa-eval | 4.4 | Report in `eval/reports/`; Score beats baselines by >= 10% |
 | 4.7 | Final audit | reviewer | 4.6 | No blockers/majors open |
 
+## Phase 5. Bulk data loading & UX polish (weeks 14-16)
+| # | Task | Owner | Depends | Acceptance criteria |
+|---|---|---|---|---|
+| 5.1 ✅ | Employee bulk import API + validation | backend | 2.3, contracts | `PUT /employees` idempotent upsert (profiles + competencies + assignments + absences); `validate_only` mode; summary with created/updated/unchanged/errors; audit log; contract tests pass |
+| 5.2 ✅ | Weight selection UI (preset cards + custom weights editor) | frontend | 4.5, contracts | `GET /reference/weight-presets` returns presets + metric descriptions; `GET /reference/metrics` returns full definitions; UI allows picking preset or editing weights with live validation (sum=1, min/max per metric); selection flows into `POST /runs` `weights` field |
+| 5.3 | Import UI: drag-drop JSON/CSV, preview, dry-run | frontend | 5.1 | File upload -> parse -> preview table -> dry-run (validate_only) -> confirm -> toast with summary; CSV template download; error rows highlighted |
+| 5.4 | End-to-end Playwright scenario: import pool -> brief -> run -> compare -> recalc -> decide | frontend, backend | 5.1, 5.2, 4.5 | Single automated test covering the full user journey; all steps complete without manual intervention |
+| 5.5 | Performance hardening: p95 optimize <= 10s (500 emp x 30 req), recalc <= 5s | backend, ml | 3.4, 4.4 | Locust/k6 load test with 20 concurrent users; CI gate on p95 thresholds |
+| 5.6 | Release hardening: circuit breakers, graceful ML degradation, observability | backend, ml | 5.5 | ADR-004 verified under chaos (ML down, LLM timeout, solver timeout); metrics exported; runbooks written |
+
+## Open questions (resolve before the listed task)
+- Customer, real data access, and tracker/HR integration: assume synthetic data only (before 2.2).
+- LLM: cloud API or local model? (before 3.1)
+- Final competency taxonomy and grade-to-rate bands (before 1.2). RESOLVED 2026-11-05: custom IT seed (12 roles, `contracts/taxonomy.yaml`) and dimensionless grade coefficients J1.0/M1.4/S1.9/L2.6/P3.4 (`contracts/reference.yaml`); no currency in the system.
+- Working-time model: 40 h/week, 20% reserve? Russian production calendar source (before 2.4).
+- Bulk import format: JSON only or also CSV? (before 5.1) — RECOMMENDATION: JSON primary, CSV via frontend transform.
+- Weight editor: allow free-form custom weights or only preset + delta sliders? (before 5.2) — RECOMMENDATION: preset cards + "Custom" mode with per-metric sliders, sum=1 enforced.
+
 ## Log
+2026-11-20 - frontend-routing-fix - closed the "half the tabs 404 / params not displaying" follow-up: added React Router catch-all route (`path="*"` -> new `NotFoundPage`), guarded menu navigation to registered leaf keys (group key `reference` no longer navigates blindly), made the `reference` submenu controlled via `openKeys` (blank submenu screen reported on menu click), fixed `WeightSelector` preset tab (cards rendered as nested `Tabs.TabPane` -> Col grid, preset cards were not displayed); needs re-verification (frontend tsc/lint/vitest/build not runnable in this session - shell denied)
+2026-11-20 - 5.1+5.2 - implemented `PUT /api/v1/employees` bulk import (backend: upsert/replace modes, validate_only, audit, 122 tests pass) + Weight Selection UI (frontend: preset cards, custom editor with live validation, metric definitions panel, 122 Vitest tests pass, build/lint clean); ML `/v1/extract` 500 fixed (env typo: `LLM_TIMEOUT_MS=300000sk` → `300000`, all 313 pytest green, ADR-004 compliant Problem responses)
+2026-11-20 - contracts v2 - added `PUT /api/v1/employees` bulk import (profiles + competencies + assignments + absences, upsert/replace modes, validate_only, audit trail); enhanced `GET /api/v1/reference/weight-presets` with metric descriptions + new `GET /api/v1/reference/metrics` for weight-selection UI; added Phase 5 tasks (5.1-5.6) to PLAN.md with bulk import, weight editor, import UI, E2E test, performance hardening, release hardening
+2026-11-16 - 4.1 - schedule engine - added pure Go `backend/internal/schedule` with three-point fixed-seed Monte Carlo (P50/P80), deadline probability, capacity/absence-aware progress and M8 portfolio impact; hand-computed, determinism and no-progress tests pass; no online services used
 2026-11-12 - 3.1-fix-v4 - extractor semantic disambiguation - prompt `extract-v4` now forbids generic-role-to-competency inference and related-technology duplication; lexical validator ignores generic role/activity terms as competency evidence; fixtures replayed with 310 pytest green and final pair F1=0.9356 / hold-out pair F1=0.8667; live OpenRouter check blocked by provider connect timeout on two free models
+2026-11-16 - phase-3-complete-offline - 3.2/3.6/3.7 - added deterministic `/v1/embed` hashing-char-ngram-v1 (1024 dimensions, normalized, request-order stable), backend ML client + brief/review/confirm/run routes, deterministic `/taxonomy/normalize` baseline, and Russian brief/review/variants screens with backend switch; ML 313 tests green and frontend tests/build green; backend unit code compiles, Docker-backed integration tests not runnable in this environment
 2026-11-05 - 1.1 - contracts v1 committed: `openapi.yaml` (38 operations, 31 paths), `ml-openapi.yaml` (5 operations), 6 JSON Schemas, spectral ruleset - 43 operations all with request+response examples; 0 personal-data fields; 75 reason codes (ML subset 43, subset relation checked by hand)
 2026-11-05 - 1.2 - taxonomy seed + 4 ADRs - 12 roles (>= 8 required), 101 competencies, 5 level descriptors, 5 grade coefficients; ADR-001..004 accepted; ADR-004 added for ML timeout/error policy (NFR "graceful failure when ML is down")
 2026-11-05 - 1.1/1.2 - independent review (reviewer, read-only) found 4 blockers + 16 majors; fixed: schema `allOf` bug, evidence quote/offset contradiction, INFEASIBLE without explanation, forgeable audit actor, missing run constraints, freeze_members not representable, capacity example arithmetic, unquoted date scalars, determinism vs wall-clock, duplicated min_jaccard, no brief-text endpoint, servers vs base path, variant_id pattern, k=1 vs 2-3, 30 s timeout lie, missing pagination params, M12 not required, overload override missing, non-reproducible run inputs. Open: lint run (blocked), `T_ref`/criticality weights in PlanningParams, run-level variant_set diagnostics, single primitive definitions

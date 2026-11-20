@@ -1,7 +1,7 @@
 """Team Optimizer ML Service.
 
-Implements /healthz, /readyz, POST /v1/extract (extraction pipeline) and
-POST /v1/optimize (CP-SAT team optimizer). /v1/embed remains a stub (501) for phase 3.2.
+Implements /healthz, /readyz, POST /v1/extract, POST /v1/embed and
+POST /v1/optimize (CP-SAT team optimizer).
 All error responses conform to the Problem schema from contracts/ml-openapi.yaml.
 """
 
@@ -12,8 +12,10 @@ from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from .extract.router import router as extract_router
+from .embed import EMBED_DIM, EMBED_MODEL, EmbedRequest, embed as embed_request
 from .llm.config import get_settings
 from .optimize.router import router as optimize_router
 from .version import __version__
@@ -30,7 +32,7 @@ except Exception:  # pragma: no cover - ortools is a hard dependency
 app = FastAPI(
     title="Team Optimizer ML Service",
     version=__version__,
-    description="ML service for team formation: extraction + optimization implemented; embedding stub.",
+    description="ML service for team formation: extraction, embeddings and optimization.",
 )
 
 # Include the real /v1/extract and /v1/optimize routers
@@ -100,13 +102,13 @@ async def readyz() -> dict[str, Any]:
         "ready": True,
         "capabilities": {
             "extract": extract_state,
-            "embed": "degraded",
+            "embed": "ready",
             "optimize": optimize_state,
         },
         "models": {
             "llm": settings.model if settings.is_available else None,
-            "embedding": "multilingual-e5-large",
-            "embedding_dim": 1024,
+            "embedding": EMBED_MODEL,
+            "embedding_dim": EMBED_DIM,
             "spacy_pipeline": "ru_core_news_lg",
         },
         "solver": {
@@ -125,22 +127,21 @@ async def readyz() -> dict[str, Any]:
 
 
 # ---------------------------------------------------------------------------
-# Stub endpoint: /v1/embed returns 501 Not Implemented (phase 3.2).
-# /v1/extract and /v1/optimize are real (via routers).
+# /v1/extract, /v1/embed and /v1/optimize are real endpoints.
 # ---------------------------------------------------------------------------
 
 
 @app.post("/v1/embed")
 async def embed(request: Request) -> JSONResponse:
-    """Stub: text embedding not yet implemented."""
-    return JSONResponse(
-        status_code=501,
-        content=_problem(
-            status=501,
-            code="NOT_IMPLEMENTED",
-            title="Not implemented",
-            detail="POST /v1/embed is a stub; implementation comes in phase 3.2.",
-            request_id=_req_id(request),
-            retryable=False,
-        ),
-    )
+    """Embed a bounded batch in the deterministic shared vector space."""
+    rid = _req_id(request)
+    try:
+        body = EmbedRequest.model_validate(await request.json())
+        result = embed_request(body)
+    except ValidationError as exc:
+        return JSONResponse(status_code=422, content=_problem(422, "VALIDATION_FAILED", "Invalid request", str(exc), rid))
+    except ValueError as exc:
+        return JSONResponse(status_code=422, content=_problem(422, "UNSUPPORTED_MODEL", "Unsupported model", str(exc), rid))
+    response = JSONResponse(status_code=200, content=result.model_dump())
+    response.headers["X-Request-Id"] = rid
+    return response
