@@ -76,19 +76,30 @@ button:active:not(:disabled), .ant-btn:active:not([disabled]) {
 }
 
 /* Refined upload dropzones */
-.humb-dropzone {
-  border: 1.5px dashed rgba(255, 255, 255, 0.15);
-  background: rgba(17, 24, 39, 0.6);
-  border-radius: 12px;
-  padding: 24px;
-  text-align: center;
-  transition: all 0.2s ease;
-  cursor: pointer;
+.ant-upload-wrapper,
+.ant-upload-wrapper.humb-dropzone {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
 }
 
-.humb-dropzone:hover, .humb-dropzone.drag-active {
-  border-color: var(--accent-blue);
-  background: rgba(59, 130, 246, 0.06);
+.ant-upload.ant-upload-drag,
+.ant-upload.ant-upload-drag.humb-dropzone,
+div.humb-dropzone:not(.ant-upload-wrapper):not(.ant-upload) {
+  border: 1px dashed rgba(255, 255, 255, 0.18) !important;
+  background: rgba(17, 24, 39, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  text-align: center !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.ant-upload.ant-upload-drag:hover,
+.ant-upload.ant-upload-drag.humb-dropzone:hover,
+div.humb-dropzone:hover {
+  border-color: var(--accent-blue) !important;
+  background: rgba(59, 130, 246, 0.06) !important;
 }
 
 /* Status live dot */

@@ -29,6 +29,8 @@ import type {
   Explanation,
   RecalculateRequest,
   RecalculateResponse,
+  DecisionRequest,
+  DecisionResponse,
   Problem,
   FieldError,
   ReasonCode,
@@ -271,6 +273,28 @@ export async function recalculateRun(runId: string, request: RecalculateRequest)
   }
   await delay();
   return recalculateMockRun(runId, request);
+}
+
+/**
+ * Record human manager decision on chosen variant (ADR-007 §4).
+ * Calls POST /runs/{runId}/decision.
+ */
+export async function recordDecision(runId: string, request: DecisionRequest): Promise<DecisionResponse> {
+  if (API_BASE) {
+    return backend<DecisionResponse>(`/runs/${runId}/decision`, {
+      method: 'POST',
+      body: JSON.stringify(request),
+    });
+  }
+  await delay();
+  return {
+    run_id: runId,
+    variant_id: request.variant_id,
+    decided_at: new Date().toISOString(),
+    decided_by: request.decided_by,
+    edits_count: request.edits_applied?.length ?? 0,
+    audit_event_id: `aud_${Date.now().toString(36)}`,
+  };
 }
 
 /** Test-only hook: clears the in-memory mock run store. */

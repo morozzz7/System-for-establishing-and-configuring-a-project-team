@@ -295,7 +295,6 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }: Employ
               maxCount={1}
               beforeUpload={handleFile}
               showUploadList={false}
-              className="humb-dropzone"
             >
               <p className="ant-upload-drag-icon">
                 <InboxOutlined style={{ fontSize: 36, color: '#3b82f6' }} />

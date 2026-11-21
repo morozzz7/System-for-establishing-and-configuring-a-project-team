@@ -19,6 +19,7 @@ import {
   Typography,
 } from 'antd';
 import type { Brief, TeamRun, Horizon, PresetName, Weights } from '../types';
+import { DEFAULT_WEIGHTS } from '../types/reference';
 import { createRun, getBrief, listBriefs } from '../api/client';
 import { ApiError, toApiError } from '../api/errors';
 import WeightSelector from '../components/team-formation/WeightSelector';
@@ -52,11 +53,24 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
       max_candidates: 500,
     },
   });
-  const [selectedWeights, setSelectedWeights] = useState<Weights | null>(null);
+  const [selectedWeights, setSelectedWeights] = useState<Weights | null>(DEFAULT_WEIGHTS);
   const [selectedPreset, setSelectedPreset] = useState<PresetName | undefined>('balanced');
 
   const presets = useWeightPresetsWithMetrics();
   const metrics = useMetricDefinitions();
+
+  // Synchronize weights with loaded preset if using preset mode
+  useEffect(() => {
+    if (presets.data?.presets && selectedPreset) {
+      const p = presets.data.presets.find(
+        (x) => (x.preset || x.Preset) === selectedPreset,
+      );
+      if (p) {
+        const w = p.weights || p.Weights;
+        if (w) setSelectedWeights(w);
+      }
+    }
+  }, [presets.data, selectedPreset]);
 
   // Load briefs list
   useEffect(() => {

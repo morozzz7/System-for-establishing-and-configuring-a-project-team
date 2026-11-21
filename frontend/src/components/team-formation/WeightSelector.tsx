@@ -5,7 +5,7 @@
  */
 import { useCallback, useEffect, useMemo, useState, type ReactElement } from 'react';
 import { Tabs, Alert, Space, Card, Divider, Typography, Tag, Row, Col } from 'antd';
-import type { Weights, MetricDefinition, WeightPresetListResponse } from '../../types/reference';
+import type { Weights, MetricDefinition, WeightPresetListResponse, WeightPreset } from '../../types/reference';
 import { METRIC_IDS, validateWeights, DEFAULT_WEIGHTS } from '../../types/reference';
 import PresetCard from './PresetCard';
 import CustomWeightsEditor from './CustomWeightsEditor';
@@ -52,20 +52,44 @@ export default function WeightSelector({
   const [mode, setMode] = useState<'preset' | 'custom'>('preset');
   const [activeTab, setActiveTab] = useState<'presets' | 'custom' | 'metrics'>('presets');
   const [selectedPreset, setSelectedPreset] = useState<string>(initialPreset);
-  const [customWeights, setCustomWeights] = useState<Weights>(
-    initialWeights ?? presetsData?.presets.find((p) => p.preset === initialPreset)?.weights ?? DEFAULT_WEIGHTS,
+
+  const getPreset = useCallback(
+    (presetName: string) => {
+      return presetsData?.presets.find(
+        (p) => (p.preset || p.Preset) === presetName,
+      );
+    },
+    [presetsData],
   );
+
+  const getWeights = useCallback(
+    (presetName: string): Weights => {
+      const p = getPreset(presetName);
+      return p ? (p.weights || p.Weights || DEFAULT_WEIGHTS) : DEFAULT_WEIGHTS;
+    },
+    [getPreset],
+  );
+
+  const [customWeights, setCustomWeights] = useState<Weights>(
+    initialWeights ?? getWeights(initialPreset),
+  );
+
+  // Notify parent on mount or when presetsData loads if in preset mode
+  useEffect(() => {
+    if (mode === 'preset') {
+      const w = getWeights(selectedPreset);
+      onChange(w, selectedPreset);
+    }
+  }, [mode, selectedPreset, presetsData, getWeights, onChange]);
 
   // When preset changes in preset mode, update weights and notify
   const handlePresetSelect = useCallback((presetName: string) => {
     setSelectedPreset(presetName);
     setMode('preset');
     setActiveTab('presets');
-    const preset = presetsData?.presets.find((p) => p.preset === presetName);
-    if (preset) {
-      onChange(preset.weights, presetName);
-    }
-  }, [presetsData, onChange]);
+    const w = getWeights(presetName);
+    onChange(w, presetName);
+  }, [getWeights, onChange]);
 
   // When custom weights change, notify
   const handleCustomWeightsChange = (weights: Weights) => {
@@ -86,11 +110,10 @@ export default function WeightSelector({
   // Get current effective weights
   const effectiveWeights = useMemo((): Weights => {
     if (mode === 'preset') {
-      const preset = presetsData?.presets.find((p) => p.preset === selectedPreset);
-      return preset?.weights ?? customWeights;
+      return getWeights(selectedPreset);
     }
     return customWeights;
-  }, [mode, selectedPreset, customWeights, presetsData]);
+  }, [mode, selectedPreset, customWeights, getWeights]);
 
   // Validate current weights
   const validation = useMemo(
@@ -103,12 +126,20 @@ export default function WeightSelector({
     if (!presetsData) return null;
     const cards: ReactElement[] = [];
     for (const presetName of PRESET_ORDER) {
-      const preset = presetsData.presets.find((p) => p.preset === presetName);
+      const preset = getPreset(presetName);
       if (!preset) continue;
+      const normalizedPreset: WeightPreset = {
+        ...preset,
+        preset: preset.preset || preset.Preset || 'balanced',
+        label_ru: preset.label_ru || preset.LabelRU || '',
+        description_ru: preset.description_ru || '',
+        weights: preset.weights || preset.Weights || DEFAULT_WEIGHTS,
+        sum_check: preset.sum_check ?? 1,
+      };
       cards.push(
         <Col key={presetName} xs={24} sm={12} lg={6}>
           <PresetCard
-            preset={preset}
+            preset={normalizedPreset}
             selected={mode === 'preset' && selectedPreset === presetName}
             onSelect={handlePresetSelect}
             metrics={presetsData.metrics}
@@ -117,7 +148,7 @@ export default function WeightSelector({
       );
     }
     return cards;
-  }, [presetsData, mode, selectedPreset, handlePresetSelect]);
+  }, [presetsData, mode, selectedPreset, handlePresetSelect, getPreset]);
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>

@@ -43,6 +43,10 @@ export interface WeightPreset {
   description_ru: string;
   weights: Weights;
   sum_check: number;
+  // Backwards/casing compatibility
+  Preset?: PresetName;
+  LabelRU?: string;
+  Weights?: Weights;
 }
 
 /** Response for GET /api/v1/reference/metrics */

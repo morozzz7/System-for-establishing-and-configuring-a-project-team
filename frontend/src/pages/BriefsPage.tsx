@@ -281,7 +281,6 @@ export default function BriefsPage() {
                     maxCount={1}
                     beforeUpload={handleFileDrop}
                     showUploadList={false}
-                    className="humb-dropzone"
                   >
                     <p className="ant-upload-drag-icon">
                       <InboxOutlined style={{ fontSize: 32, color: '#3b82f6' }} />

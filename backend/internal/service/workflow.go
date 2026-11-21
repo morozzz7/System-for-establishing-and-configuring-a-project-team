@@ -5,6 +5,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -28,6 +29,9 @@ type BriefRecord struct {
 	Diagnostics                                  map[string]any
 }
 
+var ErrDecisionExists = errors.New("decision already recorded")
+var ErrVariantNotFound = errors.New("variant not found")
+
 type WorkflowService struct {
 	mu         sync.RWMutex
 	ml         *mlclient.Client
@@ -37,6 +41,7 @@ type WorkflowService struct {
 	variants   map[string]map[string]map[string]any // runID -> variantID -> full Variant payload
 	details    map[string]map[string]explain.VariantDetail
 	varresults map[string]map[string]metrics.VariantResult // runID -> variantID -> authoritative result
+	decisions  map[string]map[string]any                   // runID -> decision record
 	next       int
 }
 
@@ -49,6 +54,7 @@ func NewWorkflowService(ml *mlclient.Client) *WorkflowService {
 		variants:   map[string]map[string]map[string]any{},
 		details:    map[string]map[string]explain.VariantDetail{},
 		varresults: map[string]map[string]metrics.VariantResult{},
+		decisions:  map[string]map[string]any{},
 	}
 }
 
@@ -460,6 +466,19 @@ func horizonWeeks(input map[string]any) ([]string, error) {
 	if !ok {
 		return []string{"2026-W10", "2026-W11", "2026-W12"}, nil
 	}
+	startWeek, hasStart := raw["start_week"].(string)
+	endWeek, hasEnd := raw["end_week"].(string)
+	if hasStart && hasEnd && startWeek != "" && endWeek != "" {
+		weeks, err := domain.WeekRange(startWeek, endWeek)
+		if err != nil {
+			return nil, fmt.Errorf("%w: invalid horizon range %s..%s: %v", ErrInvalidRunInput, startWeek, endWeek, err)
+		}
+		if len(weeks) == 0 {
+			return nil, fmt.Errorf("%w: horizon.weeks must not be empty", ErrInvalidRunInput)
+		}
+		return weeks, nil
+	}
+
 	list, _ := raw["weeks"].([]any)
 	weeks := make([]string, 0, len(list))
 	for i, entry := range list {
@@ -718,4 +737,86 @@ func runPayload(
 		"variant_set":  set,
 		"reason_codes": append([]string{}, resp.ReasonCodes...),
 	}
+}
+
+type DecisionInput struct {
+	VariantID    string           `json:"variant_id"`
+	DecidedBy    string           `json:"decided_by"`
+	Comment      string           `json:"comment,omitempty"`
+	EditsApplied []map[string]any `json:"edits_applied,omitempty"`
+}
+
+type DecisionResponse struct {
+	RunID        string    `json:"run_id"`
+	VariantID    string    `json:"variant_id"`
+	DecidedAt    time.Time `json:"decided_at"`
+	DecidedBy    string    `json:"decided_by"`
+	EditsCount   int       `json:"edits_count"`
+	AuditEventID string    `json:"audit_event_id"`
+}
+
+func (s *WorkflowService) RecordDecision(runID string, input DecisionInput) (*DecisionResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	run, ok := s.runs[runID]
+	if !ok {
+		return nil, ErrRunNotFound
+	}
+	if _, exists := s.decisions[runID]; exists {
+		return nil, ErrDecisionExists
+	}
+	if input.VariantID == "" {
+		return nil, fmt.Errorf("%w: variant_id is required", ErrInvalidRunInput)
+	}
+	variants, _ := run["variants"].([]map[string]any)
+	found := false
+	for _, v := range variants {
+		if v["variant_id"] == input.VariantID {
+			found = true
+			break
+		}
+	}
+	if !found && s.variants[runID] != nil {
+		if _, ok := s.variants[runID][input.VariantID]; ok {
+			found = true
+		}
+	}
+	if !found {
+		return nil, ErrVariantNotFound
+	}
+
+	decidedBy := input.DecidedBy
+	if decidedBy == "" {
+		decidedBy = "system"
+	}
+	s.next++
+	auditID := fmt.Sprintf("aud_%04d", s.next)
+	now := time.Now().UTC()
+
+	resp := &DecisionResponse{
+		RunID:        runID,
+		VariantID:    input.VariantID,
+		DecidedAt:    now,
+		DecidedBy:    decidedBy,
+		EditsCount:   len(input.EditsApplied),
+		AuditEventID: auditID,
+	}
+	s.decisions[runID] = map[string]any{
+		"run_id":         runID,
+		"variant_id":     input.VariantID,
+		"decided_at":     now,
+		"decided_by":     decidedBy,
+		"edits_count":    len(input.EditsApplied),
+		"audit_event_id": auditID,
+		"comment":        input.Comment,
+	}
+	return resp, nil
+}
+
+func (s *WorkflowService) GetDecision(runID string) (map[string]any, bool) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	d, ok := s.decisions[runID]
+	return d, ok
 }
