@@ -13,19 +13,15 @@ import {
   Descriptions,
   Card,
   Tag,
-  Modal,
-  Alert,
-  Upload,
-  message,
+  Badge,
 } from 'antd';
-import { EyeOutlined, InboxOutlined } from '@ant-design/icons';
+import { EyeOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Employee } from '../types';
 import { useEmployees, useEmployee, useEmployeeCompetencies, useEmployeeCapacity } from '../hooks';
 import { Loading, Empty, ErrorDisplay, GradeTag, LevelBar } from '../components/shared';
 import { mockRoles } from '../mocks/reference';
-import { importEmployees } from '../api/client';
-import type { EmployeeImportPayload } from '../api/client';
+import EmployeeImportModal from '../components/employee/EmployeeImportModal';
 
 const { Title, Text } = Typography;
 
@@ -37,8 +33,6 @@ export default function EmployeesPage() {
   const [benchFilter, setBenchFilter] = useState<boolean | undefined>();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [importPayload, setImportPayload] = useState<EmployeeImportPayload | null>(null);
-  const [importing, setImporting] = useState(false);
 
   if (employees.loading) return <Loading />;
   if (employees.error) return <ErrorDisplay error={employees.error} />;
@@ -103,114 +97,81 @@ export default function EmployeesPage() {
 
   return (
     <Space direction="vertical" size="large" style={{ width: '100%' }}>
-      <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-        <Title level={2} style={{ margin: 0 }}>Сотрудники</Title>
-        <Button onClick={() => setImportOpen(true)}>Загрузить данные</Button>
+      <Space style={{ width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <Title level={2} style={{ margin: 0, color: '#f8fafc' }}>Сотрудники</Title>
+          <Text style={{ color: '#94a3b8', fontSize: 13 }}>
+            Пул доступных специалистов для формирования проектных команд
+          </Text>
+        </div>
+        <Button
+          type="primary"
+          icon={<UploadOutlined />}
+          onClick={() => setImportOpen(true)}
+          style={{ background: '#3b82f6', borderColor: '#3b82f6', fontWeight: 500 }}
+        >
+          Загрузить данные
+        </Button>
       </Space>
-      <Space wrap>
-        <Input.Search
-          placeholder="Поиск по ID"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 200 }}
-          allowClear
-        />
-        <Select
-          placeholder="Грейд"
-          value={gradeFilter}
-          onChange={setGradeFilter}
-          style={{ width: 120 }}
-          allowClear
-          options={[
-            { value: 'J', label: 'J' },
-            { value: 'M', label: 'M' },
-            { value: 'S', label: 'S' },
-            { value: 'L', label: 'L' },
-            { value: 'P', label: 'P' },
-          ]}
-        />
-        <Select
-          placeholder="Роль"
-          value={roleFilter}
-          onChange={setRoleFilter}
-          style={{ width: 200 }}
-          allowClear
-          options={mockRoles.map((r) => ({ value: r.role_id, label: r.name_ru }))}
-        />
-        <Select
-          placeholder="Скамейка"
-          value={benchFilter}
-          onChange={setBenchFilter}
-          style={{ width: 150 }}
-          allowClear
-          options={[
-            { value: true, label: 'На скамейке' },
-            { value: false, label: 'Не на скамейке' },
-          ]}
-        />
-      </Space>
+      <Card bodyStyle={{ padding: 16 }}>
+        <Space wrap size="middle">
+          <Input.Search
+            placeholder="Поиск по ID сотрудника"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: 220 }}
+            allowClear
+          />
+          <Select
+            placeholder="Грейд"
+            value={gradeFilter}
+            onChange={setGradeFilter}
+            style={{ width: 130 }}
+            allowClear
+            options={[
+              { value: 'J', label: 'Junior (J)' },
+              { value: 'M', label: 'Middle (M)' },
+              { value: 'S', label: 'Senior (S)' },
+              { value: 'L', label: 'Lead (L)' },
+              { value: 'P', label: 'Principal (P)' },
+            ]}
+          />
+          <Select
+            placeholder="Роль в пуле"
+            value={roleFilter}
+            onChange={setRoleFilter}
+            style={{ width: 220 }}
+            allowClear
+            options={mockRoles.map((r) => ({ value: r.role_id, label: r.name_ru }))}
+          />
+          <Select
+            placeholder="Статус занятости"
+            value={benchFilter}
+            onChange={setBenchFilter}
+            style={{ width: 170 }}
+            allowClear
+            options={[
+              { value: true, label: 'На скамейке (Бенч)' },
+              { value: false, label: 'На проектах' },
+            ]}
+          />
+          <Badge
+            count={`Найдено: ${filtered.length}`}
+            style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', borderColor: 'rgba(59, 130, 246, 0.3)' }}
+          />
+        </Space>
+      </Card>
       <Table
         dataSource={filtered}
         columns={columns}
         rowKey="employee_id"
         pagination={{ pageSize: 10 }}
       />
-      <Modal
-        title="Загрузка сотрудников"
+      <EmployeeImportModal
         open={importOpen}
-        onCancel={() => setImportOpen(false)}
-        onOk={async () => {
-          if (!importPayload) return;
-          setImporting(true);
-          try {
-            const result = await importEmployees(importPayload);
-            message.success(`Обработано: ${result.totals.received}, создано: ${result.totals.created}, обновлено: ${result.totals.updated}, ошибок: ${result.totals.errors}`);
-            setImportOpen(false);
-            setImportPayload(null);
-            employees.refetch();
-          } catch (error) {
-            message.error(error instanceof Error ? error.message : 'Не удалось загрузить сотрудников');
-          } finally {
-            setImporting(false);
-          }
-        }}
-        okText="Импортировать"
-        cancelText="Отмена"
-        okButtonProps={{ disabled: !importPayload, loading: importing }}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <Alert
-            type="info"
-            showIcon
-            message="Загрузите JSON по схеме EmployeeImportRequest из OpenAPI. Импорт выполняется в режиме upsert."
-            description="Файл должен содержать объект с массивом employees. Персональные данные в файлах не используйте; идентификаторы сотрудников должны быть псевдонимами."
-          />
-          <Upload.Dragger
-            accept=".json,application/json"
-            maxCount={1}
-            beforeUpload={async (file) => {
-              try {
-                const parsed: unknown = JSON.parse(await file.text());
-                if (typeof parsed !== 'object' || parsed === null || !Array.isArray((parsed as { employees?: unknown }).employees) || (parsed as { employees: unknown[] }).employees.length === 0) {
-                  throw new Error('Ожидается JSON-объект с непустым массивом employees');
-                }
-                setImportPayload(parsed as EmployeeImportPayload);
-                message.success(`Файл прочитан: ${(parsed as EmployeeImportPayload).employees.length} записей`);
-              } catch (error) {
-                setImportPayload(null);
-                message.error(error instanceof Error ? error.message : 'Некорректный JSON-файл');
-              }
-              return false;
-            }}
-            onRemove={() => setImportPayload(null)}
-            showUploadList={{ showRemoveIcon: true }}
-          >
-            <p className="ant-upload-drag-icon"><InboxOutlined /></p>
-            <p className="ant-upload-text">Перетащите JSON-файл или нажмите для выбора</p>
-            <p className="ant-upload-hint">Формат: {`{ "employees": [...] }`}</p>
-          </Upload.Dragger>
-        </Space>
-      </Modal>
+        onClose={() => setImportOpen(false)}
+        onSuccess={() => employees.refetch()}
+      />
       {selectedId && <EmployeeDetailDrawer employeeId={selectedId} onClose={() => setSelectedId(null)} />}
     </Space>
   );

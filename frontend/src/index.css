@@ -1,0 +1,184 @@
+/* Humblytics / Linear slate dark aesthetic design tokens */
+@import 'antd/dist/reset.css';
+
+:root {
+  --bg-canvas: #090d16;
+  --bg-card: #111827;
+  --bg-card-hover: #162238;
+  --bg-card-subtle: #0d1322;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-focus: #3b82f6;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --accent-blue: #3b82f6;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #ef4444;
+}
+
+html, body, #root {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Geist', 'Inter', 'Segoe UI', Roboto, sans-serif;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom refined scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Tabular figures for numbers, metrics, dates */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Buttons micro-interaction feedback (Emil Kowalski guidance) */
+button, .ant-btn {
+  transition: transform 0.08s ease, background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+button:active:not(:disabled), .ant-btn:active:not([disabled]) {
+  transform: scale(0.98) !important;
+}
+
+/* Tactile card borders and shadows */
+.ant-card {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4) !important;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease !important;
+}
+
+.ant-card-hoverable:hover {
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 8px 30px -4px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* Refined upload dropzones */
+.ant-upload-wrapper,
+.ant-upload-wrapper.humb-dropzone {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+
+.ant-upload.ant-upload-drag,
+.ant-upload.ant-upload-drag.humb-dropzone,
+div.humb-dropzone:not(.ant-upload-wrapper):not(.ant-upload) {
+  border: 1px dashed rgba(255, 255, 255, 0.18) !important;
+  background: rgba(17, 24, 39, 0.6) !important;
+  border-radius: 12px !important;
+  padding: 24px !important;
+  text-align: center !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
+}
+
+.ant-upload.ant-upload-drag:hover,
+.ant-upload.ant-upload-drag.humb-dropzone:hover,
+div.humb-dropzone:hover {
+  border-color: var(--accent-blue) !important;
+  background: rgba(59, 130, 246, 0.06) !important;
+}
+
+/* Status live dot */
+.status-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.status-dot-green {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+}
+
+.status-dot-amber {
+  background: var(--accent-amber);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.5);
+}
+
+.status-dot-blue {
+  background: var(--accent-blue);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+}
+
+/* Tables in dark slate */
+.ant-table {
+  background: transparent !important;
+}
+
+.ant-table-thead > tr > th {
+  background: #0d1424 !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  font-weight: 500 !important;
+  font-size: 13px !important;
+}
+
+.ant-table-tbody > tr > td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: rgba(59, 130, 246, 0.05) !important;
+}
+
+/* Modern Pill Badges */
+.humb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid transparent;
+}
+
+.humb-badge-blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+  border-color: rgba(59, 130, 246, 0.25);
+}
+
+.humb-badge-emerald {
+  background: rgba(16, 185, 129, 0.12);
+  color: #6ee7b7;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.humb-badge-amber {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.humb-badge-rose {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.25);
+}

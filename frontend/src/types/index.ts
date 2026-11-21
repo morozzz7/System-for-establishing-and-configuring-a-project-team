@@ -641,6 +641,24 @@ export interface RecalculateResponse {
   facts?: Record<string, unknown>;
 }
 
+// ──── decisions ────
+
+export interface DecisionRequest {
+  variant_id: string;
+  decided_by: string;
+  comment?: string;
+  edits_applied?: ConstraintOverride[];
+}
+
+export interface DecisionResponse {
+  run_id: string;
+  variant_id: string;
+  decided_at: string;
+  decided_by: string;
+  edits_count: number;
+  audit_event_id: string;
+}
+
 // ──── projects ────
 
 export type ProjectStatus = 'planned' | 'active' | 'paused' | 'done' | 'cancelled';

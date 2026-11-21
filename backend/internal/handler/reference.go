@@ -30,18 +30,18 @@ func (h *ReferenceHandler) Register(r chi.Router) {
 }
 
 type GradeBand struct {
-	Grade              string   `yaml:"grade"`
-	LabelRU            string   `yaml:"label_ru"`
-	CostCoefficient    float64  `yaml:"cost_coefficient"`
-	TypicalLevelRange  []int    `yaml:"typical_level_range"`
+	Grade             string   `yaml:"grade" json:"grade"`
+	LabelRU           string   `yaml:"label_ru" json:"label_ru"`
+	CostCoefficient   float64  `yaml:"cost_coefficient" json:"cost_coefficient"`
+	TypicalLevelRange []int    `yaml:"typical_level_range" json:"typical_level_range"`
 }
 
 type WeightPreset struct {
-	Preset      string          `yaml:"preset"`
-	LabelRU     string          `yaml:"label_ru"`
-	Description string          `yaml:"description_ru,omitempty"`
-	Weights     map[string]float64 `yaml:"weights"`
-	SumCheck    float64         `yaml:"sum"`
+	Preset      string             `yaml:"preset" json:"preset"`
+	LabelRU     string             `yaml:"label_ru" json:"label_ru"`
+	Description string             `yaml:"description_ru,omitempty" json:"description,omitempty"`
+	Weights     map[string]float64 `yaml:"weights" json:"weights"`
+	SumCheck    float64            `yaml:"sum" json:"sum"`
 }
 
 type referenceFile struct {
@@ -50,13 +50,13 @@ type referenceFile struct {
 }
 
 type MetricDefinition struct {
-	ID                   string   `yaml:"id"`
-	NameRU               string   `yaml:"name_ru"`
-	NameEN               string   `yaml:"name_en"`
-	FormulaRU            string   `yaml:"formula_ru"`
-	InterpretationRU     string   `yaml:"interpretation_ru"`
-	IsCore               bool     `yaml:"is_core"`
-	TypicalWeightRange   []float64 `yaml:"typical_weight_range"`
+	ID                 string    `yaml:"id" json:"id"`
+	NameRU             string    `yaml:"name_ru" json:"name_ru"`
+	NameEN             string    `yaml:"name_en" json:"name_en"`
+	FormulaRU          string    `yaml:"formula_ru" json:"formula_ru"`
+	InterpretationRU   string    `yaml:"interpretation_ru" json:"interpretation_ru"`
+	IsCore             bool      `yaml:"is_core" json:"is_core"`
+	TypicalWeightRange []float64 `yaml:"typical_weight_range" json:"typical_weight_range"`
 }
 
 type metricsFile struct {
@@ -65,30 +65,30 @@ type metricsFile struct {
 
 type PlanningParams struct {
 	TimeModel struct {
-		WeekStart            string  `yaml:"week_start"`
-		WorkingDaysPerWeek   int     `yaml:"working_days_per_week"`
-		HoursPerDay          int     `yaml:"hours_per_day"`
-		WeeklyHoursNorm      int     `yaml:"weekly_hours_norm"`
-		ReserveRatio         float64 `yaml:"reserve_ratio"`
-		Calendar             string  `yaml:"calendar"`
-	} `yaml:"time_model"`
+		WeekStart          string  `yaml:"week_start" json:"week_start"`
+		WorkingDaysPerWeek int     `yaml:"working_days_per_week" json:"working_days_per_week"`
+		HoursPerDay        int     `yaml:"hours_per_day" json:"hours_per_day"`
+		WeeklyHoursNorm    int     `yaml:"weekly_hours_norm" json:"weekly_hours_norm"`
+		ReserveRatio       float64 `yaml:"reserve_ratio" json:"reserve_ratio"`
+		Calendar           string  `yaml:"calendar" json:"calendar"`
+	} `yaml:"time_model" json:"time_model"`
 	Schedule struct {
-		MonteCarloRuns           int     `yaml:"monte_carlo_runs"`
-		MonteCarloSeed           int     `yaml:"monte_carlo_seed"`
-		PortfolioTauWorkingDays  float64 `yaml:"portfolio_tau_working_days"`
-	} `yaml:"schedule"`
+		MonteCarloRuns          int     `yaml:"monte_carlo_runs" json:"monte_carlo_runs"`
+		MonteCarloSeed          int     `yaml:"monte_carlo_seed" json:"monte_carlo_seed"`
+		PortfolioTauWorkingDays float64 `yaml:"portfolio_tau_working_days" json:"portfolio_tau_working_days"`
+	} `yaml:"schedule" json:"schedule"`
 	Solver struct {
-		DefaultTimeLimitMS   int     `yaml:"default_time_limit_ms"`
-		RecalcTimeLimitMS    int     `yaml:"recalc_time_limit_ms"`
-		KMin                 int     `yaml:"k_min"`
-		KMax                 int     `yaml:"k_max"`
-		MinJaccardDiversity  float64 `yaml:"min_jaccard_diversity"`
-	} `yaml:"solver"`
+		DefaultTimeLimitMS  int     `yaml:"default_time_limit_ms" json:"default_time_limit_ms"`
+		RecalcTimeLimitMS   int     `yaml:"recalc_time_limit_ms" json:"recalc_time_limit_ms"`
+		KMin                int     `yaml:"k_min" json:"k_min"`
+		KMax                int     `yaml:"k_max" json:"k_max"`
+		MinJaccardDiversity float64 `yaml:"min_jaccard_diversity" json:"min_jaccard_diversity"`
+	} `yaml:"solver" json:"solver"`
 	Limits struct {
-		MaxEmployees     int `yaml:"max_employees"`
-		MaxRequirements  int `yaml:"max_requirements"`
-	} `yaml:"limits"`
-	MetricsVersion string `yaml:"metrics_version"`
+		MaxEmployees    int `yaml:"max_employees" json:"max_employees"`
+		MaxRequirements int `yaml:"max_requirements" json:"max_requirements"`
+	} `yaml:"limits" json:"limits"`
+	MetricsVersion string `yaml:"metrics_version" json:"metrics_version"`
 }
 
 func (h *ReferenceHandler) Grades(w http.ResponseWriter, r *http.Request) {

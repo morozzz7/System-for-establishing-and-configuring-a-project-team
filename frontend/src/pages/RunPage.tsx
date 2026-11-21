@@ -15,7 +15,9 @@ import {
   Descriptions,
   Divider,
   Empty as AntEmpty,
+  Input,
   List,
+  Modal,
   Radio,
   Row,
   Space,
@@ -26,6 +28,7 @@ import {
   message,
 } from 'antd';
 import type {
+  DecisionResponse,
   Explanation,
   RecalculateResponse,
   RejectedOverride,
@@ -35,7 +38,15 @@ import type {
   VariantSummary,
 } from '../types';
 import { ApiError, reasonCodeLabel, toApiError } from '../api/errors';
-import { createRun, getRun, getRunInputs, getVariant, getVariantExplanation, listRoles } from '../api/client';
+import {
+  createRun,
+  getRun,
+  getRunInputs,
+  getVariant,
+  getVariantExplanation,
+  listRoles,
+  recordDecision,
+} from '../api/client';
 import ConstraintEditor from '../components/ConstraintEditor';
 import ExplanationPanel, { ExplanationLoading } from '../components/ExplanationPanel';
 import { GradeTag } from '../components/shared';
@@ -281,6 +292,11 @@ export default function RunPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [loadingRun, setLoadingRun] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [decisionModalOpen, setDecisionModalOpen] = useState(false);
+  const [decisionComment, setDecisionComment] = useState('');
+  const [deciding, setDeciding] = useState(false);
+  const [decision, setDecision] = useState<DecisionResponse | null>(null);
+  const [decisionError, setDecisionError] = useState<ApiError | null>(null);
 
   const runId = run?.run_id;
 
@@ -431,6 +447,26 @@ export default function RunPage() {
     setRecalcResult(null);
   };
 
+  const handleRecordDecision = async () => {
+    if (!run || !selectedVariantId) return;
+    setDeciding(true);
+    setDecisionError(null);
+    try {
+      const resp = await recordDecision(run.run_id, {
+        variant_id: selectedVariantId,
+        decided_by: 'emp_manager1',
+        comment: decisionComment.trim() || undefined,
+      });
+      setDecision(resp);
+      setDecisionModalOpen(false);
+      message.success('Решение утверждено и сохранено в аудите');
+    } catch (err) {
+      setDecisionError(toApiError(err));
+    } finally {
+      setDeciding(false);
+    }
+  };
+
   const parentLink = useMemo(() => {
     if (!run?.parent_run_id) return null;
     return `/runs/new/${run.brief_id}?run=${run.parent_run_id}`;
@@ -450,8 +486,30 @@ export default function RunPage() {
         <Button onClick={() => setEditorOpen(true)} disabled={!run}>
           Ограничения
         </Button>
+        <Button
+          type="primary"
+          style={decision ? { background: '#059669', borderColor: '#059669' } : { background: '#10b981', borderColor: '#10b981' }}
+          onClick={() => setDecisionModalOpen(true)}
+          disabled={!run || !selectedVariantId || !!decision}
+        >
+          {decision ? 'Вариант утверждён' : 'Утвердить состав'}
+        </Button>
         {selectedVariantId && <Text type="secondary">Базовый вариант: {selectedVariantId}</Text>}
       </Space>
+
+      {decision && (
+        <Alert
+          type="success"
+          showIcon
+          message={`Состав команды утверждён (аудит ${decision.audit_event_id})`}
+          description={
+            <Space direction="vertical" size={0}>
+              <Text>Утверждён вариант: <Text strong>{decision.variant_id}</Text></Text>
+              <Text type="secondary">Дата решения: {new Date(decision.decided_at).toLocaleString('ru-RU')}</Text>
+            </Space>
+          }
+        />
+      )}
 
       {pageError && (
         <Alert
@@ -599,6 +657,31 @@ export default function RunPage() {
         onRecalculated={handleRecalculated}
         onError={handleRecalcError}
       />
+
+      <Modal
+        title={`Утвердить вариант команды: ${selectedVariantId}`}
+        open={decisionModalOpen}
+        onOk={handleRecordDecision}
+        confirmLoading={deciding}
+        onCancel={() => setDecisionModalOpen(false)}
+        okText="Подтвердить решение"
+        cancelText="Отмена"
+      >
+        <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 12 }}>
+          <Text>
+            Вы утверждаете вариант <Text strong>{selectedVariantId}</Text> в качестве финального состава проектной команды. Это действие фиксируется в журнале аудита.
+          </Text>
+          {decisionError && (
+            <Alert type="error" showIcon message={decisionError.detail || decisionError.code} />
+          )}
+          <Input.TextArea
+            rows={3}
+            placeholder="Комментарий менеджера к решению (необязательно)"
+            value={decisionComment}
+            onChange={(e) => setDecisionComment(e.target.value)}
+          />
+        </Space>
+      </Modal>
     </Space>
   );
 }

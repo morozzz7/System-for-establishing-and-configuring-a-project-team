@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/teamopt/backend/internal/domain"
@@ -27,21 +30,89 @@ func (h *WorkflowHandler) Register(r chi.Router) {
 	r.Get("/runs/{runId}/variants/{variantId}", h.GetVariant)
 	r.Get("/runs/{runId}/variants/{variantId}/explanation", h.GetExplanation)
 	r.Post("/runs/{runId}/recalculate", h.Recalculate)
+	r.Post("/runs/{runId}/decision", h.RecordDecision)
+	r.Get("/runs/{runId}/decision", h.GetDecision)
 }
 func (h *WorkflowHandler) CreateBrief(w http.ResponseWriter, r *http.Request) {
-	var in struct {
-		Title              string `json:"title"`
-		SourceType         string `json:"source_type"`
-		Language           string `json:"language"`
-		Text               string `json:"text"`
-		RequestedStartWeek string `json:"requested_start_week"`
-		DeadlineWeek       string `json:"deadline_week"`
+	var input service.BriefInput
+	contentType := r.Header.Get("Content-Type")
+
+	if strings.HasPrefix(contentType, "multipart/form-data") {
+		// Limit to 10 MB per openapi.yaml
+		if err := r.ParseMultipartForm(10 << 20); err != nil {
+			writeProblem(w, problem400(r, fmt.Errorf("file too large or invalid multipart form: %w", err)))
+			return
+		}
+		file, header, err := r.FormFile("file")
+		if err != nil {
+			writeProblem(w, problem400(r, fmt.Errorf("missing file field in multipart request: %w", err)))
+			return
+		}
+		defer file.Close()
+
+		fileBytes, err := io.ReadAll(file)
+		if err != nil {
+			writeProblem(w, problem400(r, fmt.Errorf("failed to read uploaded file: %w", err)))
+			return
+		}
+
+		title := r.FormValue("title")
+		if title == "" {
+			title = strings.TrimSuffix(header.Filename, filepath.Ext(header.Filename))
+			if title == "" {
+				title = "Без названия"
+			}
+		}
+
+		text := ExtractTextFromFile(header.Filename, fileBytes)
+		if len(strings.TrimSpace(text)) == 0 {
+			writeProblem(w, problem400(r, fmt.Errorf("uploaded file contains no extractable text")))
+			return
+		}
+
+		lang := r.FormValue("language")
+		if lang == "" {
+			lang = "ru"
+		}
+
+		input = service.BriefInput{
+			Title:              title,
+			SourceType:         "document",
+			Language:           lang,
+			Text:               text,
+			RequestedStartWeek: r.FormValue("requested_start_week"),
+			DeadlineWeek:       r.FormValue("deadline_week"),
+		}
+	} else {
+		var in struct {
+			Title              string `json:"title"`
+			SourceType         string `json:"source_type"`
+			Language           string `json:"language"`
+			Text               string `json:"text"`
+			RequestedStartWeek string `json:"requested_start_week"`
+			DeadlineWeek       string `json:"deadline_week"`
+		}
+		if err := readJSON(r, &in); err != nil {
+			writeProblem(w, problem400(r, err))
+			return
+		}
+		if in.SourceType == "" {
+			in.SourceType = "text"
+		}
+		if in.Language == "" {
+			in.Language = "ru"
+		}
+		input = service.BriefInput{
+			Title:              in.Title,
+			SourceType:         in.SourceType,
+			Language:           in.Language,
+			Text:               in.Text,
+			RequestedStartWeek: in.RequestedStartWeek,
+			DeadlineWeek:       in.DeadlineWeek,
+		}
 	}
-	if err := readJSON(r, &in); err != nil {
-		writeProblem(w, problem400(r, err))
-		return
-	}
-	b, err := h.Svc.CreateBrief(r.Context(), service.BriefInput{Title: in.Title, SourceType: in.SourceType, Language: in.Language, Text: in.Text, RequestedStartWeek: in.RequestedStartWeek, DeadlineWeek: in.DeadlineWeek})
+
+	b, err := h.Svc.CreateBrief(r.Context(), input)
 	if err != nil {
 		writeProblem(w, problem502(r, err))
 		return
@@ -171,6 +242,38 @@ func (h *WorkflowHandler) Recalculate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, result)
+}
+func (h *WorkflowHandler) RecordDecision(w http.ResponseWriter, r *http.Request) {
+	runID := chi.URLParam(r, "runId")
+	var in service.DecisionInput
+	if err := readJSON(r, &in); err != nil {
+		writeProblem(w, problem400(r, err))
+		return
+	}
+	resp, err := h.Svc.RecordDecision(runID, in)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrRunNotFound):
+			writeProblem(w, problem404(r))
+		case errors.Is(err, service.ErrVariantNotFound):
+			writeProblem(w, domain.NewProblem(400, "VARIANT_NOT_FOUND", err.Error(), requestID(r), []string{"VARIANT_NOT_FOUND"}))
+		case errors.Is(err, service.ErrDecisionExists):
+			writeProblem(w, domain.NewProblem(409, "CONFLICT_DECISION_EXISTS", "Use a recalculation run to change the decision.", requestID(r), []string{"DECISION_IMMUTABLE"}))
+		default:
+			writeProblem(w, problem400(r, err))
+		}
+		return
+	}
+	writeJSON(w, http.StatusCreated, resp)
+}
+func (h *WorkflowHandler) GetDecision(w http.ResponseWriter, r *http.Request) {
+	runID := chi.URLParam(r, "runId")
+	d, ok := h.Svc.GetDecision(runID)
+	if !ok {
+		writeProblem(w, problem404(r))
+		return
+	}
+	writeJSON(w, http.StatusOK, d)
 }
 func briefJSON(b *service.BriefRecord) map[string]any {
 	return map[string]any{"brief_id": b.BriefID, "title": b.Title, "source_type": b.SourceType, "language": b.Language, "status": b.Status, "created_at": b.CreatedAt, "requirement_count": len(b.Requirements), "needs_review_count": len(b.Review), "extraction": b.Diagnostics, "reason_codes": []string{}}

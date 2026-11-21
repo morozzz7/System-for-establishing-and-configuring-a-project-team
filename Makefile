@@ -1,7 +1,7 @@
 COMPOSE_FILE := deploy/docker-compose.yml
 COMPOSE_PROJECT_NAME := teamopt
 COMPOSE_ENV_FILE := .env
-COMPOSE := docker compose -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT_NAME) --env-file $(COMPOSE_ENV_FILE)
+COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT_NAME) --env-file $(COMPOSE_ENV_FILE)
 
 .PHONY: up down build logs test lint-contracts lint-backend lint-ml seed status help
 
