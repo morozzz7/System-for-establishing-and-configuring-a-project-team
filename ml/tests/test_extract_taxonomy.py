@@ -16,19 +16,19 @@ def _reset():
 
 
 class TestTaxonomyLoad:
-    def test_load_all_12_roles(self):
+    def test_load_all_roles(self):
         reg = get_registry()
-        assert len(reg.roles) == 12
+        assert len(reg.roles) == 63
         expected_ids = {
             "backend_engineer", "frontend_engineer", "qa_engineer", "devops_engineer",
             "data_engineer", "ml_engineer", "business_analyst", "system_analyst",
             "project_manager", "ux_ui_designer", "solution_architect", "security_engineer",
         }
-        assert set(reg.roles.keys()) == expected_ids
+        assert expected_ids <= set(reg.roles.keys())
 
     def test_competencies_loaded(self):
         reg = get_registry()
-        assert len(reg.competencies) >= 100  # taxonomy says 101
+        assert len(reg.competencies) >= 390  # taxonomy says 390
 
     def test_core_competencies_populated(self):
         reg = get_registry()
@@ -104,5 +104,6 @@ class TestCompetencyRoles:
         reg = get_registry()
         comp = reg.get_competency("db_postgresql")
         assert set(comp.roles) == {
-            "backend_engineer", "data_engineer", "system_analyst", "devops_engineer"
+            "backend_engineer", "data_engineer", "system_analyst", "devops_engineer",
+            "fullstack_engineer", "dba",
         }

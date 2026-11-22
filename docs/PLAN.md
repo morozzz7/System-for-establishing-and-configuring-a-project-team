@@ -15,8 +15,8 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 - Customer, real data access, and tracker/HR integration: assume synthetic data only (before 2.2).
 - LLM: cloud API or local model? (before 3.1)
 - Final competency taxonomy and grade-to-rate bands (before 1.2). RESOLVED 2026-11-05: custom IT seed
-  (12 roles, `contracts/taxonomy.yaml`) and dimensionless grade coefficients J1.0/M1.4/S1.9/L2.6/P3.4
-  (`contracts/reference.yaml`); no currency in the system.
+  (63 roles, 390 competencies, `contracts/taxonomy.yaml`; expanded 2026-11-22 from `roles.csv`/`competencies.csv`)
+  and dimensionless grade coefficients J1.0/M1.4/S1.9/L2.6/P3.4 (`contracts/reference.yaml`); no currency in the system.
 - Working-time model: 40 h/week, 20% reserve? Russian production calendar source (before 2.4).
 
 ## Phase 1. Task validation (weeks 1-2)
@@ -72,12 +72,13 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 ## Open questions (resolve before the listed task)
 - Customer, real data access, and tracker/HR integration: assume synthetic data only (before 2.2).
 - LLM: cloud API or local model? (before 3.1)
-- Final competency taxonomy and grade-to-rate bands (before 1.2). RESOLVED 2026-11-05: custom IT seed (12 roles, `contracts/taxonomy.yaml`) and dimensionless grade coefficients J1.0/M1.4/S1.9/L2.6/P3.4 (`contracts/reference.yaml`); no currency in the system.
+- Final competency taxonomy and grade-to-rate bands (before 1.2). RESOLVED 2026-11-05: custom IT seed (63 roles, 390 competencies, `contracts/taxonomy.yaml`; expanded 2026-11-22 from `roles.csv`/`competencies.csv`) and dimensionless grade coefficients J1.0/M1.4/S1.9/L2.6/P3.4 (`contracts/reference.yaml`); no currency in the system.
 - Working-time model: 40 h/week, 20% reserve? Russian production calendar source (before 2.4).
 - Bulk import format: JSON only or also CSV? (before 5.1) — RECOMMENDATION: JSON primary, CSV via frontend transform.
 - Weight editor: allow free-form custom weights or only preset + delta sliders? (before 5.2) — RECOMMENDATION: preset cards + "Custom" mode with per-metric sliders, sum=1 enforced.
 
 ## Log
+2026-11-22 - taxonomy-expansion - added 51 roles and 289 competencies from `roles.csv`/`competencies.csv` to `contracts/taxonomy.yaml` (63 roles, 390 competencies total) - merged core competencies/grades for overlapping roles and role links for overlapping competencies; assigned default roles to CSV competencies with no explicit role; synced embedded handler copy; updated seed and ML taxonomy tests
 2026-11-22 - fix(explanation) - blank screen after "Рассчитать варианты" - `explain.Generate` left `Excluded`/`Deficits` nil when a run had no relevant excluded candidates, so the contract-mandated arrays serialized as `null` and `ExplanationPanel` crashed on `.length`; all Explanation arrays are now initialized to `[]` (regression test checks JSON shape) and the panel tolerates malformed null arrays; reproduced the exact user flow with default parameters — run page and explanation render with 0 console/page errors; E2E 1 test / 4.0 s, frontend 128 Vitest tests / lint / build green
 2026-11-22 - 5.4 - full-stack Playwright journey - added `frontend/e2e/full-journey.e2e.ts`: one test covers import pool (real PUT /employees with Dry Run) -> brief upload and LLM extraction -> requirements review -> run config -> 2-variant comparison -> recalc (force_exclude, RECALC_APPLIED, child run) -> decision with audit id; green on a clean stack in 3.9 s (1 test, 7 steps, 0 console/page errors); `deploy/docker-compose.e2e.yml` + `deploy/e2e/llm_stub.py` replace only the external LLM with a recorded response (no API key); frontend 127 Vitest tests / lint / build green; fixed import payload contract fields (unit_id, employment_type, competency confidence/source), pgx NUMERIC float scan crash, and amd64 binary build on an arm64 Docker host
 2026-11-20 - 5.3 - employee bulk import UI + file brief upload + Humblytics dark revamp - implemented EmployeeImportModal with CSV/JSON drag-drop, header auto-mapping, preview table, dry-run mode (validate_only: true), row-level error highlights, downloadable CSV template; added file-based brief upload (.txt, .docx, .pdf, .md, .json) with text preview; revamped UI in Humblytics slate dark aesthetic (#090d16 canvas, #111827 cards, #3b82f6 electric accents, Emil Kowalski tactile interactions); 14 vitest suites (127 tests) green, eslint 0 warnings, vite build clean

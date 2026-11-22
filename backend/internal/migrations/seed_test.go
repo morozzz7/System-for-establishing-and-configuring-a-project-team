@@ -39,10 +39,10 @@ func TestSeedPopulatesReference(t *testing.T) {
 	assert.Equal(t, 5, n, "expected 5 level descriptors")
 
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM role`).Scan(&n))
-	assert.Equal(t, 12, n, "expected 12 roles")
+	assert.Equal(t, 63, n, "expected 63 roles")
 
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM competency`).Scan(&n))
-	assert.GreaterOrEqual(t, n, 101, "expected >= 101 competencies")
+	assert.GreaterOrEqual(t, n, 390, "expected >= 390 competencies")
 
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM grade_band`).Scan(&n))
 	assert.Equal(t, 5, n, "expected 5 grades")
@@ -67,9 +67,9 @@ func TestSeedPopulatesReference(t *testing.T) {
 	// Idempotency: run seed again, counts must not change.
 	runSeedInline(t, db, absRoot)
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM role`).Scan(&n))
-	assert.Equal(t, 12, n, "seed idempotency: roles count changed")
+	assert.Equal(t, 63, n, "seed idempotency: roles count changed")
 	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM competency`).Scan(&n))
-	assert.GreaterOrEqual(t, n, 101, "seed idempotency: competencies count dropped")
+	assert.GreaterOrEqual(t, n, 390, "seed idempotency: competencies count dropped")
 }
 
 // TestSeedNoPersonalData verifies that reference tables contain no
