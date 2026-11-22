@@ -33,8 +33,8 @@ emp_test2,M,frontend_dev,part_time,false,fe_react:3
     expect((rows[0].raw.competencies as Array<Record<string, unknown>>)[0]).toMatchObject({
       competency_id: 'lang_go',
       level: 4,
-      confidence: 0.9,
-      source: 'manager_review',
+      confidence: 0.8,
+      source: 'self_assessment',
     });
 
     expect(rows[1].employee_id).toBe('emp_test2');

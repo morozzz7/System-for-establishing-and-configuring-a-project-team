@@ -20,6 +20,30 @@ export interface ParsedEmployeeRow {
   error_message?: string;
 }
 
+const COMP_DEFAULT_SOURCE = 'self_assessment';
+const COMP_DEFAULT_CONFIDENCE = 0.8;
+
+function normalizeEmploymentType(value: string): string {
+  const raw = value.trim().toLowerCase();
+  if (raw === 'full_time' || raw === 'fulltime') return 'internal';
+  if (raw === 'part_time' || raw === 'parttime') return 'contractor';
+  if (raw === 'contractor' || raw === 'external_partner') return raw;
+  return 'internal';
+}
+
+function normalizeCompetencies(
+  values: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  return values
+    .map((c) => ({
+      competency_id: String(c.competency_id ?? ''),
+      level: Number(c.level ?? 1),
+      confidence: typeof c.confidence === 'number' ? c.confidence : COMP_DEFAULT_CONFIDENCE,
+      source: typeof c.source === 'string' && c.source ? c.source : COMP_DEFAULT_SOURCE,
+    }))
+    .filter((c) => c.competency_id);
+}
+
 export const CSV_TEMPLATE_CONTENT = `# Шаблон импорта сотрудников
 # Допустимые грейды: J (Junior), M (Middle), S (Senior), L (Lead), P (Principal)
 # Тип занятости: internal, contractor, external_partner
@@ -43,22 +67,6 @@ export function downloadCsvTemplate(): void {
   URL.revokeObjectURL(url);
 }
 
-function normalizeEmploymentType(value: string): string {
-  const raw = value.trim().toLowerCase();
-  if (raw === 'contractor' || raw === 'external_partner') return raw;
-  return 'internal';
-}
-
-function normalizeCompetencies(
-  values: Array<Record<string, unknown>>,
-): Array<Record<string, unknown>> {
-  return values.map((item) => ({
-    ...item,
-    confidence: Number(item.confidence ?? 0.9),
-    source: String(item.source || 'manager_review'),
-  }));
-}
-
 export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
   const lines = csvText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
   if (lines.length < 2) return [];
@@ -70,7 +78,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
   const colId = getCol(['employee_id', 'id', 'ид']);
   const colGrade = getCol(['grade', 'грейд']);
   const colRole = getCol(['role_profile_id', 'role', 'роль']);
-  const colUnit = getCol(['unit_id', 'unit', 'подразделение']);
+  const colUnit = getCol(['unit_id', 'unit', 'отдел', 'юнит', 'team', 'подразделение', 'department']);
   const colType = getCol(['employment_type', 'type', 'тип', 'занятость']);
   const colBench = getCol(['bench_flag', 'bench', 'скамейка']);
   const colComp = getCol(['competencies', 'компетенции', 'skills']);
@@ -92,14 +100,16 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
     const bench = benchRaw === 'true' || benchRaw === '1' || benchRaw === 'да';
 
     const compRaw = colComp >= 0 && parts[colComp] ? parts[colComp] : '';
-    const comps = normalizeCompetencies(
-      compRaw
-        ? compRaw.split(';').map((c) => {
-            const [cId, lvl] = c.split(':');
-            return { competency_id: cId?.trim(), level: Number(lvl?.trim() || 1) };
-          }).filter((c) => c.competency_id)
-        : [],
-    );
+    const parsedComps: Array<Record<string, unknown>> = [];
+    if (compRaw) {
+      for (const entry of compRaw.split(';')) {
+        const [cId, lvl] = entry.split(':');
+        const id = cId?.trim();
+        if (!id) continue;
+        parsedComps.push({ competency_id: id, level: Number(lvl?.trim() || 1) });
+      }
+    }
+    const comps = normalizeCompetencies(parsedComps);
 
     let hasError = false;
     let errorMsg = '';
@@ -159,11 +169,10 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
     const empId = String(obj.employee_id || '');
     const grade = String(obj.grade || '').toUpperCase();
     const roleId = String(obj.role_profile_id || '');
-    const rawComps = Array.isArray(obj.competencies)
-      ? (obj.competencies as Array<Record<string, unknown>>)
-      : [];
-    const comps = normalizeCompetencies(rawComps);
     const empType = normalizeEmploymentType(String(obj.employment_type || 'internal'));
+    const comps = normalizeCompetencies(
+      Array.isArray(obj.competencies) ? (obj.competencies as Array<Record<string, unknown>>) : [],
+    );
 
     let hasError = false;
     let errorMsg = '';
