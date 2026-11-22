@@ -51,8 +51,8 @@ Implemented screens (all on mock data):
 - **Assignments** — table of weekly assignments
 - **Absences** — table with delete action
 - **Reference data** (read-only):
-  - Roles (12 IT roles from taxonomy)
-  - Competencies (grouped by category)
+  - Roles (63 IT roles from taxonomy)
+  - Competencies (390 competencies grouped by category)
   - Grades (J/M/S/L/P with cost coefficients)
   - Weight presets (Fast/Economical/Balanced/Low-risk)
   - Planning parameters

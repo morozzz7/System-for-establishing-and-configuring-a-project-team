@@ -427,6 +427,7 @@ func TestMigrationOrder(t *testing.T) {
 		"00006_run.sql",
 		"00007_audit.sql",
 		"00008_extend_audit.sql",
+		"00009_role_family_check.sql",
 	}
 	assert.Equal(t, expected, names)
 }
