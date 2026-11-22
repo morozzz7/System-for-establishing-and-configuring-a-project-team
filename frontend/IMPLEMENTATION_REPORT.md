@@ -37,7 +37,7 @@ Successfully implemented the frontend skeleton with reference-data screens for t
 - 15 mock absences (vacation, sick_leave, training, business_trip, other)
 
 ### 6. Reference Data (read-only)
-- **Roles** (`/reference/roles`) — 12 IT roles from taxonomy
+- **Roles** (`/reference/roles`) — 63 IT roles from taxonomy
 - **Competencies** (`/reference/competencies`) — grouped by category
 - **Grades** (`/reference/grades`) — J/M/S/L/P with cost coefficients
 - **Weight Presets** (`/reference/weight-presets`) — Fast/Economical/Balanced/Low-risk

@@ -42,7 +42,7 @@ import type {
 } from '../types';
 import { ApiError } from '../api/errors';
 import { mockAbsences } from './data';
-import { mockEmployees, mockWeightPresets } from './reference';
+import { mockEmployees, mockRoles, mockWeightPresets } from './reference';
 import { parseWeek, weekStart } from '../utils/week';
 
 // ──── constants ────
@@ -852,17 +852,10 @@ export function getMockRunInputs(runId: string): RunInputs | null {
 
 // ──── explanation (GET /runs/{runId}/variants/{variantId}/explanation) ────
 
-/** Role name map (mirrors mockRoles; ids are pseudonyms, no personal data). */
-const MOCK_ROLE_NAMES: Record<string, string> = {
-  backend_engineer: 'Бэкенд-разработчик',
-  frontend_engineer: 'Фронтенд-разработчик',
-  qa_engineer: 'Тестировщик',
-  devops_engineer: 'DevOps-инженер',
-  data_engineer: 'Дата-инженер',
-  ml_engineer: 'ML-инженер',
-  business_analyst: 'Бизнес-аналитик',
-  system_analyst: 'Системный аналитик',
-};
+/** Role name map from the mock taxonomy (ids are pseudonyms, no personal data). */
+const MOCK_ROLE_NAMES: Record<string, string> = Object.fromEntries(
+  mockRoles.map((role) => [role.role_id, role.name_ru]),
+);
 
 const MOCK_GRADE_LABEL: Record<Grade, string> = { J: 'Джуниор', M: 'Мидл', S: 'Сеньор', L: 'Лид', P: 'Принципал' };
 

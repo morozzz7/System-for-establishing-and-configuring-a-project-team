@@ -12,7 +12,7 @@
 # - No personal data here: roles, technologies and generic skill descriptions only.
 schema_version: 1.0.0
 contract_version: v1
-updated: '2026-11-05'
+updated: '2026-11-22'
 default_locale: ru
 level_scale: 5
 
@@ -49,64 +49,64 @@ roles:
     name_ru: Бэкенд-разработчик
     family: engineering
     synonyms: [backend, back-end, бэкенд, бэкенд-разработчик, серверный разработчик, server-side developer, api developer]
-    core_competencies: [lang_go, lang_java, lang_python, db_postgresql, api_rest, arch_microservices, proc_git_flow]
-    typical_grades: [J, M, S]
+    core_competencies: [lang_go, lang_java, lang_python, db_postgresql, api_rest, arch_microservices, proc_git_flow, mq_kafka]
+    typical_grades: [J, M, S, L]
   - role_id: frontend_engineer
     name_en: Frontend Engineer
     name_ru: Фронтенд-разработчик
     family: engineering
     synonyms: [frontend, front-end, фронтенд, фронт, web developer, веб-разработчик, верстальщик]
-    core_competencies: [lang_typescript, fw_react, web_css, api_rest, test_playwright, ui_design_system]
-    typical_grades: [J, M, S]
+    core_competencies: [lang_typescript, fw_react, web_css, api_rest, test_playwright, ui_design_system, web_a11y, web_performance]
+    typical_grades: [J, M, S, L]
   - role_id: qa_engineer
     name_en: QA Engineer
     name_ru: Тестировщик
     family: quality
     synonyms: [qa, qa engineer, тестировщик, тестирование, quality assurance, инженер по тестированию, qa-инженер]
-    core_competencies: [qa_test_design, test_playwright, test_api, qa_manual, test_performance, proc_git_flow]
+    core_competencies: [qa_test_design, test_playwright, test_api, qa_manual, test_performance, proc_git_flow, qa_bug_reporting]
     typical_grades: [J, M, S]
   - role_id: devops_engineer
     name_en: DevOps Engineer
     name_ru: DevOps-инженер
     family: infrastructure
     synonyms: [devops, dev-ops, девопс, sre, инфраструктурный инженер, platform engineer, инженер эксплуатации]
-    core_competencies: [cloud_kubernetes, iac_terraform, cicd_gitlab, obs_prometheus, lang_bash, lang_go]
+    core_competencies: [cloud_kubernetes, iac_terraform, cicd_gitlab, obs_prometheus, lang_bash, lang_go, os_linux, cloud_docker]
     typical_grades: [M, S, L]
   - role_id: data_engineer
     name_en: Data Engineer
     name_ru: Дата-инженер
     family: data
     synonyms: [data engineer, дата-инженер, дата инженер, инженер данных, etl developer, bi developer]
-    core_competencies: [lang_python, lang_sql, db_postgresql, db_clickhouse, etl_orchestration, mq_kafka]
-    typical_grades: [M, S]
+    core_competencies: [lang_python, lang_sql, db_postgresql, db_clickhouse, etl_orchestration, mq_kafka, data_airflow, data_spark]
+    typical_grades: [J, M, S, L]
   - role_id: ml_engineer
     name_en: ML Engineer
     name_ru: ML-инженер
     family: data
     synonyms: [ml engineer, ml-инженер, machine learning engineer, ds, data scientist, дата-сайентист, исследователь данных]
-    core_competencies: [lang_python, ml_sklearn, ml_pytorch, ml_mlops, ml_nlp, stat_probability]
+    core_competencies: [lang_python, ml_sklearn, ml_pytorch, ml_mlops, ml_nlp, stat_probability, ml_mlflow, ml_feature_store]
     typical_grades: [M, S, L]
   - role_id: business_analyst
     name_en: Business Analyst
     name_ru: Бизнес-аналитик
     family: analysis
     synonyms: [ba, business analyst, бизнес-аналитик, бизнес аналитик, аналитик требований, product owner]
-    core_competencies: [an_requirements, an_bpmn, an_user_stories, an_sql_analysis, proc_stakeholder_mgmt]
+    core_competencies: [an_requirements, an_bpmn, an_user_stories, an_sql_analysis, proc_stakeholder_mgmt, an_process_mining]
     typical_grades: [J, M, S]
   - role_id: system_analyst
     name_en: System Analyst
     name_ru: Системный аналитик
     family: analysis
     synonyms: [sa, system analyst, системный аналитик, аналитик api, integration analyst]
-    core_competencies: [an_requirements, api_rest, arch_c4, lang_sql, an_bpmn]
-    typical_grades: [M, S]
+    core_competencies: [an_requirements, api_rest, arch_c4, lang_sql, an_bpmn, an_api_spec, an_data_model, an_integration, an_uml, api_openapi]
+    typical_grades: [J, M, S]
   - role_id: project_manager
     name_en: Project Manager
     name_ru: Руководитель проекта
     family: management
     synonyms: [pm, project manager, руководитель проекта, менеджер проекта, delivery manager, scrum master]
-    core_competencies: [proc_agile_scrum, proc_estimation, proc_risk_management, proc_stakeholder_mgmt, proc_kanban]
-    typical_grades: [S, L]
+    core_competencies: [proc_agile_scrum, proc_estimation, proc_risk_management, proc_stakeholder_mgmt, proc_kanban, proc_agile, proc_risk_mgmt, proc_budgeting]
+    typical_grades: [M, S, L]
   - role_id: ux_ui_designer
     name_en: UX/UI Designer
     name_ru: UX/UI-дизайнер
@@ -119,15 +119,372 @@ roles:
     name_ru: Архитектор решения
     family: engineering
     synonyms: [architect, solution architect, архитектор, системный архитектор, lead architect, tech lead]
-    core_competencies: [arch_system_design, arch_microservices, arch_event_driven, arch_c4, sec_threat_modeling]
-    typical_grades: [L, P]
+    core_competencies: [arch_system_design, arch_microservices, arch_event_driven, arch_c4, sec_threat_modeling, arch_solution, arch_integration, arch_nfr, arch_cloud, soft_stakeholder]
+    typical_grades: [S, L, P]
   - role_id: security_engineer
     name_en: Security Engineer
     name_ru: Инженер по безопасности
     family: security
     synonyms: [security engineer, appsec, инфобез, информационная безопасность, security analyst, pentester, пентестер]
-    core_competencies: [sec_appsec, sec_owasp, sec_threat_modeling, sec_iam, sec_pki]
+    core_competencies: [sec_appsec, sec_owasp, sec_threat_modeling, sec_iam, sec_pki, sec_crypto, sec_compliance]
+    typical_grades: [M, S, L]
+  - role_id: fullstack_engineer
+    name_en: Fullstack Engineer
+    name_ru: Фулстек-разработчик
+    family: engineering
+    synonyms: [фулстек-разработчик, fullstack engineer, fullstack_engineer]
+    core_competencies: [lang_typescript, fw_nodejs, fw_react, db_postgresql, api_rest]
+    typical_grades: [J, M, S]
+  - role_id: ios_engineer
+    name_en: iOS Engineer
+    name_ru: iOS-разработчик
+    family: engineering
+    synonyms: [ios-разработчик, ios engineer, ios_engineer]
+    core_competencies: [lang_swift, fw_swiftui, mob_ios_arch, api_rest, mob_appstore]
+    typical_grades: [J, M, S, L]
+  - role_id: android_engineer
+    name_en: Android Engineer
+    name_ru: Android-разработчик
+    family: engineering
+    synonyms: [android-разработчик, android engineer, android_engineer]
+    core_competencies: [lang_kotlin, fw_jetpack_compose, mob_android_arch, api_rest]
+    typical_grades: [J, M, S, L]
+  - role_id: crossplatform_mobile_engineer
+    name_en: Cross-platform Mobile Engineer
+    name_ru: Кроссплатформенный мобильный разработчик
+    family: engineering
+    synonyms: [кроссплатформенный мобильный разработчик, cross-platform mobile engineer, crossplatform_mobile_engineer]
+    core_competencies: [lang_dart, fw_flutter, fw_react_native, api_rest]
+    typical_grades: [J, M, S]
+  - role_id: embedded_engineer
+    name_en: Embedded Engineer
+    name_ru: Embedded-разработчик
+    family: engineering
+    synonyms: [embedded-разработчик, embedded engineer, embedded_engineer]
+    core_competencies: [lang_c, lang_cpp, emb_rtos, emb_can, emb_fpga]
+    typical_grades: [J, M, S, L]
+  - role_id: game_developer
+    name_en: Game Developer
+    name_ru: Разработчик игр
+    family: engineering
+    synonyms: [разработчик игр, game developer, game_developer]
+    core_competencies: [game_unity, game_unreal, lang_csharp, lang_cpp, game_physics]
+    typical_grades: [J, M, S, L]
+  - role_id: desktop_developer
+    name_en: Desktop Developer
+    name_ru: Разработчик десктоп-приложений
+    family: engineering
+    synonyms: [разработчик десктоп-приложений, desktop developer, desktop_developer]
+    core_competencies: [lang_csharp, fw_dotnet, lang_cpp, desk_qt, desk_electron]
+    typical_grades: [J, M, S]
+  - role_id: onec_developer
+    name_en: 1C Developer
+    name_ru: 1С-разработчик
+    family: engineering
+    synonyms: [1с-разработчик, 1c developer, onec_developer]
+    core_competencies: [lang_1c_bsl, erp_1c_ut, erp_1c_zup, erp_1c_integration]
+    typical_grades: [J, M, S, L]
+  - role_id: bitrix_developer
+    name_en: Bitrix Developer
+    name_ru: Bitrix-разработчик
+    family: engineering
+    synonyms: [bitrix-разработчик, bitrix developer, bitrix_developer]
+    core_competencies: [lang_php, erp_bitrix, db_mysql, web_html]
+    typical_grades: [J, M, S]
+  - role_id: blockchain_developer
+    name_en: Blockchain Developer
+    name_ru: Блокчейн-разработчик
+    family: engineering
+    synonyms: [блокчейн-разработчик, blockchain developer, blockchain_developer]
+    core_competencies: [lang_solidity, lang_rust, bc_smart_contracts, bc_evm, sec_crypto]
+    typical_grades: [M, S, L]
+  - role_id: integration_engineer
+    name_en: Integration Engineer
+    name_ru: Интеграционный инженер
+    family: engineering
+    synonyms: [интеграционный инженер, integration engineer, integration_engineer]
+    core_competencies: [api_soap, api_rest, mq_rabbitmq, int_esb, int_etl]
+    typical_grades: [J, M, S]
+  - role_id: dba
+    name_en: Database Administrator
+    name_ru: Администратор БД
+    family: engineering
+    synonyms: [администратор бд, database administrator, dba]
+    core_competencies: [db_postgresql, db_oracle, db_mssql, db_tuning, db_replication, db_backup]
+    typical_grades: [J, M, S, L]
+  - role_id: software_architect
+    name_en: Software Architect
+    name_ru: Архитектор ПО
+    family: engineering
+    synonyms: [архитектор по, software architect, software_architect]
+    core_competencies: [arch_system_design, arch_ddd, arch_event_driven, arch_high_load, arch_clean]
     typical_grades: [S, L]
+  - role_id: tech_lead
+    name_en: Tech Lead
+    name_ru: Технический лидер
+    family: engineering
+    synonyms: [технический лидер, tech_lead]
+    core_competencies: [arch_system_design, soft_mentoring, soft_code_review, proc_estimation]
+    typical_grades: [S, L]
+  - role_id: qa_automation_engineer
+    name_en: QA Automation Engineer
+    name_ru: Автоматизатор тестирования
+    family: quality
+    synonyms: [автоматизатор тестирования, qa automation engineer, qa_automation_engineer]
+    core_competencies: [test_playwright, test_selenium, test_pytest, test_junit, cicd_gitlab]
+    typical_grades: [J, M, S, L]
+  - role_id: mobile_qa_engineer
+    name_en: Mobile QA Engineer
+    name_ru: Тестировщик мобильных приложений
+    family: quality
+    synonyms: [тестировщик мобильных приложений, mobile qa engineer, mobile_qa_engineer]
+    core_competencies: [test_appium, qa_mobile, qa_test_design, test_api]
+    typical_grades: [J, M, S]
+  - role_id: performance_engineer
+    name_en: Performance Engineer
+    name_ru: Инженер по нагрузочному тестированию
+    family: quality
+    synonyms: [инженер по нагрузочному тестированию, performance engineer, performance_engineer]
+    core_competencies: [test_jmeter, test_k6, obs_grafana, qa_profiling]
+    typical_grades: [M, S, L]
+  - role_id: qa_lead
+    name_en: QA Lead
+    name_ru: QA-лид
+    family: quality
+    synonyms: [qa-лид, qa lead, qa_lead]
+    core_competencies: [qa_strategy, qa_test_plan, qa_metrics, soft_leadership]
+    typical_grades: [S, L]
+  - role_id: sre_engineer
+    name_en: Site Reliability Engineer
+    name_ru: SRE-инженер
+    family: infrastructure
+    synonyms: [sre-инженер, site reliability engineer, sre_engineer]
+    core_competencies: [sre_slo, obs_prometheus, obs_grafana, sre_incident_mgmt, cloud_kubernetes]
+    typical_grades: [M, S, L]
+  - role_id: platform_engineer
+    name_en: Platform Engineer
+    name_ru: Платформенный инженер
+    family: infrastructure
+    synonyms: [платформенный инженер, platform_engineer]
+    core_competencies: [cloud_kubernetes, iac_helm, cicd_argocd, plat_idp, cloud_service_mesh]
+    typical_grades: [S, L]
+  - role_id: cloud_architect
+    name_en: Cloud Architect
+    name_ru: Облачный архитектор
+    family: infrastructure
+    synonyms: [облачный архитектор, cloud architect, cloud_architect]
+    core_competencies: [cloud_aws, cloud_azure, cloud_yandex, arch_multicloud, finops]
+    typical_grades: [S, L]
+  - role_id: release_engineer
+    name_en: Release Engineer
+    name_ru: Релиз-инженер
+    family: infrastructure
+    synonyms: [релиз-инженер, release engineer, release_engineer]
+    core_competencies: [cicd_jenkins, cicd_github_actions, rel_versioning, rel_branching]
+    typical_grades: [J, M, S]
+  - role_id: sysadmin
+    name_en: System Administrator
+    name_ru: Системный администратор
+    family: infrastructure
+    synonyms: [системный администратор, system administrator, sysadmin]
+    core_competencies: [os_linux, os_windows_server, net_tcp_ip, os_ad, virt_vmware]
+    typical_grades: [J, M, S, L]
+  - role_id: network_engineer
+    name_en: Network Engineer
+    name_ru: Сетевой инженер
+    family: infrastructure
+    synonyms: [сетевой инженер, network engineer, network_engineer]
+    core_competencies: [net_routing, net_switching, net_firewall, net_vpn, net_load_balancing]
+    typical_grades: [J, M, S, L]
+  - role_id: analytics_engineer
+    name_en: Analytics Engineer
+    name_ru: Аналитический инженер
+    family: data
+    synonyms: [аналитический инженер, analytics engineer, analytics_engineer]
+    core_competencies: [data_dbt, lang_sql, data_dwh, data_modeling]
+    typical_grades: [M, S]
+  - role_id: data_analyst
+    name_en: Data Analyst
+    name_ru: Аналитик данных
+    family: data
+    synonyms: [аналитик данных, data analyst, data_analyst]
+    core_competencies: [lang_sql, bi_tableau, stat_ab_testing, lang_python]
+    typical_grades: [J, M, S]
+  - role_id: bi_developer
+    name_en: BI Developer
+    name_ru: BI-разработчик
+    family: data
+    synonyms: [bi-разработчик, bi_developer]
+    core_competencies: [bi_power_bi, bi_datalens, bi_superset, data_dwh, lang_sql]
+    typical_grades: [J, M, S]
+  - role_id: data_scientist
+    name_en: Data Scientist
+    name_ru: Дата-сайентист
+    family: data
+    synonyms: [data_scientist]
+    core_competencies: [lang_python, ml_sklearn, stat_hypothesis, ml_timeseries, ml_recsys]
+    typical_grades: [J, M, S, L]
+  - role_id: nlp_engineer
+    name_en: NLP Engineer
+    name_ru: NLP-инженер
+    family: data
+    synonyms: [nlp-инженер, nlp engineer, nlp_engineer]
+    core_competencies: [ml_nlp, ml_transformers, ml_pytorch, ml_embeddings]
+    typical_grades: [M, S, L]
+  - role_id: cv_engineer
+    name_en: Computer Vision Engineer
+    name_ru: CV-инженер
+    family: data
+    synonyms: [cv-инженер, computer vision engineer, cv_engineer]
+    core_competencies: [ml_cv, ml_pytorch, ml_detection, ml_optimization]
+    typical_grades: [M, S, L]
+  - role_id: llm_engineer
+    name_en: LLM Engineer
+    name_ru: LLM-инженер
+    family: data
+    synonyms: [llm-инженер, llm engineer, llm_engineer]
+    core_competencies: [ml_llm, ml_rag, ml_prompting, ml_finetuning, ml_vector_db]
+    typical_grades: [M, S, L]
+  - role_id: data_architect
+    name_en: Data Architect
+    name_ru: Архитектор данных
+    family: data
+    synonyms: [архитектор данных, data architect, data_architect]
+    core_competencies: [data_dwh, data_lakehouse, data_governance, data_modeling]
+    typical_grades: [S, L]
+  - role_id: product_analyst
+    name_en: Product Analyst
+    name_ru: Продуктовый аналитик
+    family: analysis
+    synonyms: [продуктовый аналитик, product analyst, product_analyst]
+    core_competencies: [prod_metrics, stat_ab_testing, lang_sql, prod_funnel_analysis]
+    typical_grades: [J, M, S]
+  - role_id: technical_writer
+    name_en: Technical Writer
+    name_ru: Технический писатель
+    family: analysis
+    synonyms: [технический писатель, technical writer, technical_writer]
+    core_competencies: [doc_tech_writing, doc_api_docs, doc_docs_as_code]
+    typical_grades: [J, M, S]
+  - role_id: program_manager
+    name_en: Program Manager
+    name_ru: Руководитель программы
+    family: management
+    synonyms: [руководитель программы, program manager, program_manager]
+    core_competencies: [proc_portfolio, proc_dependency_mgmt, proc_governance]
+    typical_grades: [S, L]
+  - role_id: delivery_manager
+    name_en: Delivery Manager
+    name_ru: Delivery-менеджер
+    family: management
+    synonyms: [delivery-менеджер, delivery_manager]
+    core_competencies: [proc_delivery, proc_resource_mgmt, proc_kpi, proc_scrum]
+    typical_grades: [M, S, L]
+  - role_id: scrum_master
+    name_en: Scrum Master
+    name_ru: Scrum-мастер
+    family: management
+    synonyms: [scrum-мастер, scrum_master]
+    core_competencies: [proc_scrum, proc_kanban, soft_facilitation, proc_coaching]
+    typical_grades: [J, M, S]
+  - role_id: engineering_manager
+    name_en: Engineering Manager
+    name_ru: Руководитель разработки
+    family: management
+    synonyms: [руководитель разработки, engineering manager, engineering_manager]
+    core_competencies: [soft_leadership, hr_hiring, hr_performance, proc_estimation]
+    typical_grades: [S, L]
+  - role_id: product_manager
+    name_en: Product Manager
+    name_ru: Продакт-менеджер
+    family: product
+    synonyms: [продакт-менеджер, product manager, product_manager]
+    core_competencies: [prod_strategy, prod_user_research, prod_metrics, prod_roadmap]
+    typical_grades: [M, S, L]
+  - role_id: product_owner
+    name_en: Product Owner
+    name_ru: Владелец продукта
+    family: product
+    synonyms: [владелец продукта, product_owner]
+    core_competencies: [prod_backlog, an_user_stories, prod_prioritization, prod_discovery]
+    typical_grades: [J, M, S]
+  - role_id: ui_designer
+    name_en: UI Designer
+    name_ru: UI-дизайнер
+    family: design
+    synonyms: [ui-дизайнер, ui_designer]
+    core_competencies: [ui_figma, ui_design_system, ui_typography, ui_motion]
+    typical_grades: [J, M, S]
+  - role_id: ux_designer
+    name_en: UX Designer
+    name_ru: UX-дизайнер
+    family: design
+    synonyms: [ux-дизайнер, ux_designer]
+    core_competencies: [ux_ia, ux_prototyping, ux_cjm, ux_usability_testing]
+    typical_grades: [J, M, S, L]
+  - role_id: ux_researcher
+    name_en: UX Researcher
+    name_ru: UX-исследователь
+    family: design
+    synonyms: [ux-исследователь, ux researcher, ux_researcher]
+    core_competencies: [ux_research, ux_interviews, ux_surveys, stat_hypothesis]
+    typical_grades: [J, M, S]
+  - role_id: ux_writer
+    name_en: UX Writer
+    name_ru: UX-райтер
+    family: design
+    synonyms: [ux-райтер, ux writer, ux_writer]
+    core_competencies: [ux_writing, ux_content_strategy, doc_style_guide]
+    typical_grades: [J, M, S]
+  - role_id: pentester
+    name_en: Penetration Tester
+    name_ru: Специалист по тестированию на проникновение
+    family: security
+    synonyms: [специалист по тестированию на проникновение, penetration tester]
+    core_competencies: [sec_pentest, sec_web_vulns, sec_reverse, sec_red_team]
+    typical_grades: [M, S, L]
+  - role_id: soc_analyst
+    name_en: SOC Analyst
+    name_ru: Аналитик SOC
+    family: security
+    synonyms: [аналитик soc, soc analyst, soc_analyst]
+    core_competencies: [sec_siem, sec_incident_response, sec_forensics, sec_threat_intel]
+    typical_grades: [J, M, S, L]
+  - role_id: devsecops_engineer
+    name_en: DevSecOps Engineer
+    name_ru: DevSecOps-инженер
+    family: security
+    synonyms: [devsecops-инженер, devsecops engineer, devsecops_engineer]
+    core_competencies: [sec_sast_dast, sec_container, cicd_gitlab, sec_secrets_mgmt]
+    typical_grades: [M, S, L]
+  - role_id: security_architect
+    name_en: Security Architect
+    name_ru: Архитектор безопасности
+    family: security
+    synonyms: [архитектор безопасности, security architect, security_architect]
+    core_competencies: [sec_architecture, sec_iam, sec_zero_trust, sec_cloud]
+    typical_grades: [S, L]
+  - role_id: compliance_specialist
+    name_en: Compliance Specialist
+    name_ru: Специалист по compliance
+    family: security
+    synonyms: [специалист по compliance, compliance specialist, compliance_specialist]
+    core_competencies: [sec_152fz, sec_iso27001, sec_gost, sec_audit]
+    typical_grades: [M, S]
+  - role_id: support_engineer
+    name_en: Support Engineer
+    name_ru: Инженер техподдержки L2/L3
+    family: engineering
+    synonyms: [инженер техподдержки l2/l3, support engineer, support_engineer]
+    core_competencies: [sup_troubleshooting, lang_sql, os_linux, sup_sla]
+    typical_grades: [J, M, S]
+  - role_id: implementation_engineer
+    name_en: Implementation Engineer
+    name_ru: Инженер внедрения
+    family: engineering
+    synonyms: [инженер внедрения, implementation engineer, implementation_engineer]
+    core_competencies: [impl_deployment, impl_training, an_integration, soft_communication]
+    typical_grades: [J, M, S]
 
 competencies:
   # ---------------------------------------------------------------- languages
@@ -141,7 +498,7 @@ competencies:
     name_en: Python
     name_ru: Python
     category: language
-    roles: [backend_engineer, data_engineer, ml_engineer, qa_engineer]
+    roles: [backend_engineer, data_engineer, ml_engineer, qa_engineer, data_analyst, data_scientist]
     synonyms: [python3, питон, пайтон, py]
   - competency_id: lang_java
     name_en: Java
@@ -153,7 +510,7 @@ competencies:
     name_en: TypeScript
     name_ru: TypeScript
     category: language
-    roles: [frontend_engineer, qa_engineer]
+    roles: [frontend_engineer, qa_engineer, fullstack_engineer]
     synonyms: [ts, тайпскрипт, typescript 5, tsx]
   - competency_id: lang_javascript
     name_en: JavaScript
@@ -165,19 +522,19 @@ competencies:
     name_en: "C#"
     name_ru: "C#"
     category: language
-    roles: [backend_engineer]
+    roles: [backend_engineer, game_developer, desktop_developer]
     synonyms: [csharp, c sharp, си шарп, dotnet, .net, net core, asp.net]
   - competency_id: lang_cpp
     name_en: C++
     name_ru: C++
     category: language
-    roles: [backend_engineer]
+    roles: [backend_engineer, embedded_engineer, game_developer, desktop_developer]
     synonyms: [cpp, c plus plus, си плюс плюс, c++17, c++20]
   - competency_id: lang_sql
     name_en: SQL
     name_ru: SQL
     category: language
-    roles: [backend_engineer, data_engineer, business_analyst, system_analyst, qa_engineer, ml_engineer]
+    roles: [backend_engineer, data_engineer, business_analyst, system_analyst, qa_engineer, ml_engineer, analytics_engineer, data_analyst, bi_developer, product_analyst, support_engineer]
     synonyms: [sql, скл, sql-запросы, ansi sql, запросы к бд]
   - competency_id: lang_bash
     name_en: Bash / shell
@@ -191,7 +548,7 @@ competencies:
     name_en: React
     name_ru: React
     category: framework
-    roles: [frontend_engineer]
+    roles: [frontend_engineer, fullstack_engineer]
     synonyms: [react 18, reactjs, реакт, react hooks, redux, next.js, nextjs]
   - competency_id: fw_vue
     name_en: Vue.js
@@ -233,13 +590,13 @@ competencies:
     name_en: ASP.NET Core
     name_ru: ASP.NET Core
     category: framework
-    roles: [backend_engineer]
+    roles: [backend_engineer, desktop_developer]
     synonyms: [asp.net, aspnet, net core, дотнет, entity framework, efcore]
   - competency_id: fw_nodejs
     name_en: Node.js
     name_ru: Node.js
     category: framework
-    roles: [backend_engineer, frontend_engineer]
+    roles: [backend_engineer, frontend_engineer, fullstack_engineer]
     synonyms: [node, нода, nodejs, express, nestjs, nest.js]
 
   # ---------------------------------------------------------------- databases
@@ -247,19 +604,19 @@ competencies:
     name_en: PostgreSQL
     name_ru: PostgreSQL
     category: database
-    roles: [backend_engineer, data_engineer, system_analyst, devops_engineer]
+    roles: [backend_engineer, data_engineer, system_analyst, devops_engineer, fullstack_engineer, dba]
     synonyms: [postgres, постгрес, постгре, постгря, psql, pg, postgresql 16]
   - competency_id: db_mysql
     name_en: MySQL
     name_ru: MySQL
     category: database
-    roles: [backend_engineer, data_engineer]
+    roles: [backend_engineer, data_engineer, bitrix_developer]
     synonyms: [mysql 8, майскл, mariadb, мускул]
   - competency_id: db_mssql
     name_en: MS SQL Server
     name_ru: MS SQL Server
     category: database
-    roles: [backend_engineer, data_engineer]
+    roles: [backend_engineer, data_engineer, dba]
     synonyms: [mssql, ms sql, sql server, скл сервер, t-sql, tsql]
   - competency_id: db_mongodb
     name_en: MongoDB
@@ -303,7 +660,7 @@ competencies:
     name_en: RabbitMQ
     name_ru: RabbitMQ
     category: messaging
-    roles: [backend_engineer, devops_engineer]
+    roles: [backend_engineer, devops_engineer, integration_engineer]
     synonyms: [rabbit, рэббит, кролик, amqp]
   - competency_id: mq_nats
     name_en: NATS
@@ -317,7 +674,7 @@ competencies:
     name_en: Kubernetes
     name_ru: Kubernetes
     category: devops
-    roles: [devops_engineer, backend_engineer, solution_architect]
+    roles: [devops_engineer, backend_engineer, solution_architect, sre_engineer, platform_engineer]
     synonyms: [k8s, кубер, кубернетес, kubernetes, helm, openshift, k3s]
   - competency_id: cloud_docker
     name_en: Docker
@@ -329,19 +686,19 @@ competencies:
     name_en: AWS
     name_ru: AWS
     category: cloud
-    roles: [devops_engineer, solution_architect]
+    roles: [devops_engineer, solution_architect, cloud_architect]
     synonyms: [amazon web services, авс, aws cloud, ec2, s3]
   - competency_id: cloud_yandex
     name_en: Yandex Cloud
     name_ru: Yandex Cloud
     category: cloud
-    roles: [devops_engineer, solution_architect]
+    roles: [devops_engineer, solution_architect, cloud_architect]
     synonyms: [яндекс облако, yandex cloud, yc, яндекс клауд]
   - competency_id: cloud_azure
     name_en: Azure
     name_ru: Azure
     category: cloud
-    roles: [devops_engineer, solution_architect]
+    roles: [devops_engineer, solution_architect, cloud_architect]
     synonyms: [microsoft azure, ажур, azure cloud]
   - competency_id: cloud_gcp
     name_en: Google Cloud
@@ -359,25 +716,25 @@ competencies:
     name_en: GitLab CI
     name_ru: GitLab CI
     category: devops
-    roles: [devops_engineer, qa_engineer, backend_engineer]
+    roles: [devops_engineer, qa_engineer, backend_engineer, qa_automation_engineer, devsecops_engineer]
     synonyms: [gitlab, гитлаб, gitlab pipelines, ci/cd, пайплайны]
   - competency_id: cicd_github_actions
     name_en: GitHub Actions
     name_ru: GitHub Actions
     category: devops
-    roles: [devops_engineer, backend_engineer, frontend_engineer]
+    roles: [devops_engineer, backend_engineer, frontend_engineer, release_engineer]
     synonyms: [github actions, гитхаб экшнс, gha, gh actions]
   - competency_id: obs_prometheus
     name_en: Prometheus
     name_ru: Prometheus
     category: devops
-    roles: [devops_engineer]
+    roles: [devops_engineer, sre_engineer]
     synonyms: [прометеус, prom, prometheus, victoriametrics, vmagent]
   - competency_id: obs_grafana
     name_en: Grafana
     name_ru: Grafana
     category: devops
-    roles: [devops_engineer]
+    roles: [devops_engineer, performance_engineer, sre_engineer]
     synonyms: [графана, grafana dashboards, дашборды]
   - competency_id: obs_opentelemetry
     name_en: OpenTelemetry
@@ -397,31 +754,31 @@ competencies:
     name_en: Test design
     name_ru: Тест-дизайн
     category: testing
-    roles: [qa_engineer, system_analyst]
+    roles: [qa_engineer, system_analyst, mobile_qa_engineer]
     synonyms: [тест-дизайн, тест дизайн, test design, тестовая модель, классы эквивалентности, граничные значения]
   - competency_id: test_api
     name_en: API testing
     name_ru: Тестирование API
     category: testing
-    roles: [qa_engineer, system_analyst]
+    roles: [qa_engineer, system_analyst, mobile_qa_engineer]
     synonyms: [api testing, postman, тестирование апи, rest assured, soapui, contract tests, pact]
   - competency_id: test_playwright
     name_en: Playwright
     name_ru: Playwright
     category: testing
-    roles: [qa_engineer, frontend_engineer]
+    roles: [qa_engineer, frontend_engineer, qa_automation_engineer]
     synonyms: [плейрайт, playwright ts, playwright python, автотесты ui, e2e]
   - competency_id: test_selenium
     name_en: Selenium
     name_ru: Selenium
     category: testing
-    roles: [qa_engineer]
+    roles: [qa_engineer, qa_automation_engineer]
     synonyms: [селениум, selenium webdriver, selenoid, page object]
   - competency_id: test_pytest
     name_en: pytest
     name_ru: pytest
     category: testing
-    roles: [qa_engineer, ml_engineer, backend_engineer]
+    roles: [qa_engineer, ml_engineer, backend_engineer, qa_automation_engineer]
     synonyms: [пайтест, pytest fixtures, автотесты python]
   - competency_id: test_unit
     name_en: Unit testing
@@ -447,7 +804,7 @@ competencies:
     name_en: REST API design
     name_ru: Проектирование REST API
     category: architecture
-    roles: [backend_engineer, system_analyst, solution_architect, frontend_engineer]
+    roles: [backend_engineer, system_analyst, solution_architect, frontend_engineer, fullstack_engineer, ios_engineer, android_engineer, crossplatform_mobile_engineer, integration_engineer]
     synonyms: [rest, rest api, рест, рест апи, openapi, swagger, http api, restful]
   - competency_id: api_grpc
     name_en: gRPC
@@ -493,7 +850,7 @@ competencies:
     name_en: User stories / backlog
     name_ru: Пользовательские истории и бэклог
     category: analytics
-    roles: [business_analyst, project_manager]
+    roles: [business_analyst, project_manager, product_owner]
     synonyms: [user story, юзер стори, бэклог, backlog, acceptance criteria, критерии приёмки, definition of done]
   - competency_id: an_sql_analysis
     name_en: Data analysis with SQL
@@ -505,7 +862,7 @@ competencies:
     name_en: System integration analysis
     name_ru: Анализ интеграций
     category: analytics
-    roles: [system_analyst, solution_architect]
+    roles: [system_analyst, solution_architect, implementation_engineer]
     synonyms: [интеграции, интеграция систем, api интеграция, шина данных, esb, обмен данными]
 
   # ----------------------------------------------------------------------- ml
@@ -513,25 +870,25 @@ competencies:
     name_en: scikit-learn
     name_ru: scikit-learn
     category: ml
-    roles: [ml_engineer]
+    roles: [ml_engineer, data_scientist]
     synonyms: [sklearn, scikit learn, скикит, классические ml модели, градиентный бустинг]
   - competency_id: ml_pytorch
     name_en: PyTorch
     name_ru: PyTorch
     category: ml
-    roles: [ml_engineer]
+    roles: [ml_engineer, nlp_engineer, cv_engineer]
     synonyms: [pytorch, пайторч, torch, глубокое обучение, deep learning, tensorflow]
   - competency_id: ml_nlp
     name_en: NLP
     name_ru: Обработка естественного языка
     category: ml
-    roles: [ml_engineer]
+    roles: [ml_engineer, nlp_engineer]
     synonyms: [nlp, обработка текста, natural language processing, spacy, transformers, эмбеддинги, embeddings]
   - competency_id: ml_llm
     name_en: LLM application engineering
     name_ru: Прикладная работа с LLM
     category: ml
-    roles: [ml_engineer, backend_engineer]
+    roles: [ml_engineer, backend_engineer, llm_engineer]
     synonyms: [llm, большие языковые модели, prompt engineering, промпт-инжиниринг, rag, structured output, json schema prompting]
   - competency_id: ml_mlops
     name_en: MLOps
@@ -543,13 +900,13 @@ competencies:
     name_en: Computer vision
     name_ru: Компьютерное зрение
     category: ml
-    roles: [ml_engineer]
+    roles: [ml_engineer, cv_engineer]
     synonyms: [cv, компьютерное зрение, computer vision, opencv, сегментация, детекция объектов]
   - competency_id: ml_recsys
     name_en: Recommender systems
     name_ru: Рекомендательные системы
     category: ml
-    roles: [ml_engineer]
+    roles: [ml_engineer, data_scientist]
     synonyms: [рекомендательные системы, recsys, рекомендации, collaborative filtering, ранжирование]
   - competency_id: stat_probability
     name_en: Probability and statistics
@@ -577,7 +934,7 @@ competencies:
     name_en: System design
     name_ru: Проектирование систем
     category: architecture
-    roles: [solution_architect, backend_engineer]
+    roles: [solution_architect, backend_engineer, software_architect, tech_lead]
     synonyms: [системный дизайн, проектирование архитектуры, высоконагруженные системы, масштабирование, system design]
   - competency_id: arch_microservices
     name_en: Microservices
@@ -589,13 +946,13 @@ competencies:
     name_en: Event-driven architecture
     name_ru: Событийная архитектура
     category: architecture
-    roles: [solution_architect, backend_engineer, data_engineer]
+    roles: [solution_architect, backend_engineer, data_engineer, software_architect]
     synonyms: [событийная архитектура, event-driven, kafka архитектура, cqrs, event sourcing]
   - competency_id: arch_ddd
     name_en: Domain-driven design
     name_ru: Domain-driven design
     category: architecture
-    roles: [solution_architect, business_analyst]
+    roles: [solution_architect, business_analyst, software_architect]
     synonyms: [ddd, доменные области, bounded context, ubiquitous language]
   - competency_id: arch_c4
     name_en: C4 / architecture documentation
@@ -633,7 +990,7 @@ competencies:
     name_en: IAM / authorization
     name_ru: Управление доступом (IAM)
     category: security
-    roles: [security_engineer, backend_engineer, devops_engineer]
+    roles: [security_engineer, backend_engineer, devops_engineer, security_architect]
     synonyms: [iam, управление доступом, авторизация, аутентификация, oauth 2.0, oidc, saml, rbac, abac]
   - competency_id: sec_pki
     name_en: PKI / cryptography
@@ -645,7 +1002,7 @@ competencies:
     name_en: SIEM / incident response
     name_ru: SIEM и реагирование на инциденты
     category: security
-    roles: [security_engineer]
+    roles: [security_engineer, soc_analyst]
     synonyms: [siem, soc, реагирование на инциденты, incident response, логи безопасности, форензика]
 
   # ------------------------------------------------------------------ process
@@ -659,13 +1016,13 @@ competencies:
     name_en: Kanban
     name_ru: Kanban
     category: process
-    roles: [project_manager, devops_engineer]
+    roles: [project_manager, devops_engineer, scrum_master]
     synonyms: [kanban, канбан, wip-лимиты, поток задач]
   - competency_id: proc_estimation
     name_en: Estimation
     name_ru: Оценка трудозатрат
     category: process
-    roles: [project_manager, business_analyst, solution_architect]
+    roles: [project_manager, business_analyst, solution_architect, tech_lead, engineering_manager]
     synonyms: [оценка, оценка трудозатрат, эстимейт, estimation, story points, планирование сроков]
   - competency_id: proc_risk_management
     name_en: Risk management
@@ -697,7 +1054,7 @@ competencies:
     name_en: UX research
     name_ru: UX-исследования
     category: analytics
-    roles: [ux_ui_designer, business_analyst]
+    roles: [ux_ui_designer, business_analyst, ux_researcher]
     synonyms: [ux исследования, ux research, интервью с пользователями, юзабилити-тестирование, custdev]
   - competency_id: ui_wireframing
     name_en: Wireframing / prototyping
@@ -709,13 +1066,13 @@ competencies:
     name_en: Figma
     name_ru: Figma
     category: analytics
-    roles: [ux_ui_designer, frontend_engineer]
+    roles: [ux_ui_designer, frontend_engineer, ui_designer]
     synonyms: [фигма, figma design, figma prototyping, компоненты figma]
   - competency_id: ui_design_system
     name_en: Design system
     name_ru: Дизайн-система
     category: analytics
-    roles: [ux_ui_designer, frontend_engineer]
+    roles: [ux_ui_designer, frontend_engineer, ui_designer]
     synonyms: [дизайн-система, design system, ui kit, ui-кит, токены дизайна, ant design]
   - competency_id: ux_accessibility
     name_en: UX accessibility
@@ -729,13 +1086,13 @@ competencies:
     name_en: Communication
     name_ru: Коммуникация
     category: soft_skill
-    roles: [project_manager, business_analyst, solution_architect, backend_engineer, frontend_engineer]
+    roles: [project_manager, business_analyst, solution_architect, backend_engineer, frontend_engineer, implementation_engineer]
     synonyms: [коммуникация, коммуникабельность, communication, презентация, публичные выступления]
   - competency_id: soft_mentoring
     name_en: Mentoring
     name_ru: Наставничество
     category: soft_skill
-    roles: [solution_architect, project_manager, backend_engineer]
+    roles: [solution_architect, project_manager, backend_engineer, tech_lead]
     synonyms: [наставничество, mentoring, менторство, обучение коллег, онбординг]
   - competency_id: soft_negotiation
     name_en: Negotiation
@@ -769,10 +1126,1744 @@ competencies:
     category: domain
     roles: [business_analyst, system_analyst, backend_engineer]
     synonyms: [телеком, telecom, oss/bss, биллинг, tarif, тарификация]
+  - competency_id: an_api_spec
+    name_en: API specification
+    name_ru: API specification
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_api_spec]
+  - competency_id: an_archimate
+    name_en: ArchiMate
+    name_ru: ArchiMate
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_archimate]
+  - competency_id: an_c4_model
+    name_en: C4 model
+    name_ru: C4 model
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_c4_model]
+  - competency_id: an_data_lineage
+    name_en: Data lineage
+    name_ru: Data lineage
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_data_lineage]
+  - competency_id: an_data_model
+    name_en: Data model
+    name_ru: Data model
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_data_model]
+  - competency_id: an_dfd
+    name_en: DFD
+    name_ru: DFD
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_dfd]
+  - competency_id: an_nfr
+    name_en: Non-functional requirements
+    name_ru: Non-functional requirements
+    category: analytics
+    roles: [solution_architect]
+    synonyms: [an_nfr]
+  - competency_id: an_process_mining
+    name_en: Process mining
+    name_ru: Process mining
+    category: analytics
+    roles: [business_analyst]
+    synonyms: [an_process_mining]
+  - competency_id: an_sql_analytics
+    name_en: SQL analytics
+    name_ru: SQL analytics
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_sql_analytics]
+  - competency_id: an_uml
+    name_en: UML
+    name_ru: UML
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_uml]
+  - competency_id: an_use_cases
+    name_en: Use cases
+    name_ru: Use cases
+    category: analytics
+    roles: [system_analyst]
+    synonyms: [an_use_cases]
+  - competency_id: api_openapi
+    name_en: OpenAPI
+    name_ru: OpenAPI
+    category: architecture
+    roles: [system_analyst]
+    synonyms: [api_openapi]
+  - competency_id: api_soap
+    name_en: SOAP
+    name_ru: SOAP
+    category: architecture
+    roles: [integration_engineer]
+    synonyms: [api_soap]
+  - competency_id: api_versioning
+    name_en: API versioning
+    name_ru: API versioning
+    category: architecture
+    roles: [backend_engineer]
+    synonyms: [api_versioning]
+  - competency_id: api_webhooks
+    name_en: Webhooks
+    name_ru: Webhooks
+    category: architecture
+    roles: [backend_engineer]
+    synonyms: [api_webhooks]
+  - competency_id: api_websocket
+    name_en: WebSocket
+    name_ru: WebSocket
+    category: architecture
+    roles: [backend_engineer]
+    synonyms: [api_websocket]
+  - competency_id: arch_clean
+    name_en: Clean architecture
+    name_ru: Clean architecture
+    category: architecture
+    roles: [software_architect]
+    synonyms: [arch_clean]
+  - competency_id: arch_cloud
+    name_en: Cloud architecture
+    name_ru: Cloud architecture
+    category: architecture
+    roles: [solution_architect]
+    synonyms: [arch_cloud]
+  - competency_id: arch_cqrs
+    name_en: CQRS
+    name_ru: CQRS
+    category: architecture
+    roles: [software_architect]
+    synonyms: [arch_cqrs]
+  - competency_id: arch_high_load
+    name_en: High-load architecture
+    name_ru: High-load architecture
+    category: architecture
+    roles: [software_architect]
+    synonyms: [arch_high_load]
+  - competency_id: arch_integration
+    name_en: Integration architecture
+    name_ru: Integration architecture
+    category: architecture
+    roles: [solution_architect]
+    synonyms: [arch_integration]
+  - competency_id: arch_monolith_modular
+    name_en: Modular monolith
+    name_ru: Modular monolith
+    category: architecture
+    roles: [software_architect]
+    synonyms: [arch_monolith_modular]
+  - competency_id: arch_multicloud
+    name_en: Multicloud architecture
+    name_ru: Multicloud architecture
+    category: architecture
+    roles: [cloud_architect]
+    synonyms: [arch_multicloud]
+  - competency_id: arch_nfr
+    name_en: Non-functional requirements
+    name_ru: Non-functional requirements
+    category: architecture
+    roles: [solution_architect]
+    synonyms: [arch_nfr]
+  - competency_id: arch_solution
+    name_en: Solution architecture
+    name_ru: Solution architecture
+    category: architecture
+    roles: [solution_architect]
+    synonyms: [arch_solution]
+  - competency_id: bc_evm
+    name_en: EVM
+    name_ru: EVM
+    category: framework
+    roles: [blockchain_developer]
+    synonyms: [bc_evm]
+  - competency_id: bc_smart_contracts
+    name_en: Smart contracts
+    name_ru: Smart contracts
+    category: framework
+    roles: [blockchain_developer]
+    synonyms: [bc_smart_contracts]
+  - competency_id: bi_datalens
+    name_en: DataLens
+    name_ru: DataLens
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_datalens]
+  - competency_id: bi_looker
+    name_en: Looker
+    name_ru: Looker
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_looker]
+  - competency_id: bi_metabase
+    name_en: Metabase
+    name_ru: Metabase
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_metabase]
+  - competency_id: bi_power_bi
+    name_en: Power BI
+    name_ru: Power BI
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_power_bi]
+  - competency_id: bi_qlik
+    name_en: Qlik
+    name_ru: Qlik
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_qlik]
+  - competency_id: bi_superset
+    name_en: Superset
+    name_ru: Superset
+    category: analytics
+    roles: [bi_developer]
+    synonyms: [bi_superset]
+  - competency_id: bi_tableau
+    name_en: Tableau
+    name_ru: Tableau
+    category: analytics
+    roles: [data_analyst]
+    synonyms: [bi_tableau]
+  - competency_id: cicd_argocd
+    name_en: Argo CD
+    name_ru: Argo CD
+    category: devops
+    roles: [platform_engineer]
+    synonyms: [cicd_argocd]
+  - competency_id: cicd_jenkins
+    name_en: Jenkins
+    name_ru: Jenkins
+    category: devops
+    roles: [release_engineer]
+    synonyms: [cicd_jenkins]
+  - competency_id: cicd_release_automation
+    name_en: Release automation
+    name_ru: Release automation
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [cicd_release_automation]
+  - competency_id: cicd_teamcity
+    name_en: TeamCity
+    name_ru: TeamCity
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [cicd_teamcity]
+  - competency_id: cloud_openshift
+    name_en: OpenShift
+    name_ru: OpenShift
+    category: cloud
+    roles: [devops_engineer]
+    synonyms: [cloud_openshift]
+  - competency_id: cloud_sber_cloud
+    name_en: Sber Cloud
+    name_ru: Sber Cloud
+    category: cloud
+    roles: [devops_engineer]
+    synonyms: [cloud_sber_cloud]
+  - competency_id: cloud_serverless
+    name_en: Serverless
+    name_ru: Serverless
+    category: cloud
+    roles: [devops_engineer]
+    synonyms: [cloud_serverless]
+  - competency_id: cloud_service_mesh
+    name_en: Service mesh
+    name_ru: Service mesh
+    category: cloud
+    roles: [platform_engineer]
+    synonyms: [cloud_service_mesh]
+  - competency_id: cloud_vk_cloud
+    name_en: VK Cloud
+    name_ru: VK Cloud
+    category: cloud
+    roles: [devops_engineer]
+    synonyms: [cloud_vk_cloud]
+  - competency_id: data_airflow
+    name_en: Airflow
+    name_ru: Airflow
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_airflow]
+  - competency_id: data_catalog
+    name_en: Data catalog
+    name_ru: Data catalog
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_catalog]
+  - competency_id: data_dbt
+    name_en: dbt
+    name_ru: dbt
+    category: analytics
+    roles: [analytics_engineer]
+    synonyms: [data_dbt]
+  - competency_id: data_dwh
+    name_en: DWH
+    name_ru: DWH
+    category: analytics
+    roles: [analytics_engineer, bi_developer, data_architect]
+    synonyms: [data_dwh]
+  - competency_id: data_etl
+    name_en: ETL
+    name_ru: ETL
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_etl]
+  - competency_id: data_flink
+    name_en: Flink
+    name_ru: Flink
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_flink]
+  - competency_id: data_governance
+    name_en: Data governance
+    name_ru: Data governance
+    category: analytics
+    roles: [data_architect]
+    synonyms: [data_governance]
+  - competency_id: data_hadoop
+    name_en: Hadoop
+    name_ru: Hadoop
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_hadoop]
+  - competency_id: data_lakehouse
+    name_en: Lakehouse
+    name_ru: Lakehouse
+    category: analytics
+    roles: [data_architect]
+    synonyms: [data_lakehouse]
+  - competency_id: data_modeling
+    name_en: Data modeling
+    name_ru: Data modeling
+    category: analytics
+    roles: [analytics_engineer, data_architect]
+    synonyms: [data_modeling]
+  - competency_id: data_quality
+    name_en: Data quality
+    name_ru: Data quality
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_quality]
+  - competency_id: data_spark
+    name_en: Spark
+    name_ru: Spark
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_spark]
+  - competency_id: data_streaming
+    name_en: Data streaming
+    name_ru: Data streaming
+    category: analytics
+    roles: [data_engineer]
+    synonyms: [data_streaming]
+  - competency_id: db_backup
+    name_en: Database backup
+    name_ru: Database backup
+    category: database
+    roles: [dba]
+    synonyms: [db_backup]
+  - competency_id: db_cassandra
+    name_en: Cassandra
+    name_ru: Cassandra
+    category: database
+    roles: [dba]
+    synonyms: [db_cassandra]
+  - competency_id: db_greenplum
+    name_en: Greenplum
+    name_ru: Greenplum
+    category: database
+    roles: [dba]
+    synonyms: [db_greenplum]
+  - competency_id: db_neo4j
+    name_en: Neo4j
+    name_ru: Neo4j
+    category: database
+    roles: [dba]
+    synonyms: [db_neo4j]
+  - competency_id: db_oracle
+    name_en: Oracle
+    name_ru: Oracle
+    category: database
+    roles: [dba]
+    synonyms: [db_oracle]
+  - competency_id: db_replication
+    name_en: Database replication
+    name_ru: Database replication
+    category: database
+    roles: [dba]
+    synonyms: [db_replication]
+  - competency_id: db_sharding
+    name_en: Database sharding
+    name_ru: Database sharding
+    category: database
+    roles: [dba]
+    synonyms: [db_sharding]
+  - competency_id: db_sqlite
+    name_en: SQLite
+    name_ru: SQLite
+    category: database
+    roles: [dba]
+    synonyms: [db_sqlite]
+  - competency_id: db_tarantool
+    name_en: Tarantool
+    name_ru: Tarantool
+    category: database
+    roles: [dba]
+    synonyms: [db_tarantool]
+  - competency_id: db_tuning
+    name_en: Database tuning
+    name_ru: Database tuning
+    category: database
+    roles: [dba]
+    synonyms: [db_tuning]
+  - competency_id: desk_electron
+    name_en: Electron
+    name_ru: Electron
+    category: framework
+    roles: [desktop_developer]
+    synonyms: [desk_electron]
+  - competency_id: desk_qt
+    name_en: Qt
+    name_ru: Qt
+    category: framework
+    roles: [desktop_developer]
+    synonyms: [desk_qt]
+  - competency_id: doc_api_docs
+    name_en: API documentation
+    name_ru: API documentation
+    category: process
+    roles: [technical_writer]
+    synonyms: [doc_api_docs]
+  - competency_id: doc_diagrams
+    name_en: Diagrams
+    name_ru: Diagrams
+    category: process
+    roles: [technical_writer]
+    synonyms: [doc_diagrams]
+  - competency_id: doc_docs_as_code
+    name_en: Docs as code
+    name_ru: Docs as code
+    category: process
+    roles: [technical_writer]
+    synonyms: [doc_docs_as_code]
+  - competency_id: doc_style_guide
+    name_en: Style guide
+    name_ru: Style guide
+    category: process
+    roles: [ux_writer]
+    synonyms: [doc_style_guide]
+  - competency_id: doc_tech_writing
+    name_en: Technical writing
+    name_ru: Technical writing
+    category: process
+    roles: [technical_writer]
+    synonyms: [doc_tech_writing]
+  - competency_id: domain_adtech
+    name_en: AdTech
+    name_ru: AdTech
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_adtech]
+  - competency_id: domain_banking
+    name_en: Banking
+    name_ru: Banking
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_banking]
+  - competency_id: domain_ecommerce
+    name_en: eCommerce
+    name_ru: eCommerce
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_ecommerce]
+  - competency_id: domain_edtech
+    name_en: EdTech
+    name_ru: EdTech
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_edtech]
+  - competency_id: domain_energy
+    name_en: Energy
+    name_ru: Energy
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_energy]
+  - competency_id: domain_fintech
+    name_en: Fintech
+    name_ru: Fintech
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_fintech]
+  - competency_id: domain_gamedev
+    name_en: GameDev
+    name_ru: GameDev
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_gamedev]
+  - competency_id: domain_gov
+    name_en: GovTech
+    name_ru: GovTech
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_gov]
+  - competency_id: domain_healthcare
+    name_en: Healthcare
+    name_ru: Healthcare
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_healthcare]
+  - competency_id: domain_industrial
+    name_en: Industrial
+    name_ru: Industrial
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_industrial]
+  - competency_id: domain_insurance
+    name_en: Insurance
+    name_ru: Insurance
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_insurance]
+  - competency_id: domain_logistics
+    name_en: Logistics
+    name_ru: Logistics
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_logistics]
+  - competency_id: domain_retail
+    name_en: Retail
+    name_ru: Retail
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_retail]
+  - competency_id: domain_telecom
+    name_en: Telecom
+    name_ru: Telecom
+    category: domain
+    roles: [business_analyst]
+    synonyms: [domain_telecom]
+  - competency_id: emb_can
+    name_en: CAN
+    name_ru: CAN
+    category: framework
+    roles: [embedded_engineer]
+    synonyms: [emb_can]
+  - competency_id: emb_fpga
+    name_en: FPGA
+    name_ru: FPGA
+    category: framework
+    roles: [embedded_engineer]
+    synonyms: [emb_fpga]
+  - competency_id: emb_rtos
+    name_en: RTOS
+    name_ru: RTOS
+    category: framework
+    roles: [embedded_engineer]
+    synonyms: [emb_rtos]
+  - competency_id: emb_stm32
+    name_en: STM32
+    name_ru: STM32
+    category: framework
+    roles: [embedded_engineer]
+    synonyms: [emb_stm32]
+  - competency_id: erp_1c_integration
+    name_en: 1C integration
+    name_ru: 1C integration
+    category: framework
+    roles: [onec_developer]
+    synonyms: [erp_1c_integration]
+  - competency_id: erp_1c_ut
+    name_en: 1C:UT
+    name_ru: 1C:UT
+    category: framework
+    roles: [onec_developer]
+    synonyms: [erp_1c_ut]
+  - competency_id: erp_1c_zup
+    name_en: 1C:ZUP
+    name_ru: 1C:ZUP
+    category: framework
+    roles: [onec_developer]
+    synonyms: [erp_1c_zup]
+  - competency_id: erp_bitrix
+    name_en: Bitrix24
+    name_ru: Bitrix24
+    category: framework
+    roles: [bitrix_developer]
+    synonyms: [erp_bitrix]
+  - competency_id: erp_sap
+    name_en: SAP
+    name_ru: SAP
+    category: framework
+    roles: [integration_engineer]
+    synonyms: [erp_sap]
+  - competency_id: finops
+    name_en: FinOps
+    name_ru: FinOps
+    category: cloud
+    roles: [cloud_architect]
+    synonyms: [finops]
+  - competency_id: fw_express
+    name_en: Express
+    name_ru: Express
+    category: framework
+    roles: [backend_engineer]
+    synonyms: [fw_express]
+  - competency_id: fw_flask
+    name_en: Flask
+    name_ru: Flask
+    category: framework
+    roles: [backend_engineer]
+    synonyms: [fw_flask]
+  - competency_id: fw_flutter
+    name_en: Flutter
+    name_ru: Flutter
+    category: framework
+    roles: [crossplatform_mobile_engineer]
+    synonyms: [fw_flutter]
+  - competency_id: fw_jetpack_compose
+    name_en: Jetpack Compose
+    name_ru: Jetpack Compose
+    category: framework
+    roles: [android_engineer]
+    synonyms: [fw_jetpack_compose]
+  - competency_id: fw_laravel
+    name_en: Laravel
+    name_ru: Laravel
+    category: framework
+    roles: [backend_engineer]
+    synonyms: [fw_laravel]
+  - competency_id: fw_nestjs
+    name_en: NestJS
+    name_ru: NestJS
+    category: framework
+    roles: [backend_engineer]
+    synonyms: [fw_nestjs]
+  - competency_id: fw_nextjs
+    name_en: Next.js
+    name_ru: Next.js
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [fw_nextjs]
+  - competency_id: fw_rails
+    name_en: Ruby on Rails
+    name_ru: Ruby on Rails
+    category: framework
+    roles: [backend_engineer]
+    synonyms: [fw_rails]
+  - competency_id: fw_react_native
+    name_en: React Native
+    name_ru: React Native
+    category: framework
+    roles: [crossplatform_mobile_engineer]
+    synonyms: [fw_react_native]
+  - competency_id: fw_svelte
+    name_en: Svelte
+    name_ru: Svelte
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [fw_svelte]
+  - competency_id: fw_swiftui
+    name_en: SwiftUI
+    name_ru: SwiftUI
+    category: framework
+    roles: [ios_engineer]
+    synonyms: [fw_swiftui]
+  - competency_id: game_physics
+    name_en: Game physics
+    name_ru: Game physics
+    category: framework
+    roles: [game_developer]
+    synonyms: [game_physics]
+  - competency_id: game_unity
+    name_en: Unity
+    name_ru: Unity
+    category: framework
+    roles: [game_developer]
+    synonyms: [game_unity]
+  - competency_id: game_unreal
+    name_en: Unreal Engine
+    name_ru: Unreal Engine
+    category: framework
+    roles: [game_developer]
+    synonyms: [game_unreal]
+  - competency_id: hr_hiring
+    name_en: Hiring
+    name_ru: Hiring
+    category: process
+    roles: [engineering_manager]
+    synonyms: [hr_hiring]
+  - competency_id: hr_performance
+    name_en: Performance review
+    name_ru: Performance review
+    category: process
+    roles: [engineering_manager]
+    synonyms: [hr_performance]
+  - competency_id: iac_ansible
+    name_en: Ansible
+    name_ru: Ansible
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [iac_ansible]
+  - competency_id: iac_cloudformation
+    name_en: CloudFormation
+    name_ru: CloudFormation
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [iac_cloudformation]
+  - competency_id: iac_helm
+    name_en: Helm
+    name_ru: Helm
+    category: devops
+    roles: [platform_engineer]
+    synonyms: [iac_helm]
+  - competency_id: iac_packer
+    name_en: Packer
+    name_ru: Packer
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [iac_packer]
+  - competency_id: iac_pulumi
+    name_en: Pulumi
+    name_ru: Pulumi
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [iac_pulumi]
+  - competency_id: impl_deployment
+    name_en: Deployment
+    name_ru: Deployment
+    category: process
+    roles: [implementation_engineer]
+    synonyms: [impl_deployment]
+  - competency_id: impl_training
+    name_en: User training
+    name_ru: User training
+    category: process
+    roles: [implementation_engineer]
+    synonyms: [impl_training]
+  - competency_id: int_esb
+    name_en: ESB
+    name_ru: ESB
+    category: architecture
+    roles: [integration_engineer]
+    synonyms: [int_esb]
+  - competency_id: int_etl
+    name_en: ETL
+    name_ru: ETL
+    category: architecture
+    roles: [integration_engineer]
+    synonyms: [int_etl]
+  - competency_id: lang_1c_bsl
+    name_en: 1C BSL
+    name_ru: 1C BSL
+    category: language
+    roles: [onec_developer]
+    synonyms: [lang_1c_bsl]
+  - competency_id: lang_c
+    name_en: C
+    name_ru: C
+    category: language
+    roles: [embedded_engineer]
+    synonyms: [lang_c]
+  - competency_id: lang_dart
+    name_en: Dart
+    name_ru: Dart
+    category: language
+    roles: [crossplatform_mobile_engineer]
+    synonyms: [lang_dart]
+  - competency_id: lang_elixir
+    name_en: Elixir
+    name_ru: Elixir
+    category: language
+    roles: [backend_engineer]
+    synonyms: [lang_elixir]
+  - competency_id: lang_kotlin
+    name_en: Kotlin
+    name_ru: Kotlin
+    category: language
+    roles: [android_engineer]
+    synonyms: [lang_kotlin]
+  - competency_id: lang_lua
+    name_en: Lua
+    name_ru: Lua
+    category: language
+    roles: [backend_engineer]
+    synonyms: [lang_lua]
+  - competency_id: lang_php
+    name_en: PHP
+    name_ru: PHP
+    category: language
+    roles: [bitrix_developer]
+    synonyms: [lang_php]
+  - competency_id: lang_r
+    name_en: R
+    name_ru: R
+    category: language
+    roles: [data_scientist]
+    synonyms: [lang_r]
+  - competency_id: lang_ruby
+    name_en: Ruby
+    name_ru: Ruby
+    category: language
+    roles: [backend_engineer]
+    synonyms: [lang_ruby]
+  - competency_id: lang_rust
+    name_en: Rust
+    name_ru: Rust
+    category: language
+    roles: [blockchain_developer]
+    synonyms: [lang_rust]
+  - competency_id: lang_scala
+    name_en: Scala
+    name_ru: Scala
+    category: language
+    roles: [backend_engineer]
+    synonyms: [lang_scala]
+  - competency_id: lang_solidity
+    name_en: Solidity
+    name_ru: Solidity
+    category: language
+    roles: [blockchain_developer]
+    synonyms: [lang_solidity]
+  - competency_id: lang_swift
+    name_en: Swift
+    name_ru: Swift
+    category: language
+    roles: [ios_engineer]
+    synonyms: [lang_swift]
+  - competency_id: ml_automl
+    name_en: AutoML
+    name_ru: AutoML
+    category: ml
+    roles: [ml_engineer]
+    synonyms: [ml_automl]
+  - competency_id: ml_detection
+    name_en: Object detection
+    name_ru: Object detection
+    category: ml
+    roles: [cv_engineer]
+    synonyms: [ml_detection]
+  - competency_id: ml_embeddings
+    name_en: Embeddings
+    name_ru: Embeddings
+    category: ml
+    roles: [nlp_engineer]
+    synonyms: [ml_embeddings]
+  - competency_id: ml_feature_store
+    name_en: Feature store
+    name_ru: Feature store
+    category: ml
+    roles: [ml_engineer]
+    synonyms: [ml_feature_store]
+  - competency_id: ml_finetuning
+    name_en: Fine-tuning
+    name_ru: Fine-tuning
+    category: ml
+    roles: [llm_engineer]
+    synonyms: [ml_finetuning]
+  - competency_id: ml_mlflow
+    name_en: MLflow
+    name_ru: MLflow
+    category: ml
+    roles: [ml_engineer]
+    synonyms: [ml_mlflow]
+  - competency_id: ml_optimization
+    name_en: Optimization
+    name_ru: Optimization
+    category: ml
+    roles: [cv_engineer]
+    synonyms: [ml_optimization]
+  - competency_id: ml_prompting
+    name_en: Prompt engineering
+    name_ru: Prompt engineering
+    category: ml
+    roles: [llm_engineer]
+    synonyms: [ml_prompting]
+  - competency_id: ml_rag
+    name_en: RAG
+    name_ru: RAG
+    category: ml
+    roles: [llm_engineer]
+    synonyms: [ml_rag]
+  - competency_id: ml_tensorflow
+    name_en: TensorFlow
+    name_ru: TensorFlow
+    category: ml
+    roles: [ml_engineer]
+    synonyms: [ml_tensorflow]
+  - competency_id: ml_timeseries
+    name_en: Time series
+    name_ru: Time series
+    category: ml
+    roles: [data_scientist]
+    synonyms: [ml_timeseries]
+  - competency_id: ml_transformers
+    name_en: Transformers
+    name_ru: Transformers
+    category: ml
+    roles: [nlp_engineer]
+    synonyms: [ml_transformers]
+  - competency_id: ml_vector_db
+    name_en: Vector database
+    name_ru: Vector database
+    category: ml
+    roles: [llm_engineer]
+    synonyms: [ml_vector_db]
+  - competency_id: ml_xgboost
+    name_en: XGBoost
+    name_ru: XGBoost
+    category: ml
+    roles: [ml_engineer]
+    synonyms: [ml_xgboost]
+  - competency_id: mob_android_arch
+    name_en: Android architecture
+    name_ru: Android architecture
+    category: framework
+    roles: [android_engineer]
+    synonyms: [mob_android_arch]
+  - competency_id: mob_appstore
+    name_en: App Store release
+    name_ru: App Store release
+    category: framework
+    roles: [ios_engineer]
+    synonyms: [mob_appstore]
+  - competency_id: mob_ios_arch
+    name_en: iOS architecture
+    name_ru: iOS architecture
+    category: framework
+    roles: [ios_engineer]
+    synonyms: [mob_ios_arch]
+  - competency_id: mob_mobile_ci
+    name_en: Mobile CI
+    name_ru: Mobile CI
+    category: framework
+    roles: [crossplatform_mobile_engineer]
+    synonyms: [mob_mobile_ci]
+  - competency_id: mq_activemq
+    name_en: ActiveMQ
+    name_ru: ActiveMQ
+    category: messaging
+    roles: [backend_engineer]
+    synonyms: [mq_activemq]
+  - competency_id: net_bgp
+    name_en: BGP
+    name_ru: BGP
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_bgp]
+  - competency_id: net_dns
+    name_en: DNS
+    name_ru: DNS
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_dns]
+  - competency_id: net_firewall
+    name_en: Firewall
+    name_ru: Firewall
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_firewall]
+  - competency_id: net_haproxy
+    name_en: HAProxy
+    name_ru: HAProxy
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_haproxy]
+  - competency_id: net_load_balancing
+    name_en: Load balancing
+    name_ru: Load balancing
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_load_balancing]
+  - competency_id: net_nginx
+    name_en: nginx
+    name_ru: nginx
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_nginx]
+  - competency_id: net_ospf
+    name_en: OSPF
+    name_ru: OSPF
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_ospf]
+  - competency_id: net_routing
+    name_en: Routing
+    name_ru: Routing
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_routing]
+  - competency_id: net_switching
+    name_en: Switching
+    name_ru: Switching
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_switching]
+  - competency_id: net_tcp_ip
+    name_en: TCP/IP
+    name_ru: TCP/IP
+    category: devops
+    roles: [sysadmin]
+    synonyms: [net_tcp_ip]
+  - competency_id: net_vlan
+    name_en: VLAN
+    name_ru: VLAN
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_vlan]
+  - competency_id: net_vpn
+    name_en: VPN
+    name_ru: VPN
+    category: devops
+    roles: [network_engineer]
+    synonyms: [net_vpn]
+  - competency_id: obs_datadog
+    name_en: Datadog
+    name_ru: Datadog
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [obs_datadog]
+  - competency_id: obs_elk
+    name_en: ELK
+    name_ru: ELK
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [obs_elk]
+  - competency_id: obs_jaeger
+    name_en: Jaeger
+    name_ru: Jaeger
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [obs_jaeger]
+  - competency_id: obs_loki
+    name_en: Loki
+    name_ru: Loki
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [obs_loki]
+  - competency_id: obs_zabbix
+    name_en: Zabbix
+    name_ru: Zabbix
+    category: devops
+    roles: [devops_engineer]
+    synonyms: [obs_zabbix]
+  - competency_id: os_ad
+    name_en: Active Directory
+    name_ru: Active Directory
+    category: devops
+    roles: [sysadmin]
+    synonyms: [os_ad]
+  - competency_id: os_linux
+    name_en: Linux
+    name_ru: Linux
+    category: devops
+    roles: [devops_engineer, sysadmin, support_engineer]
+    synonyms: [os_linux]
+  - competency_id: os_windows_server
+    name_en: Windows Server
+    name_ru: Windows Server
+    category: devops
+    roles: [sysadmin]
+    synonyms: [os_windows_server]
+  - competency_id: plat_idp
+    name_en: Internal developer platform
+    name_ru: Internal developer platform
+    category: devops
+    roles: [platform_engineer]
+    synonyms: [plat_idp]
+  - competency_id: proc_agile
+    name_en: Agile
+    name_ru: Agile
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_agile]
+  - competency_id: proc_budgeting
+    name_en: Budgeting
+    name_ru: Budgeting
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_budgeting]
+  - competency_id: proc_change_mgmt
+    name_en: Change management
+    name_ru: Change management
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_change_mgmt]
+  - competency_id: proc_coaching
+    name_en: Coaching
+    name_ru: Coaching
+    category: process
+    roles: [scrum_master]
+    synonyms: [proc_coaching]
+  - competency_id: proc_contract_mgmt
+    name_en: Contract management
+    name_ru: Contract management
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_contract_mgmt]
+  - competency_id: proc_delivery
+    name_en: Delivery management
+    name_ru: Delivery management
+    category: process
+    roles: [delivery_manager]
+    synonyms: [proc_delivery]
+  - competency_id: proc_dependency_mgmt
+    name_en: Dependency management
+    name_ru: Dependency management
+    category: process
+    roles: [program_manager]
+    synonyms: [proc_dependency_mgmt]
+  - competency_id: proc_governance
+    name_en: Governance
+    name_ru: Governance
+    category: process
+    roles: [program_manager]
+    synonyms: [proc_governance]
+  - competency_id: proc_itil
+    name_en: ITIL
+    name_ru: ITIL
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_itil]
+  - competency_id: proc_kpi
+    name_en: KPI
+    name_ru: KPI
+    category: process
+    roles: [delivery_manager]
+    synonyms: [proc_kpi]
+  - competency_id: proc_okr
+    name_en: OKR
+    name_ru: OKR
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_okr]
+  - competency_id: proc_portfolio
+    name_en: Portfolio
+    name_ru: Portfolio
+    category: process
+    roles: [program_manager]
+    synonyms: [proc_portfolio]
+  - competency_id: proc_resource_mgmt
+    name_en: Resource management
+    name_ru: Resource management
+    category: process
+    roles: [delivery_manager]
+    synonyms: [proc_resource_mgmt]
+  - competency_id: proc_risk_mgmt
+    name_en: Risk management
+    name_ru: Risk management
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_risk_mgmt]
+  - competency_id: proc_safe
+    name_en: SAFe
+    name_ru: SAFe
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_safe]
+  - competency_id: proc_scrum
+    name_en: Scrum
+    name_ru: Scrum
+    category: process
+    roles: [delivery_manager, scrum_master]
+    synonyms: [proc_scrum]
+  - competency_id: proc_waterfall
+    name_en: Waterfall
+    name_ru: Waterfall
+    category: process
+    roles: [project_manager]
+    synonyms: [proc_waterfall]
+  - competency_id: prod_backlog
+    name_en: Backlog management
+    name_ru: Backlog management
+    category: process
+    roles: [product_owner]
+    synonyms: [prod_backlog]
+  - competency_id: prod_cjm
+    name_en: Customer journey mapping
+    name_ru: Customer journey mapping
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_cjm]
+  - competency_id: prod_discovery
+    name_en: Product discovery
+    name_ru: Product discovery
+    category: process
+    roles: [product_owner]
+    synonyms: [prod_discovery]
+  - competency_id: prod_funnel_analysis
+    name_en: Funnel analysis
+    name_ru: Funnel analysis
+    category: process
+    roles: [product_analyst]
+    synonyms: [prod_funnel_analysis]
+  - competency_id: prod_gtm
+    name_en: Go-to-market
+    name_ru: Go-to-market
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_gtm]
+  - competency_id: prod_jtbd
+    name_en: Jobs to be done
+    name_ru: Jobs to be done
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_jtbd]
+  - competency_id: prod_metrics
+    name_en: Product metrics
+    name_ru: Product metrics
+    category: process
+    roles: [product_analyst, product_manager]
+    synonyms: [prod_metrics]
+  - competency_id: prod_monetization
+    name_en: Monetization
+    name_ru: Monetization
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_monetization]
+  - competency_id: prod_pricing
+    name_en: Pricing
+    name_ru: Pricing
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_pricing]
+  - competency_id: prod_prioritization
+    name_en: Prioritization
+    name_ru: Prioritization
+    category: process
+    roles: [product_owner]
+    synonyms: [prod_prioritization]
+  - competency_id: prod_roadmap
+    name_en: Roadmap
+    name_ru: Roadmap
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_roadmap]
+  - competency_id: prod_strategy
+    name_en: Product strategy
+    name_ru: Product strategy
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_strategy]
+  - competency_id: prod_user_research
+    name_en: User research
+    name_ru: User research
+    category: process
+    roles: [product_manager]
+    synonyms: [prod_user_research]
+  - competency_id: qa_bug_reporting
+    name_en: Bug reporting
+    name_ru: Bug reporting
+    category: testing
+    roles: [qa_engineer]
+    synonyms: [qa_bug_reporting]
+  - competency_id: qa_exploratory
+    name_en: Exploratory testing
+    name_ru: Exploratory testing
+    category: testing
+    roles: [qa_engineer]
+    synonyms: [qa_exploratory]
+  - competency_id: qa_metrics
+    name_en: QA metrics
+    name_ru: QA metrics
+    category: testing
+    roles: [qa_lead]
+    synonyms: [qa_metrics]
+  - competency_id: qa_mobile
+    name_en: Mobile testing
+    name_ru: Mobile testing
+    category: testing
+    roles: [mobile_qa_engineer]
+    synonyms: [qa_mobile]
+  - competency_id: qa_profiling
+    name_en: Profiling
+    name_ru: Profiling
+    category: testing
+    roles: [performance_engineer]
+    synonyms: [qa_profiling]
+  - competency_id: qa_regression
+    name_en: Regression testing
+    name_ru: Regression testing
+    category: testing
+    roles: [qa_engineer]
+    synonyms: [qa_regression]
+  - competency_id: qa_strategy
+    name_en: QA strategy
+    name_ru: QA strategy
+    category: testing
+    roles: [qa_lead]
+    synonyms: [qa_strategy]
+  - competency_id: qa_test_plan
+    name_en: Test plan
+    name_ru: Test plan
+    category: testing
+    roles: [qa_lead]
+    synonyms: [qa_test_plan]
+  - competency_id: rel_branching
+    name_en: Branching strategy
+    name_ru: Branching strategy
+    category: devops
+    roles: [release_engineer]
+    synonyms: [rel_branching]
+  - competency_id: rel_versioning
+    name_en: Versioning
+    name_ru: Versioning
+    category: devops
+    roles: [release_engineer]
+    synonyms: [rel_versioning]
+  - competency_id: sec_152fz
+    name_en: 152-FZ compliance
+    name_ru: 152-FZ compliance
+    category: security
+    roles: [compliance_specialist]
+    synonyms: [sec_152fz]
+  - competency_id: sec_architecture
+    name_en: Security architecture
+    name_ru: Security architecture
+    category: security
+    roles: [security_architect]
+    synonyms: [sec_architecture]
+  - competency_id: sec_audit
+    name_en: Security audit
+    name_ru: Security audit
+    category: security
+    roles: [compliance_specialist]
+    synonyms: [sec_audit]
+  - competency_id: sec_cloud
+    name_en: Cloud security
+    name_ru: Cloud security
+    category: security
+    roles: [security_architect]
+    synonyms: [sec_cloud]
+  - competency_id: sec_compliance
+    name_en: Compliance
+    name_ru: Compliance
+    category: security
+    roles: [security_engineer]
+    synonyms: [sec_compliance]
+  - competency_id: sec_container
+    name_en: Container security
+    name_ru: Container security
+    category: security
+    roles: [devsecops_engineer]
+    synonyms: [sec_container]
+  - competency_id: sec_crypto
+    name_en: Cryptography
+    name_ru: Cryptography
+    category: security
+    roles: [blockchain_developer, security_engineer]
+    synonyms: [sec_crypto]
+  - competency_id: sec_forensics
+    name_en: Forensics
+    name_ru: Forensics
+    category: security
+    roles: [soc_analyst]
+    synonyms: [sec_forensics]
+  - competency_id: sec_gost
+    name_en: GOST
+    name_ru: GOST
+    category: security
+    roles: [compliance_specialist]
+    synonyms: [sec_gost]
+  - competency_id: sec_incident_response
+    name_en: Incident response
+    name_ru: Incident response
+    category: security
+    roles: [soc_analyst]
+    synonyms: [sec_incident_response]
+  - competency_id: sec_iso27001
+    name_en: ISO 27001
+    name_ru: ISO 27001
+    category: security
+    roles: [compliance_specialist]
+    synonyms: [sec_iso27001]
+  - competency_id: sec_pci_dss
+    name_en: PCI DSS
+    name_ru: PCI DSS
+    category: security
+    roles: [compliance_specialist]
+    synonyms: [sec_pci_dss]
+  - competency_id: sec_pentest
+    name_en: Penetration testing
+    name_ru: Penetration testing
+    category: security
+    roles: [pentester]
+    synonyms: [sec_pentest]
+  - competency_id: sec_red_team
+    name_en: Red team
+    name_ru: Red team
+    category: security
+    roles: [pentester]
+    synonyms: [sec_red_team]
+  - competency_id: sec_reverse
+    name_en: Reverse engineering
+    name_ru: Reverse engineering
+    category: security
+    roles: [pentester]
+    synonyms: [sec_reverse]
+  - competency_id: sec_sast_dast
+    name_en: SAST/DAST
+    name_ru: SAST/DAST
+    category: security
+    roles: [devsecops_engineer]
+    synonyms: [sec_sast_dast]
+  - competency_id: sec_secrets_mgmt
+    name_en: Secrets management
+    name_ru: Secrets management
+    category: security
+    roles: [devsecops_engineer]
+    synonyms: [sec_secrets_mgmt]
+  - competency_id: sec_threat_intel
+    name_en: Threat intelligence
+    name_ru: Threat intelligence
+    category: security
+    roles: [soc_analyst]
+    synonyms: [sec_threat_intel]
+  - competency_id: sec_waf
+    name_en: WAF
+    name_ru: WAF
+    category: security
+    roles: [security_engineer]
+    synonyms: [sec_waf]
+  - competency_id: sec_web_vulns
+    name_en: Web vulnerabilities
+    name_ru: Web vulnerabilities
+    category: security
+    roles: [pentester]
+    synonyms: [sec_web_vulns]
+  - competency_id: sec_zero_trust
+    name_en: Zero trust
+    name_ru: Zero trust
+    category: security
+    roles: [security_architect]
+    synonyms: [sec_zero_trust]
+  - competency_id: soft_code_review
+    name_en: Code review
+    name_ru: Code review
+    category: soft_skill
+    roles: [tech_lead]
+    synonyms: [soft_code_review]
+  - competency_id: soft_conflict_resolution
+    name_en: Conflict resolution
+    name_ru: Conflict resolution
+    category: soft_skill
+    roles: [project_manager]
+    synonyms: [soft_conflict_resolution]
+  - competency_id: soft_english_b2
+    name_en: English B2
+    name_ru: English B2
+    category: soft_skill
+    roles: [project_manager]
+    synonyms: [soft_english_b2]
+  - competency_id: soft_english_c1
+    name_en: English C1
+    name_ru: English C1
+    category: soft_skill
+    roles: [project_manager]
+    synonyms: [soft_english_c1]
+  - competency_id: soft_facilitation
+    name_en: Facilitation
+    name_ru: Facilitation
+    category: soft_skill
+    roles: [scrum_master]
+    synonyms: [soft_facilitation]
+  - competency_id: soft_leadership
+    name_en: Leadership
+    name_ru: Leadership
+    category: soft_skill
+    roles: [qa_lead, engineering_manager]
+    synonyms: [soft_leadership]
+  - competency_id: soft_public_speaking
+    name_en: Public speaking
+    name_ru: Public speaking
+    category: soft_skill
+    roles: [project_manager]
+    synonyms: [soft_public_speaking]
+  - competency_id: soft_stakeholder
+    name_en: Stakeholder communication
+    name_ru: Stakeholder communication
+    category: soft_skill
+    roles: [solution_architect]
+    synonyms: [soft_stakeholder]
+  - competency_id: soft_time_mgmt
+    name_en: Time management
+    name_ru: Time management
+    category: soft_skill
+    roles: [project_manager]
+    synonyms: [soft_time_mgmt]
+  - competency_id: sre_incident_mgmt
+    name_en: Incident management
+    name_ru: Incident management
+    category: devops
+    roles: [sre_engineer]
+    synonyms: [sre_incident_mgmt]
+  - competency_id: sre_slo
+    name_en: SLO
+    name_ru: SLO
+    category: devops
+    roles: [sre_engineer]
+    synonyms: [sre_slo]
+  - competency_id: stat_ab_testing
+    name_en: A/B testing
+    name_ru: A/B testing
+    category: analytics
+    roles: [data_analyst, product_analyst]
+    synonyms: [stat_ab_testing]
+  - competency_id: stat_bayesian
+    name_en: Bayesian statistics
+    name_ru: Bayesian statistics
+    category: analytics
+    roles: [data_scientist]
+    synonyms: [stat_bayesian]
+  - competency_id: stat_causal_inference
+    name_en: Causal inference
+    name_ru: Causal inference
+    category: analytics
+    roles: [data_scientist]
+    synonyms: [stat_causal_inference]
+  - competency_id: stat_hypothesis
+    name_en: Hypothesis testing
+    name_ru: Hypothesis testing
+    category: analytics
+    roles: [data_scientist, ux_researcher]
+    synonyms: [stat_hypothesis]
+  - competency_id: stat_regression
+    name_en: Regression analysis
+    name_ru: Regression analysis
+    category: analytics
+    roles: [data_scientist]
+    synonyms: [stat_regression]
+  - competency_id: sup_sla
+    name_en: SLA management
+    name_ru: SLA management
+    category: process
+    roles: [support_engineer]
+    synonyms: [sup_sla]
+  - competency_id: sup_troubleshooting
+    name_en: Troubleshooting
+    name_ru: Troubleshooting
+    category: process
+    roles: [support_engineer]
+    synonyms: [sup_troubleshooting]
+  - competency_id: test_appium
+    name_en: Appium
+    name_ru: Appium
+    category: testing
+    roles: [mobile_qa_engineer]
+    synonyms: [test_appium]
+  - competency_id: test_bdd
+    name_en: BDD
+    name_ru: BDD
+    category: testing
+    roles: [qa_automation_engineer]
+    synonyms: [test_bdd]
+  - competency_id: test_chaos
+    name_en: Chaos testing
+    name_ru: Chaos testing
+    category: testing
+    roles: [qa_engineer]
+    synonyms: [test_chaos]
+  - competency_id: test_contract
+    name_en: Contract testing
+    name_ru: Contract testing
+    category: testing
+    roles: [qa_engineer]
+    synonyms: [test_contract]
+  - competency_id: test_cypress
+    name_en: Cypress
+    name_ru: Cypress
+    category: testing
+    roles: [qa_automation_engineer]
+    synonyms: [test_cypress]
+  - competency_id: test_jmeter
+    name_en: JMeter
+    name_ru: JMeter
+    category: testing
+    roles: [performance_engineer]
+    synonyms: [test_jmeter]
+  - competency_id: test_junit
+    name_en: JUnit
+    name_ru: JUnit
+    category: testing
+    roles: [qa_automation_engineer]
+    synonyms: [test_junit]
+  - competency_id: test_k6
+    name_en: k6 load testing
+    name_ru: k6 load testing
+    category: testing
+    roles: [performance_engineer]
+    synonyms: [test_k6]
+  - competency_id: test_locust
+    name_en: Locust
+    name_ru: Locust
+    category: testing
+    roles: [qa_automation_engineer]
+    synonyms: [test_locust]
+  - competency_id: test_testng
+    name_en: TestNG
+    name_ru: TestNG
+    category: testing
+    roles: [qa_automation_engineer]
+    synonyms: [test_testng]
+  - competency_id: ui_accessibility
+    name_en: UI accessibility
+    name_ru: UI accessibility
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_accessibility]
+  - competency_id: ui_branding
+    name_en: Branding
+    name_ru: Branding
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_branding]
+  - competency_id: ui_illustration
+    name_en: Illustration
+    name_ru: Illustration
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_illustration]
+  - competency_id: ui_motion
+    name_en: Motion design
+    name_ru: Motion design
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_motion]
+  - competency_id: ui_prototyping
+    name_en: Prototyping
+    name_ru: Prototyping
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_prototyping]
+  - competency_id: ui_typography
+    name_en: Typography
+    name_ru: Typography
+    category: analytics
+    roles: [ui_designer]
+    synonyms: [ui_typography]
+  - competency_id: ux_cjm
+    name_en: Customer journey mapping
+    name_ru: Customer journey mapping
+    category: analytics
+    roles: [ux_designer]
+    synonyms: [ux_cjm]
+  - competency_id: ux_content_strategy
+    name_en: Content strategy
+    name_ru: Content strategy
+    category: analytics
+    roles: [ux_writer]
+    synonyms: [ux_content_strategy]
+  - competency_id: ux_ia
+    name_en: Information architecture
+    name_ru: Information architecture
+    category: analytics
+    roles: [ux_designer]
+    synonyms: [ux_ia]
+  - competency_id: ux_interviews
+    name_en: User interviews
+    name_ru: User interviews
+    category: analytics
+    roles: [ux_researcher]
+    synonyms: [ux_interviews]
+  - competency_id: ux_prototyping
+    name_en: Prototyping
+    name_ru: Prototyping
+    category: analytics
+    roles: [ux_designer]
+    synonyms: [ux_prototyping]
+  - competency_id: ux_surveys
+    name_en: Surveys
+    name_ru: Surveys
+    category: analytics
+    roles: [ux_researcher]
+    synonyms: [ux_surveys]
+  - competency_id: ux_usability_testing
+    name_en: Usability testing
+    name_ru: Usability testing
+    category: analytics
+    roles: [ux_designer]
+    synonyms: [ux_usability_testing]
+  - competency_id: ux_writing
+    name_en: UX writing
+    name_ru: UX writing
+    category: analytics
+    roles: [ux_writer]
+    synonyms: [ux_writing]
+  - competency_id: virt_kvm
+    name_en: KVM
+    name_ru: KVM
+    category: devops
+    roles: [sysadmin]
+    synonyms: [virt_kvm]
+  - competency_id: virt_proxmox
+    name_en: Proxmox
+    name_ru: Proxmox
+    category: devops
+    roles: [sysadmin]
+    synonyms: [virt_proxmox]
+  - competency_id: virt_vmware
+    name_en: VMware
+    name_ru: VMware
+    category: devops
+    roles: [sysadmin]
+    synonyms: [virt_vmware]
+  - competency_id: web_a11y
+    name_en: Web accessibility
+    name_ru: Web accessibility
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_a11y]
+  - competency_id: web_html
+    name_en: HTML
+    name_ru: HTML
+    category: framework
+    roles: [bitrix_developer]
+    synonyms: [web_html]
+  - competency_id: web_performance
+    name_en: Web performance
+    name_ru: Web performance
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_performance]
+  - competency_id: web_pwa
+    name_en: PWA
+    name_ru: PWA
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_pwa]
+  - competency_id: web_security
+    name_en: Web security
+    name_ru: Web security
+    category: framework
+    roles: [security_engineer]
+    synonyms: [web_security]
+  - competency_id: web_seo
+    name_en: SEO
+    name_ru: SEO
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_seo]
+  - competency_id: web_ssr
+    name_en: Server-side rendering
+    name_ru: Server-side rendering
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_ssr]
+  - competency_id: web_webpack
+    name_en: Webpack
+    name_ru: Webpack
+    category: framework
+    roles: [frontend_engineer]
+    synonyms: [web_webpack]
 
 # Invariants checked by Go on load (task 2.1) and by CI on this file:
 #   1. every id is unique and matches ^[a-z][a-z0-9_]{2,39}$
 #   2. every role.core_competencies entry exists and lists that role in `roles`
 #   3. every competency.roles entry exists in roles[]
 #   4. every synonym is lowercase, unique across the whole file (a synonym must not be ambiguous)
-#   5. >= 8 roles, >= 50 competencies (current: 12 roles, 101 competencies, 5 level descriptors)
+#   5. >= 8 roles, >= 50 competencies (current: 63 roles, 390 competencies, 5 level descriptors)
