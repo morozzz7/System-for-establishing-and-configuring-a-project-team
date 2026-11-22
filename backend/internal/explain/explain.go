@@ -19,10 +19,16 @@ func Generate(in Input) (Explanation, error) {
 	if locale == "" {
 		locale = "ru"
 	}
+	// Empty slices must serialize as [] (contracts/openapi.yaml requires arrays), never null.
 	explanations := Explanation{
-		VariantID: in.Variant.VariantID,
-		RunID:     in.RunID,
-		Locale:    locale,
+		VariantID:           in.Variant.VariantID,
+		RunID:               in.RunID,
+		Locale:              locale,
+		HeadlineReasonCodes: []string{},
+		Included:            []Factor{},
+		Excluded:            []Factor{},
+		Deficits:            []Factor{},
+		Counterfactuals:     []Counterfactual{},
 	}
 
 	// Included members.
