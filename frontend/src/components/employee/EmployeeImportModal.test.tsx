@@ -9,8 +9,10 @@ import {
 
 describe('EmployeeImportModal logic', () => {
   it('has valid CSV template content', () => {
-    expect(CSV_TEMPLATE_CONTENT).toContain('employee_id,grade,role_profile_id');
-    expect(CSV_TEMPLATE_CONTENT).toContain('emp_0101,S,backend_dev');
+    expect(CSV_TEMPLATE_CONTENT).toContain(
+      'employee_id,grade,role_profile_id,unit_id,employment_type,bench_flag,competencies',
+    );
+    expect(CSV_TEMPLATE_CONTENT).toContain('emp_e2e01,S,backend_engineer');
   });
 
   it('parses valid CSV correctly', () => {
@@ -26,6 +28,14 @@ emp_test2,M,frontend_dev,part_time,false,fe_react:3
     expect(rows[0].bench_flag).toBe(true);
     expect(rows[0].has_error).toBe(false);
     expect(rows[0].competencies_count).toBe(2);
+    expect(rows[0].raw.unit_id).toBe('unt_default');
+    expect(rows[0].raw.employment_type).toBe('internal');
+    expect((rows[0].raw.competencies as Array<Record<string, unknown>>)[0]).toMatchObject({
+      competency_id: 'lang_go',
+      level: 4,
+      confidence: 0.9,
+      source: 'manager_review',
+    });
 
     expect(rows[1].employee_id).toBe('emp_test2');
     expect(rows[1].grade).toBe('M');
@@ -58,6 +68,8 @@ emp_bad1,INVALID_GRADE,backend_dev
     expect(rows[0].employee_id).toBe('emp_j1');
     expect(rows[0].grade).toBe('L');
     expect(rows[0].has_error).toBe(false);
+    expect(rows[0].raw.unit_id).toBe('unt_default');
+    expect(rows[0].raw.employment_type).toBe('internal');
     expect(rows[1].grade).toBe('J');
   });
 

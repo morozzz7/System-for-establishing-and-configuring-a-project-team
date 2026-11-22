@@ -1,0 +1,113 @@
+{
+  "mode": "upsert",
+  "employees": [
+    {
+      "employee_id": "emp_e2e01",
+      "grade": "S",
+      "role_profile_id": "backend_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": false,
+      "active": true,
+      "competencies": [
+        { "competency_id": "lang_go", "level": 4, "confidence": 0.95, "source": "manager_review" },
+        { "competency_id": "db_postgresql", "level": 4, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "api_rest", "level": 4, "confidence": 0.9, "source": "project_history" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e02",
+      "grade": "M",
+      "role_profile_id": "backend_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": true,
+      "active": true,
+      "competencies": [
+        { "competency_id": "lang_go", "level": 3, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "api_rest", "level": 3, "confidence": 0.85, "source": "project_history" },
+        { "competency_id": "db_postgresql", "level": 3, "confidence": 0.85, "source": "project_history" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e03",
+      "grade": "M",
+      "role_profile_id": "frontend_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": false,
+      "active": true,
+      "competencies": [
+        { "competency_id": "fw_react", "level": 4, "confidence": 0.95, "source": "manager_review" },
+        { "competency_id": "lang_typescript", "level": 4, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "test_playwright", "level": 3, "confidence": 0.8, "source": "project_history" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e04",
+      "grade": "J",
+      "role_profile_id": "frontend_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": true,
+      "active": true,
+      "competencies": [
+        { "competency_id": "fw_react", "level": 3, "confidence": 0.85, "source": "manager_review" },
+        { "competency_id": "lang_typescript", "level": 3, "confidence": 0.85, "source": "manager_review" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e05",
+      "grade": "S",
+      "role_profile_id": "qa_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": false,
+      "active": true,
+      "competencies": [
+        { "competency_id": "test_playwright", "level": 4, "confidence": 0.95, "source": "manager_review" },
+        { "competency_id": "qa_test_design", "level": 4, "confidence": 0.9, "source": "manager_review" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e06",
+      "grade": "M",
+      "role_profile_id": "devops_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": false,
+      "active": true,
+      "competencies": [
+        { "competency_id": "cloud_yandex", "level": 4, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "cloud_kubernetes", "level": 3, "confidence": 0.85, "source": "project_history" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e07",
+      "grade": "L",
+      "role_profile_id": "backend_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": true,
+      "active": true,
+      "competencies": [
+        { "competency_id": "lang_go", "level": 4, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "db_postgresql", "level": 3, "confidence": 0.85, "source": "manager_review" },
+        { "competency_id": "api_rest", "level": 4, "confidence": 0.9, "source": "manager_review" }
+      ]
+    },
+    {
+      "employee_id": "emp_e2e08",
+      "grade": "M",
+      "role_profile_id": "qa_engineer",
+      "unit_id": "unt_e2e",
+      "employment_type": "internal",
+      "bench_flag": true,
+      "active": true,
+      "competencies": [
+        { "competency_id": "test_playwright", "level": 3, "confidence": 0.9, "source": "manager_review" },
+        { "competency_id": "qa_test_design", "level": 3, "confidence": 0.85, "source": "manager_review" }
+      ]
+    }
+  ]
+}

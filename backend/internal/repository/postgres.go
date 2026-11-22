@@ -179,9 +179,12 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 	offsetIdx := argN
 	args = append(args, offset)
 
+	// Numeric columns are cast to float8: pgx's binary NUMERIC->float64 scan plan faults
+	// under the toolchain used to build this service (math/big.subVV on a bogus pointer).
 	selectSQL := fmt.Sprintf(
 		`SELECT employee_id, grade, role_profile_id, unit_id, employment_type, bench_flag,
-		        weekly_hours_norm, reserve_ratio, max_utilization_ratio, cost_coefficient, active
+		        weekly_hours_norm::double precision, reserve_ratio::double precision,
+		        max_utilization_ratio::double precision, cost_coefficient::double precision, active
 		 FROM employee %s ORDER BY employee_id LIMIT $%d OFFSET $%d`,
 		where, limitIdx, offsetIdx,
 	)
@@ -214,7 +217,8 @@ func (r *PgEmployeeRepo) Get(ctx context.Context, id string) (domain.Employee, e
 	var e domain.Employee
 	err := r.Pool.QueryRow(ctx,
 		`SELECT employee_id, grade, role_profile_id, unit_id, employment_type, bench_flag,
-		        weekly_hours_norm, reserve_ratio, max_utilization_ratio, cost_coefficient, active
+		        weekly_hours_norm::double precision, reserve_ratio::double precision,
+		        max_utilization_ratio::double precision, cost_coefficient::double precision, active
 		 FROM employee WHERE employee_id = $1`, id,
 	).Scan(
 		&e.EmployeeID, &e.Grade, &e.RoleProfileID, &e.UnitID, &e.EmploymentType, &e.BenchFlag,
@@ -318,7 +322,7 @@ func NewPgEmployeeCompetencyRepo(pool *pgxpool.Pool) *PgEmployeeCompetencyRepo {
 
 func (r *PgEmployeeCompetencyRepo) ListByEmployee(ctx context.Context, employeeID string) ([]domain.EmployeeCompetency, error) {
 	rows, err := r.Pool.Query(ctx,
-		`SELECT competency_id, level, confidence, last_used, source
+		`SELECT competency_id, level, confidence::double precision, last_used, source
 		 FROM employee_competency WHERE employee_id = $1 ORDER BY competency_id`, employeeID)
 	if err != nil {
 		return nil, fmt.Errorf("list competencies: %w", err)
@@ -716,7 +720,7 @@ func (r *PgAbsenceRepo) List(ctx context.Context, f domain.AbsenceFilter) ([]dom
 	args = append(args, offset)
 
 	selectSQL := fmt.Sprintf(
-		`SELECT absence_id, employee_id, type, start_date, end_date, hours_per_day, approved, source
+		`SELECT absence_id, employee_id, type, start_date, end_date, hours_per_day::double precision, approved, source
 		 FROM absence %s ORDER BY start_date LIMIT $%d OFFSET $%d`,
 		where, limitIdx, offsetIdx,
 	)
@@ -744,7 +748,7 @@ func (r *PgAbsenceRepo) List(ctx context.Context, f domain.AbsenceFilter) ([]dom
 func (r *PgAbsenceRepo) Get(ctx context.Context, id string) (domain.Absence, error) {
 	var a domain.Absence
 	err := r.Pool.QueryRow(ctx,
-		`SELECT absence_id, employee_id, type, start_date, end_date, hours_per_day, approved, source
+		`SELECT absence_id, employee_id, type, start_date, end_date, hours_per_day::double precision, approved, source
 		 FROM absence WHERE absence_id = $1 AND deleted_at IS NULL`, id,
 	).Scan(&a.AbsenceID, &a.EmployeeID, &a.Type, &a.StartDate, &a.EndDate,
 		&a.HoursPerDay, &a.Approved, &a.Source)

@@ -39,6 +39,7 @@ src/
   types/            DTOs mirroring openapi.yaml schemas
   hooks/            useEmployees, useProjects, useAbsences, etc.
   utils/            ISO week helpers (ADR-002)
+  e2e/              Playwright full-journey spec + deterministic fixtures
 ```
 
 ## Current state (Phase 2.5)
@@ -98,6 +99,22 @@ export async function listEmployees(): Promise<Employee[]> {
 - **Unit tests:** `src/utils/week.test.ts` (ISO week utilities), `src/mocks/data.test.ts` (data invariants)
 - **Component tests:** `src/app/Layout.test.tsx` (menu rendering)
 - Run: `npm run test` (Vitest)
+
+## End-to-end test (task 5.4)
+
+One Playwright spec drives the whole journey against the real Docker stack:
+import pool → brief → requirements review → run config → variants comparison → recalculation → decision.
+
+```bash
+make test-e2e         # from repo root: build/start the stack + run the spec
+make test-e2e-down    # stop the e2e stack and remove its volume
+```
+
+The e2e compose overlay (`deploy/docker-compose.e2e.yml`) replaces only the external LLM with a
+recorded deterministic response (`deploy/e2e/llm_stub.py`), so extraction needs no API key and is
+reproducible. The spec uses `E2E_BASE_URL` (default `http://127.0.0.1:${GATEWAY_PORT:-9080}`) and
+runs in headless Chromium. Fixtures: `e2e/fixtures/employees.json` (pseudonymous pool) and
+`e2e/fixtures/brief.md` (gold brief matching the recorded LLM response).
 
 ## Contract alignment
 

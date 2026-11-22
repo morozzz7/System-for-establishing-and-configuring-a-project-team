@@ -58,7 +58,8 @@ func (r *PgCapacityRepo) GetWeeklyCapacity(ctx context.Context, employeeID, star
 	// 2. Get employee profile.
 	var p empProfile
 	err = r.Pool.QueryRow(ctx,
-		`SELECT employee_id, weekly_hours_norm, reserve_ratio, max_utilization_ratio
+		`SELECT employee_id, weekly_hours_norm::integer, reserve_ratio::double precision,
+		        max_utilization_ratio::double precision
 		 FROM employee WHERE employee_id = $1 AND active = true`, employeeID,
 	).Scan(&p.EmployeeID, &p.WeeklyHoursNorm, &p.ReserveRatio, &p.MaxUtilization)
 	if err != nil {
@@ -165,7 +166,8 @@ func (r *PgCapacityRepo) FindCandidatesByCompetency(ctx context.Context, compete
 // ---------- internal helpers ----------
 
 func (r *PgCapacityRepo) getProfiles(ctx context.Context, employeeIDs []string) ([]empProfile, error) {
-	query := `SELECT employee_id, weekly_hours_norm, reserve_ratio, max_utilization_ratio
+	query := `SELECT employee_id, weekly_hours_norm::integer, reserve_ratio::double precision,
+	                 max_utilization_ratio::double precision
 	          FROM employee WHERE active = true AND employee_id = ANY($1)`
 	rows, err := r.Pool.Query(ctx, query, employeeIDs)
 	if err != nil {
@@ -214,7 +216,7 @@ func (r *PgCapacityRepo) getAssignedMinutes(ctx context.Context, employeeIDs []s
 // getAbsences returns map[employeeID][]domain.Absence for approved, non-deleted absences
 // overlapping [rangeStart, rangeEnd].
 func (r *PgCapacityRepo) getAbsences(ctx context.Context, employeeIDs []string, rangeStart, rangeEnd time.Time) (map[string][]domain.Absence, error) {
-	query := `SELECT employee_id, start_date, end_date, hours_per_day
+	query := `SELECT employee_id, start_date, end_date, hours_per_day::double precision
 	          FROM absence
 	          WHERE employee_id = ANY($1) AND deleted_at IS NULL AND approved = true
 	            AND end_date >= $2 AND start_date <= $3`

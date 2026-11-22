@@ -2,8 +2,9 @@ COMPOSE_FILE := deploy/docker-compose.yml
 COMPOSE_PROJECT_NAME := teamopt
 COMPOSE_ENV_FILE := .env
 COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT_NAME) --env-file $(COMPOSE_ENV_FILE)
+E2E_COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi) -f $(COMPOSE_FILE) -f deploy/docker-compose.e2e.yml -p $(COMPOSE_PROJECT_NAME)-e2e --env-file $(COMPOSE_ENV_FILE)
 
-.PHONY: up down build logs test lint-contracts lint-backend lint-ml seed status help
+.PHONY: up down build logs test test-e2e test-e2e-down lint-contracts lint-backend lint-ml seed status help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -76,6 +77,21 @@ test: lint-contracts ## Run all tests: spectral, go test, pytest
 	@echo ""
 	@echo "=== ML tests ==="
 	cd ml && python3 -m pytest tests/ -v
+
+# ----------------------------------------------------------- e2e
+
+test-e2e: ## full-stack Playwright journey (Docker stack + deterministic LLM stub)
+	@$(E2E_COMPOSE) up --build -d postgres
+	@sleep 5
+	@echo "Running seed (migrations + reference data)..."
+	@$(E2E_COMPOSE) run --rm --entrypoint /usr/local/bin/seed backend
+	@$(E2E_COMPOSE) up --build -d --wait --wait-timeout 120
+	@echo ""
+	@echo "=== Playwright full journey ==="
+	@cd frontend && npm run test:e2e
+
+test-e2e-down: ## stop the e2e stack and remove its volumes
+	@$(E2E_COMPOSE) down -v
 
 # ----------------------------------------------------------- seed
 

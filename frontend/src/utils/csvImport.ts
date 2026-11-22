@@ -1,5 +1,9 @@
 /**
  * Utility helpers for Employee bulk CSV / JSON parsing and template generation.
+ *
+ * The payload produced here is contract-shaped for PUT /api/v1/employees: unit_id,
+ * internal/contractor/external_partner employment types and competency confidence/source
+ * are required by the backend validator.
  */
 
 export interface ParsedEmployeeRow {
@@ -18,13 +22,13 @@ export interface ParsedEmployeeRow {
 
 export const CSV_TEMPLATE_CONTENT = `# Шаблон импорта сотрудников
 # Допустимые грейды: J (Junior), M (Middle), S (Senior), L (Lead), P (Principal)
+# Тип занятости: internal, contractor, external_partner
 # Формат компетенций: comp_id:level (уровни 1-5, разделены точкой с запятой)
-employee_id,grade,role_profile_id,employment_type,bench_flag,competencies
-emp_0101,S,backend_dev,full_time,false,lang_go:4;db_postgres:3;cloud_docker:3
-emp_0102,M,frontend_dev,full_time,true,fe_react:3;lang_typescript:3;ui_figma:2
-emp_0103,L,team_lead,full_time,false,arch_solution:4;lang_python:4;db_postgres:4
-emp_0104,J,qa_engineer,part_time,true,test_manual:2;test_automation:2
-emp_0105,S,devops,full_time,false,cloud_k8s:4;cloud_docker:4;linux_kernel:3
+employee_id,grade,role_profile_id,unit_id,employment_type,bench_flag,competencies
+emp_e2e01,S,backend_engineer,unt_e2e,internal,false,lang_go:4;db_postgresql:4;api_rest:4
+emp_e2e02,M,frontend_engineer,unt_e2e,internal,true,fw_react:3;lang_typescript:3
+emp_e2e03,L,qa_engineer,unt_e2e,internal,false,test_playwright:4;qa_test_design:4
+emp_e2e04,S,devops_engineer,unt_e2e,internal,false,cloud_yandex:4;cloud_kubernetes:4
 `;
 
 export function downloadCsvTemplate(): void {
@@ -39,6 +43,22 @@ export function downloadCsvTemplate(): void {
   URL.revokeObjectURL(url);
 }
 
+function normalizeEmploymentType(value: string): string {
+  const raw = value.trim().toLowerCase();
+  if (raw === 'contractor' || raw === 'external_partner') return raw;
+  return 'internal';
+}
+
+function normalizeCompetencies(
+  values: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  return values.map((item) => ({
+    ...item,
+    confidence: Number(item.confidence ?? 0.9),
+    source: String(item.source || 'manager_review'),
+  }));
+}
+
 export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
   const lines = csvText.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
   if (lines.length < 2) return [];
@@ -50,28 +70,36 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
   const colId = getCol(['employee_id', 'id', 'ид']);
   const colGrade = getCol(['grade', 'грейд']);
   const colRole = getCol(['role_profile_id', 'role', 'роль']);
+  const colUnit = getCol(['unit_id', 'unit', 'подразделение']);
   const colType = getCol(['employment_type', 'type', 'тип', 'занятость']);
   const colBench = getCol(['bench_flag', 'bench', 'скамейка']);
   const colComp = getCol(['competencies', 'компетенции', 'skills']);
 
   const rows: ParsedEmployeeRow[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = 1; i < lines.length; i += 1) {
     const parts = lines[i].split(',').map((p) => p.trim());
     if (parts.length === 0 || parts.every((p) => !p)) continue;
 
     const empId = colId >= 0 && parts[colId] ? parts[colId] : '';
     const grade = colGrade >= 0 && parts[colGrade] ? parts[colGrade].toUpperCase() : '';
     const roleId = colRole >= 0 && parts[colRole] ? parts[colRole] : '';
-    const empType = colType >= 0 && parts[colType] ? parts[colType] : 'full_time';
+    const unitId = colUnit >= 0 && parts[colUnit] ? parts[colUnit] : 'unt_default';
+    const empType = normalizeEmploymentType(
+      colType >= 0 && parts[colType] ? parts[colType] : 'internal',
+    );
     const benchRaw = colBench >= 0 && parts[colBench] ? parts[colBench].toLowerCase() : 'false';
     const bench = benchRaw === 'true' || benchRaw === '1' || benchRaw === 'да';
 
     const compRaw = colComp >= 0 && parts[colComp] ? parts[colComp] : '';
-    const comps = compRaw ? compRaw.split(';').map((c) => {
-      const [cId, lvl] = c.split(':');
-      return { competency_id: cId?.trim(), level: Number(lvl?.trim() || 1) };
-    }).filter((c) => c.competency_id) : [];
+    const comps = normalizeCompetencies(
+      compRaw
+        ? compRaw.split(';').map((c) => {
+            const [cId, lvl] = c.split(':');
+            return { competency_id: cId?.trim(), level: Number(lvl?.trim() || 1) };
+          }).filter((c) => c.competency_id)
+        : [],
+    );
 
     let hasError = false;
     let errorMsg = '';
@@ -94,9 +122,9 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
       employee_id: empId,
       grade,
       role_profile_id: roleId,
+      unit_id: unitId,
       employment_type: empType,
       bench_flag: bench,
-      active: true,
       competencies: comps,
     };
 
@@ -123,7 +151,7 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
   const list = Array.isArray(jsonData)
     ? jsonData
     : Array.isArray((jsonData as { employees?: unknown[] }).employees)
-    ? (jsonData as { employees: unknown[] }).employees
+    ? ((jsonData as { employees?: unknown[] }).employees as unknown[])
     : [];
 
   return list.map((item, idx) => {
@@ -131,9 +159,11 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
     const empId = String(obj.employee_id || '');
     const grade = String(obj.grade || '').toUpperCase();
     const roleId = String(obj.role_profile_id || '');
-    const empType = String(obj.employment_type || 'full_time');
-    const bench = Boolean(obj.bench_flag);
-    const comps = Array.isArray(obj.competencies) ? obj.competencies : [];
+    const rawComps = Array.isArray(obj.competencies)
+      ? (obj.competencies as Array<Record<string, unknown>>)
+      : [];
+    const comps = normalizeCompetencies(rawComps);
+    const empType = normalizeEmploymentType(String(obj.employment_type || 'internal'));
 
     let hasError = false;
     let errorMsg = '';
@@ -148,6 +178,16 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
       errorMsg = 'Отсутствует role_profile_id';
     }
 
+    const raw: Record<string, unknown> = {
+      employee_id: empId,
+      grade,
+      role_profile_id: roleId,
+      unit_id: String(obj.unit_id || 'unt_default'),
+      employment_type: empType,
+      bench_flag: Boolean(obj.bench_flag),
+      competencies: comps,
+    };
+
     return {
       key: empId || `json_${idx + 1}`,
       index: idx + 1,
@@ -155,9 +195,9 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
       grade,
       role_profile_id: roleId,
       employment_type: empType,
-      bench_flag: bench,
+      bench_flag: Boolean(obj.bench_flag),
       competencies_count: comps.length,
-      raw: obj,
+      raw,
       has_error: hasError,
       error_message: errorMsg,
     };

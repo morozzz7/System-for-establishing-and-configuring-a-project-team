@@ -1,0 +1,36 @@
+# Overlay for the full-stack Playwright scenario (task 5.4).
+#
+# The system under test is the real Docker stack. Only the external LLM provider is replaced
+# with a deterministic recorded response so that /v1/extract is reproducible and offline.
+# Usage: make test-e2e
+
+services:
+  llm-stub:
+    image: python:3.12-alpine
+    command: ["python", "/app/llm_stub.py"]
+    volumes:
+      - ./e2e/llm_stub.py:/app/llm_stub.py:ro
+      - ../ml/tests/fixtures/llm/brief_001_response.json:/app/response.json:ro
+    environment:
+      LLM_STUB_FIXTURE: /app/response.json
+      LLM_STUB_MODEL: e2e-stub
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+  ml:
+    depends_on:
+      llm-stub:
+        condition: service_healthy
+    environment:
+      LLM_BASE_URL: http://llm-stub:8000/v1
+      LLM_API_KEY: e2e-stub-key
+      LLM_MODEL: e2e-stub
+      LLM_ENSEMBLE_RUNS: 1
+      LLM_VERIFY_CANDIDATES: "false"
+      LLM_ROLE_SAFETY_NET: "false"
+      LLM_MAX_RETRIES: 0
+      LLM_TIMEOUT_MS: 30000

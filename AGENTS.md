@@ -19,7 +19,7 @@ UI language: Russian (i18n-ready; strings are currently hardcoded `ru-RU`). Code
 | DB | PostgreSQL 16 + pgvector image (`pgvector/pgvector:pg16`); pgvector ranking is not used yet |
 | **ML service** | **Python 3.12 + FastAPI, ML/optimization ONLY**: pydantic, httpx, ruamel.yaml, OR-Tools CP-SAT, pytest |
 | Frontend | React 18 + TypeScript, Vite, Ant Design, React Router; Vitest + Testing Library; deterministic mocks by default |
-| Tests | `go test` (incl. testcontainers), pytest, Vitest; frontend checks are run separately from `make test` |
+| Tests | `go test` (incl. testcontainers), pytest, Vitest, Playwright (E2E, full Docker stack); frontend checks are run separately from `make test` |
 | Infra | Docker Compose, nginx gateway, Makefile |
 
 ## Target, not implemented yet
@@ -31,7 +31,6 @@ Keep these as the intended architecture; do not describe them as current in code
 - pgvector ranking for competency normalization (exact-synonym baseline today).
 - Russian production calendar (capacity uses a fixed 5-day working week).
 - Apache ECharts on the frontend (Ant Design only today).
-- Playwright end-to-end tests (`docs/PLAN.md` tasks 4.5, 5.4).
 - CI (GitHub Actions / GitLab CI); contract linting exists as Makefile targets only.
 
 ## Key architectural decision
@@ -61,12 +60,12 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 backend/          Go: cmd/{api,seed}, internal/{domain,handler,service,repository,validator,schedule,
                   explain,metrics,mlclient,runinput,migrations,platform}
 ml/               FastAPI: app/{extract,optimize,llm}, app/embed.py, app/main.py, tests/
-frontend/         React + TS (Vite, Ant Design): src/{app,pages,components,api,mocks,types,hooks,utils}
+frontend/         React + TS (Vite, Ant Design): src/{app,pages,components,api,mocks,types,hooks,utils}, e2e/ (Playwright)
 db/migrations/    goose migrations; seed data is loaded by backend/cmd/seed (`make seed`)
 contracts/        openapi.yaml (UI<->Go), ml-openapi.yaml (Go<->ML), taxonomy.yaml, reference.yaml,
                   spectral.yaml, json-schema/: single source of truth
 eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports
-deploy/           docker-compose.yml (+ override), Dockerfile.{backend,ml,frontend}, nginx gateway
+deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), Dockerfile.{backend,ml,frontend}, nginx gateway
 docs/             PLAN.md (task status), ADR/, METRICS.md
 .opencode/skills/ local agent skills (git-ignored, see "Agent skills")
 ```
@@ -86,6 +85,7 @@ docs/             PLAN.md (task status), ADR/, METRICS.md
 make test          # contracts lint + Go tests + pytest (frontend excluded)
 make lint-backend  # golangci-lint
 make lint-ml       # ruff + black --check
+make test-e2e      # full Docker stack + Playwright journey (deterministic LLM stub)
 cd frontend && npm test -- --run && npm run lint && npm run build
 ```
 Runtime ports, gateway URLs and the mock/API switch (`VITE_API_BASE_URL`) are documented in `README.md`

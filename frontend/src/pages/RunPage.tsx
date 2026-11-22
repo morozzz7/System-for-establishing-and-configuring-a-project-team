@@ -169,6 +169,7 @@ function RecalculationResult({ result }: { result: RecalculateResponse }) {
   return (
     <Card
       size="small"
+      data-testid="recalc-result"
       title="Результат пересчёта"
       extra={<Tag color={noEffect ? 'orange' : 'green'}>{result.reason_codes.join(', ')}</Tag>}
     >
@@ -224,9 +225,9 @@ function VariantDetailCard({
           dataSource={variant.members}
           locale={{ emptyText: 'Участники не определены' }}
           renderItem={(member) => (
-            <List.Item>
+            <List.Item data-testid="variant-member">
               <Space wrap>
-                <Text strong>{member.employee_id}</Text>
+                <Text strong data-testid="variant-member-id">{member.employee_id}</Text>
                 <Tag>{roleNames[member.role_id] ?? member.role_id}</Tag>
                 <GradeTag grade={member.grade} />
                 <Text type="secondary">{member.allocated_hours} ч</Text>
@@ -501,6 +502,7 @@ export default function RunPage() {
         <Alert
           type="success"
           showIcon
+          data-testid="decision-success"
           message={`Состав команды утверждён (аудит ${decision.audit_event_id})`}
           description={
             <Space direction="vertical" size={0}>

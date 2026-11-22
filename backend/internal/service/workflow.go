@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"sync"
 	"time"
@@ -203,6 +204,13 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 		}
 		if !result.GatePass {
 			validatorRejected++
+			slog.WarnContext(ctx, "validator rejected proposed variant",
+				"run_id", runID,
+				"variant_id", proposal.VariantID,
+				"violations", result.Violations,
+				"reason_codes", result.ReasonCodes,
+				"details", result.Details,
+			)
 			continue
 		}
 		accepted = append(accepted, proposal)

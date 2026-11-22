@@ -15,9 +15,9 @@ RUN go mod download
 COPY backend/ .
 # go:embed patterns are resolved relative to the package directory.
 COPY contracts/reference.yaml contracts/taxonomy.yaml ./internal/handler/contracts/
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN CGO_ENABLED=0 GOOS=linux \
     go build -ldflags='-s -w' -o /api ./cmd/api && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    CGO_ENABLED=0 GOOS=linux \
     go build -ldflags='-s -w' -o /seed ./cmd/seed
 
 # --- runtime ---
