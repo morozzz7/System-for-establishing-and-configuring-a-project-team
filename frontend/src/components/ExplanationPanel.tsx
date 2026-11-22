@@ -35,7 +35,7 @@ function FactorList({
             </Space>
             <Text>{factor.text}</Text>
             <Space wrap size={[4, 4]}>
-              {factor.reason_codes.map((code) => (
+              {(factor.reason_codes ?? []).map((code) => (
                 <Tag key={code} color="blue">
                   {reasonCodeLabel(code)}
                 </Tag>
@@ -58,6 +58,14 @@ function CounterfactualLabel({ item }: { item: Counterfactual }) {
 }
 
 export default function ExplanationPanel({ explanation }: { explanation: Explanation }) {
+  // A malformed API response must not blank the whole screen while a human is deciding.
+  const included = explanation.included ?? [];
+  const excluded = explanation.excluded ?? [];
+  const deficits = explanation.deficits ?? [];
+  const counterfactuals = explanation.counterfactuals ?? [];
+  const headlineCodes = explanation.headline_reason_codes ?? [];
+  const tradeoffCodes = explanation.tradeoff?.reason_codes ?? [];
+
   return (
     <Card size="small" title="Почему этот состав">
       <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -65,7 +73,7 @@ export default function ExplanationPanel({ explanation }: { explanation: Explana
           <Text strong>Итог</Text>
           <Paragraph style={{ marginBottom: 4 }}>{explanation.headline}</Paragraph>
           <Space wrap size={[4, 4]}>
-            {explanation.headline_reason_codes.map((code) => (
+            {headlineCodes.map((code) => (
               <Tag key={code} color="geekblue">
                 {reasonCodeLabel(code)}
               </Tag>
@@ -82,7 +90,7 @@ export default function ExplanationPanel({ explanation }: { explanation: Explana
           description={explanation.tradeoff.text}
         />
         <Space wrap size={[4, 4]}>
-          {explanation.tradeoff.reason_codes.map((code) => (
+          {tradeoffCodes.map((code) => (
             <Tag key={code} color="processing">
               {reasonCodeLabel(code)}
             </Tag>
@@ -97,26 +105,23 @@ export default function ExplanationPanel({ explanation }: { explanation: Explana
           items={[
             {
               key: 'included',
-              label: `Включены (${explanation.included.length})`,
+              label: `Включены (${included.length})`,
               children: (
-                <FactorList
-                  factors={explanation.included}
-                  localeEmpty="Участники не описаны."
-                />
+                <FactorList factors={included} localeEmpty="Участники не описаны." />
               ),
             },
             {
               key: 'excluded',
-              label: `Исключены (${explanation.excluded.length})`,
+              label: `Исключены (${excluded.length})`,
               children: (
-                <FactorList factors={explanation.excluded} localeEmpty="Исключённых нет." />
+                <FactorList factors={excluded} localeEmpty="Исключённых нет." />
               ),
             },
             {
               key: 'deficits',
-              label: `Дефициты (${explanation.deficits.length})`,
+              label: `Дефициты (${deficits.length})`,
               children: (
-                <FactorList factors={explanation.deficits} localeEmpty="Дефицитов нет." />
+                <FactorList factors={deficits} localeEmpty="Дефицитов нет." />
               ),
             },
           ]}
@@ -125,19 +130,19 @@ export default function ExplanationPanel({ explanation }: { explanation: Explana
         <Divider style={{ margin: '4px 0' }} />
 
         <Text strong>Что если…</Text>
-        {explanation.counterfactuals.length === 0 ? (
+        {counterfactuals.length === 0 ? (
           <Text type="secondary">Контрфактических сценариев нет.</Text>
         ) : (
           <List
             size="small"
-            dataSource={explanation.counterfactuals}
+            dataSource={counterfactuals}
             renderItem={(item) => (
               <List.Item>
                 <Space direction="vertical" size={2}>
                   <Text>{item.text}</Text>
                   <Space wrap size={[4, 4]}>
                     <CounterfactualLabel item={item} />
-                    {item.reason_codes.map((code) => (
+                    {(item.reason_codes ?? []).map((code) => (
                       <Tag key={code}>{reasonCodeLabel(code)}</Tag>
                     ))}
                   </Space>

@@ -22,6 +22,8 @@ __pycache__/
 node_modules/
 dist/
 *.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
 
 # IDE
 .idea/

@@ -8,6 +8,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:install": "playwright install chromium",
     "lint": "eslint src/"
   },
   "dependencies": {
@@ -30,6 +32,7 @@
     "vitest": "^2.1.8",
     "@testing-library/react": "^16.0.1",
     "@testing-library/jest-dom": "^6.6.3",
+    "@playwright/test": "^1.65.1",
     "jsdom": "^25.0.1"
   }
 }

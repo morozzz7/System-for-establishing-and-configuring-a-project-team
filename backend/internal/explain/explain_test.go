@@ -130,6 +130,76 @@ func TestGenerateCoverage(t *testing.T) {
 	}
 }
 
+// TestGenerateEmptyArraysAreNotNull guards the contract: Explanation arrays must be []
+// even when no candidate is excluded and the variant has no deficits (a nil slice would
+// serialize as null and crash the frontend explanation panel).
+func TestGenerateEmptyArraysAreNotNull(t *testing.T) {
+	langGo := "lang_go"
+	data := runinput.Data{
+		RunID: "run_e002", BriefID: "brf_e002", Preset: "balanced", K: 1, Seed: 7,
+		TimeLimitMS: 4000,
+		Horizon:     []string{"2026-W10"},
+		Weights:     map[string]float64{"M1": 0.2, "M2": 0.1, "M3": 0.1, "M4": 0.1, "M5": 0.1, "M6": 0.1, "M7": 0.1, "M8": 0.05, "M9": 0.05, "M10": 0.05, "M11": 0.025, "M12": 0.025},
+		Requirements: []runinput.Requirement{
+			{RequirementID: "req_a", RoleID: "backend_engineer", CompetencyID: &langGo, Level: 5, Criticality: "must", Headcount: 1, Effort: runinput.Effort{MinPersonDays: 1, LikelyPersonDays: 1, MaxPersonDays: 1}, AllowsExternal: true},
+		},
+		Candidates: []runinput.Candidate{
+			{EmployeeID: "emp_aa01", Grade: "S", CostCoefficient: 1.9, RoleProfileID: "backend_engineer", EmploymentType: "internal", BenchFlag: true, CompetencyLevels: map[string]int{"lang_go": 5},
+				Capacity: []runinput.CapacityRow{capRow("2026-W10", 0, 40)}},
+		},
+		Constraints: runinput.Constraints{MaxUtilizationRatio: 0.95},
+		CreatedAt:   time.Date(2026, 11, 17, 10, 0, 0, 0, time.UTC),
+	}
+	snap, err := runinput.Build(data)
+	if err != nil {
+		t.Fatalf("build snapshot: %v", err)
+	}
+	res, err := metrics.ComputeRun(metrics.RunInput{
+		Snapshot:  snap,
+		Proposals: []metrics.Proposal{{VariantID: "var_e002", Label: "V2", Members: []metrics.ProposalMember{{EmployeeID: "emp_aa01", RoleID: "backend_engineer", Grade: "S"}}, Assignments: []metrics.ProposalAssignment{{EmployeeID: "emp_aa01", RequirementID: "req_a", Week: "2026-W10", Hours: 8}}}},
+		Schedule:  metrics.ScheduleConfig{MonteCarloRuns: 200, Seed: 7, PortfolioTauWorkingDays: 10},
+	})
+	if err != nil {
+		t.Fatalf("compute run: %v", err)
+	}
+	in := Input{
+		RunID: "run_e002", Snapshot: snap, Variant: res.Variants[0],
+		Detail: VariantDetail{
+			VariantID: "var_e002",
+			Members:   []MemberDetail{{EmployeeID: "emp_aa01", RoleID: "backend_engineer", Grade: "S", AllocatedHours: 8, AssignmentShare: 1, CompetenceFit: 1, ReasonCodes: []string{"INCLUDE_REQUIRED_ROLE"}}},
+			WeeklyAssignments: []WeeklyAssignment{{EmployeeID: "emp_aa01", RequirementID: "req_a", Week: "2026-W10", Hours: 8, Share: 0.2}},
+			ReasonCodes:       []string{"INCLUDE_REQUIRED_ROLE"},
+		},
+		Schedule: metrics.ScheduleConfig{MonteCarloRuns: 200, Seed: 7, PortfolioTauWorkingDays: 10},
+	}
+	exp, err := Generate(in)
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	if len(exp.Excluded) != 0 || len(exp.Deficits) != 0 {
+		t.Fatalf("expected empty exclusions/deficits, got %d/%d", len(exp.Excluded), len(exp.Deficits))
+	}
+	encoded, err := json.Marshal(exp)
+	if err != nil {
+		t.Fatalf("marshal explanation: %v", err)
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(encoded, &raw); err != nil {
+		t.Fatalf("unmarshal explanation: %v", err)
+	}
+	for _, key := range []string{"included", "excluded", "deficits", "counterfactuals"} {
+		var items []json.RawMessage
+		if err := json.Unmarshal(raw[key], &items); err != nil {
+			t.Errorf("%s = %s, want a JSON array: %v", key, raw[key], err)
+		}
+	}
+	for _, key := range []string{"excluded", "deficits"} {
+		if got := string(raw[key]); got != "[]" {
+			t.Errorf("%s = %s, want []", key, got)
+		}
+	}
+}
+
 // TestFaithfulness re-derives every number of every generated text from its facts.
 func TestFaithfulness(t *testing.T) {
 	exp, err := Generate(testInput(t))

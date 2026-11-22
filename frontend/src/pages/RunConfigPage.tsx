@@ -298,6 +298,8 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
               />
               <Text>–</Text>
               <Select
+                data-testid="horizon-end-week"
+                showSearch
                 style={{ width: 140 }}
                 value={runParams.horizon.end_week}
                 onChange={(v) => setRunParams({ ...runParams, horizon: { ...runParams.horizon, end_week: v } })}

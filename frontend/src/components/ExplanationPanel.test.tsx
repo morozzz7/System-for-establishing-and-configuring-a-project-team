@@ -93,6 +93,24 @@ describe('ExplanationPanel', () => {
     expect(screen.getAllByText('оценка (не пересчитано)').length).toBeGreaterThan(0);
   });
 
+  it('does not crash on null arrays from a malformed API response', () => {
+    const malformed = {
+      ...base,
+      headline_reason_codes: null,
+      excluded: null,
+      deficits: null,
+      counterfactuals: null,
+    } as unknown as Explanation;
+    render(
+      <ConfigProvider locale={ruRU}>
+        <ExplanationPanel explanation={malformed} />
+      </ConfigProvider>,
+    );
+    expect(screen.getByText('Исключены (0)')).toBeDefined();
+    expect(screen.getByText('Дефициты (0)')).toBeDefined();
+    expect(screen.getByText('Контрфактических сценариев нет.')).toBeDefined();
+  });
+
   it('renderes the loading placeholder', () => {
     render(<ExplanationLoading />);
     expect(screen.getByText('Почему этот состав')).toBeDefined();
