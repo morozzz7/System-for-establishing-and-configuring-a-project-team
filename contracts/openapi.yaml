@@ -3895,7 +3895,7 @@ components:
     RunRequest:
       type: object
       additionalProperties: false
-      required: [brief_id, preset, k, seed, time_limit_ms, horizon]
+      required: [brief_id, preset, k, seed, time_limit_ms]
       properties:
         brief_id:
           type: string
@@ -3918,7 +3918,9 @@ components:
           minimum: 1000
           maximum: 60000
         horizon:
-          $ref: '#/components/schemas/Horizon'
+          allOf:
+            - $ref: '#/components/schemas/Horizon'
+          description: Optional. When omitted, the window comes from the brief's requested_start_week/deadline_week (or ISO week mentions in its text).
         constraints:
           $ref: '#/components/schemas/RunConstraints'
         candidate_filter:

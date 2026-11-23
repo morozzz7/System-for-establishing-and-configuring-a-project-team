@@ -380,6 +380,7 @@ func buildValidatorInput(snap *runinput.Snapshot) validator.ValidateInput {
 		}
 		in.Requirements = append(in.Requirements, validator.Requirement{
 			RequirementID: r.RequirementID,
+			RoleID:        r.RoleID,
 			CompetencyID:  competencyID,
 			Level:         r.Level,
 			Criticality:   r.Criticality,
@@ -396,7 +397,7 @@ func buildValidatorInput(snap *runinput.Snapshot) validator.ValidateInput {
 			levels[id] = level
 		}
 		in.Candidates = append(in.Candidates, validator.RunInputCandidate{
-			EmployeeID: c.EmployeeID, Grade: c.Grade,
+			EmployeeID: c.EmployeeID, Grade: c.Grade, RoleProfileID: c.RoleProfileID,
 			CostCoefficient: c.CostCoefficient, CompetencyLevels: levels,
 		})
 		weeks := make([]domain.WeeklyCapacity, 0, len(c.Capacity))

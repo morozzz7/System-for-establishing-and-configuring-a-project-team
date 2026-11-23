@@ -276,7 +276,14 @@ func (h *WorkflowHandler) GetDecision(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, d)
 }
 func briefJSON(b *service.BriefRecord) map[string]any {
-	return map[string]any{"brief_id": b.BriefID, "title": b.Title, "source_type": b.SourceType, "language": b.Language, "status": b.Status, "created_at": b.CreatedAt, "requirement_count": len(b.Requirements), "needs_review_count": len(b.Review), "extraction": b.Diagnostics, "reason_codes": []string{}}
+	out := map[string]any{"brief_id": b.BriefID, "title": b.Title, "source_type": b.SourceType, "language": b.Language, "status": b.Status, "created_at": b.CreatedAt, "requirement_count": len(b.Requirements), "needs_review_count": len(b.Review), "extraction": b.Diagnostics, "reason_codes": []string{}}
+	if b.RequestedStartWeek != "" {
+		out["requested_start_week"] = b.RequestedStartWeek
+	}
+	if b.DeadlineWeek != "" {
+		out["deadline_week"] = b.DeadlineWeek
+	}
+	return out
 }
 func problem400(r *http.Request, err error) domain.Problem {
 	return domain.NewProblem(400, "BAD_REQUEST", err.Error(), requestID(r), []string{"VALIDATION_FAILED"})

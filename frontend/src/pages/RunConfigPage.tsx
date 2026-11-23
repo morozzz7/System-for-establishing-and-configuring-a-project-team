@@ -27,6 +27,8 @@ import { useWeightPresetsWithMetrics, useMetricDefinitions } from '../hooks';
 
 const { Title, Text, Paragraph } = Typography;
 
+const WEEK_OPTIONS = Array.from({ length: 52 }, (_, i) => `2026-W${String(i + 1).padStart(2, '0')}`);
+
 interface RunConfigPageProps {
   /** Optional briefId from URL params. */
   briefId?: string;
@@ -46,7 +48,8 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
     k: 2,
     seed: 42,
     time_limit_ms: 10000,
-    horizon: { start_week: '2026-W07', end_week: '2026-W17' } as Horizon,
+    // Null means "derive the window from the brief" (contract RunRequest.horizon is optional).
+    horizon: null as Horizon | null,
     candidate_filter: {
       include_bench: true,
       include_external: false,
@@ -113,6 +116,18 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
     };
   }, [selectedBriefId]);
 
+  useEffect(() => {
+    if (brief?.requested_start_week && brief?.deadline_week) {
+      setRunParams((params) => ({
+        ...params,
+        horizon: {
+          start_week: brief.requested_start_week!,
+          end_week: brief.deadline_week!,
+        },
+      }));
+    }
+  }, [brief]);
+
   const handleWeightsChange = (weights: Weights, preset?: string) => {
     setSelectedWeights(weights);
     setSelectedPreset(preset as PresetName | undefined);
@@ -157,8 +172,6 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
     setError(null);
 
     try {
-      // For now, the API client's createRun uses defaults. We'll need to call the backend directly
-      // or extend the client. Let's use the raw backend call here.
       const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
       if (API_BASE) {
         const response = await fetch(`${API_BASE}/runs`, {
@@ -175,7 +188,9 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
             k: runParams.k,
             seed: runParams.seed,
             time_limit_ms: runParams.time_limit_ms,
-            horizon: runParams.horizon,
+            ...(runParams.horizon?.start_week && runParams.horizon?.end_week
+              ? { horizon: runParams.horizon }
+              : {}),
             candidate_filter: runParams.candidate_filter,
           }),
         });
@@ -291,20 +306,30 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
             <Space wrap>
               <Select
                 style={{ width: 140 }}
-                value={runParams.horizon.start_week}
-                onChange={(v) => setRunParams({ ...runParams, horizon: { ...runParams.horizon, start_week: v } })}
+                value={runParams.horizon?.start_week}
+                onChange={(v) =>
+                  setRunParams((params) => ({
+                    ...params,
+                    horizon: { start_week: v, end_week: params.horizon?.end_week ?? '' },
+                  }))
+                }
                 placeholder="Старт"
-                options={['2026-W01', '2026-W02', '2026-W03', '2026-W04', '2026-W05', '2026-W06', '2026-W07', '2026-W08', '2026-W09', '2026-W10'].map((w) => ({ value: w, label: w }))}
+                options={WEEK_OPTIONS.map((w) => ({ value: w, label: w }))}
               />
               <Text>–</Text>
               <Select
                 data-testid="horizon-end-week"
                 showSearch
                 style={{ width: 140 }}
-                value={runParams.horizon.end_week}
-                onChange={(v) => setRunParams({ ...runParams, horizon: { ...runParams.horizon, end_week: v } })}
+                value={runParams.horizon?.end_week}
+                onChange={(v) =>
+                  setRunParams((params) => ({
+                    ...params,
+                    horizon: { start_week: params.horizon?.start_week ?? '', end_week: v },
+                  }))
+                }
                 placeholder="Конец"
-                options={['2026-W10', '2026-W11', '2026-W12', '2026-W13', '2026-W14', '2026-W15', '2026-W16', '2026-W17', '2026-W18', '2026-W19', '2026-W20'].map((w) => ({ value: w, label: w }))}
+                options={WEEK_OPTIONS.map((w) => ({ value: w, label: w }))}
               />
             </Space>
           </Form.Item>

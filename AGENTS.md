@@ -49,9 +49,15 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 3. Normalize competencies to taxonomy (ML `/v1/embed` + `/api/v1/taxonomy/normalize`; exact-synonym
    ranking with `needs_review` on low confidence. **Target:** pgvector ranking in Go).
 4. Go builds availability: capacity(employee, week) = norm - current assignments - absences
-   (fixed 5-day week; **target:** Russian production calendar).
+   (fixed 5-day week; **target:** Russian production calendar). The candidate pool comes from
+   active employees, their competency levels and current assignments (`internal/service/candidates.go`),
+   filtered by `CandidateFilter`; the in-memory stand-ins remain only for tests.
 5. Go -> ML `POST /v1/optimize` (candidates, requirements, constraints, weights, k) -> variants.
 6. Go: validator -> schedule engine (duration, P50/P80) -> deficits -> portfolio impact -> metrics.
+   The G3 gate and solver feasibility use `min_person_days`; M2 and reported deficits use `likely_person_days`
+   (ADR-007 §1); role-only requirements are covered by a matching role profile. When `horizon` is
+   omitted from `POST /runs`, the window is taken from the brief
+   (`requested_start_week`/`deadline_week`, else ISO weeks found in its text).
 7. Explainer: reasons from structured facts (reason codes).
 8. UI: compare variants, explanations, constraint editor -> `POST /api/v1/runs/{id}/recalculate`.
 

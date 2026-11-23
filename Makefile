@@ -17,6 +17,8 @@ up: ## docker compose up --build -d, wait for healthy (90 s)
 	$(COMPOSE) up --build -d postgres
 	@echo "Waiting for postgres..."
 	@sleep 5
+	@echo "Building backend with the current contracts before seeding..."
+	$(COMPOSE) build backend
 	@echo "Running seed (migrations + reference data)..."
 	$(COMPOSE) run --rm --entrypoint /usr/local/bin/seed backend
 	$(COMPOSE) up --build -d --wait --wait-timeout 90
@@ -83,6 +85,8 @@ test: lint-contracts ## Run all tests: spectral, go test, pytest
 test-e2e: ## full-stack Playwright journey (Docker stack + deterministic LLM stub)
 	@$(E2E_COMPOSE) up --build -d postgres
 	@sleep 5
+	@echo "Building backend with the current contracts before seeding..."
+	@$(E2E_COMPOSE) build backend
 	@echo "Running seed (migrations + reference data)..."
 	@$(E2E_COMPOSE) run --rm --entrypoint /usr/local/bin/seed backend
 	@$(E2E_COMPOSE) up --build -d --wait --wait-timeout 120

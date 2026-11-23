@@ -134,9 +134,8 @@ func TestValidator_G3MustUncovered(t *testing.T) {
 	v := New()
 	input := validValidatorInput()
 
-	// Drop bob's assignments so the must requirement is no longer covered.
-	input.Variant.WeeklyAssignments = input.Variant.WeeklyAssignments[:2]
-	input.Variant.Members = input.Variant.Members[:1]
+	// A single 5pd assignment is below the conservative min (10pd).
+	input.Variant.WeeklyAssignments = input.Variant.WeeklyAssignments[:1]
 
 	res, err := v.Validate(input)
 	require.NoError(t, err)
@@ -144,6 +143,63 @@ func TestValidator_G3MustUncovered(t *testing.T) {
 	assert.Greater(t, res.Violations.G3, 0)
 	assert.Greater(t, res.Violations.UncoveredMustNotInDeficit, 0)
 	assert.Contains(t, res.ReasonCodes, reasonG3MustUncovered)
+}
+
+func TestValidator_G3MinEffortCoverageWithoutDeficit(t *testing.T) {
+	v := New()
+	input := validValidatorInput()
+
+	// 15pd covers min (10pd) but not likely (20pd): ADR-007 §1 makes this feasible
+	// without a declared deficit; M2 reports the 5pd shortfall separately.
+	input.Variant.WeeklyAssignments = input.Variant.WeeklyAssignments[:3]
+
+	res, err := v.Validate(input)
+	require.NoError(t, err)
+	assert.True(t, res.GatePass)
+	assert.Equal(t, 0, res.Violations.G3)
+	assert.Equal(t, 0, res.Violations.UncoveredMustNotInDeficit)
+}
+
+func TestValidator_G3BelowMinEffortWithoutDeficit(t *testing.T) {
+	v := New()
+	input := validValidatorInput()
+
+	// 5pd is below the conservative min (10pd) and no deficit is declared.
+	input.Variant.WeeklyAssignments = input.Variant.WeeklyAssignments[:1]
+
+	res, err := v.Validate(input)
+	require.NoError(t, err)
+	assert.False(t, res.GatePass)
+	assert.Equal(t, 1, res.Violations.G3)
+	assert.Contains(t, res.ReasonCodes, reasonG3MustUncovered)
+}
+
+func TestValidator_G3RoleOnlyRequirementUsesRoleProfile(t *testing.T) {
+	v := New()
+	input := validValidatorInput()
+	input.Requirements[0].CompetencyID = ""
+	input.Requirements[0].RoleID = "backend_dev"
+	input.Candidates[0].RoleProfileID = "backend_dev"
+	input.Candidates[1].RoleProfileID = "backend_dev"
+
+	res, err := v.Validate(input)
+	require.NoError(t, err)
+	assert.True(t, res.GatePass)
+	assert.Equal(t, 0, res.Violations.G3)
+}
+
+func TestValidator_G3RoleOnlyRequirementRejectsWrongRole(t *testing.T) {
+	v := New()
+	input := validValidatorInput()
+	input.Requirements[0].CompetencyID = ""
+	input.Requirements[0].RoleID = "tech_lead"
+	input.Candidates[0].RoleProfileID = "backend_dev"
+	input.Candidates[1].RoleProfileID = "backend_dev"
+
+	res, err := v.Validate(input)
+	require.NoError(t, err)
+	assert.False(t, res.GatePass)
+	assert.Equal(t, 1, res.Violations.G3)
 }
 
 func TestValidator_G3MustCoveredByDeficit(t *testing.T) {
@@ -303,7 +359,8 @@ func TestValidator_G1IgnoresZeroHourAssignments(t *testing.T) {
 func TestValidator_G3MissingCompetency(t *testing.T) {
 	v := New()
 	input := validValidatorInput()
-	// Remove bob's competency so the must requirement is no longer covered.
+	// Nobody holds the competency, so the must requirement has no coverage at all.
+	input.Candidates[0].CompetencyLevels = map[string]int{}
 	input.Candidates[1].CompetencyLevels = map[string]int{}
 
 	res, err := v.Validate(input)

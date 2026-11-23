@@ -85,6 +85,7 @@ func main() {
 			capRepo := repository.NewPgCapacityRepo(pool)
 
 			capSvc := service.NewCapacityService(empRepo, asgRepo, absRepo, capRepo)
+			workflow.SetCandidateSource(service.NewPgCandidateSource(empRepo, compRepo, capRepo, asgRepo))
 
 			empSvc := &service.EmployeeService{
 				EmployeeRepo: empRepo,

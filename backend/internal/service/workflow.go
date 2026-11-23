@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"sort"
 	"sync"
 	"time"
@@ -23,6 +24,7 @@ import (
 type BriefInput struct{ Title, SourceType, Language, Text, RequestedStartWeek, DeadlineWeek string }
 type BriefRecord struct {
 	BriefID, Title, SourceType, Language, Status string
+	RequestedStartWeek, DeadlineWeek             string
 	CreatedAt                                    time.Time
 	Text                                         string
 	Requirements                                 []map[string]any
@@ -43,6 +45,7 @@ type WorkflowService struct {
 	details    map[string]map[string]explain.VariantDetail
 	varresults map[string]map[string]metrics.VariantResult // runID -> variantID -> authoritative result
 	decisions  map[string]map[string]any                   // runID -> decision record
+	candidates CandidateSource
 	next       int
 }
 
@@ -57,6 +60,12 @@ func NewWorkflowService(ml *mlclient.Client) *WorkflowService {
 		varresults: map[string]map[string]metrics.VariantResult{},
 		decisions:  map[string]map[string]any{},
 	}
+}
+
+// SetCandidateSource wires the persistent employee pool into runs. The in-memory
+// workflow slice keeps its deterministic stand-ins when no source is configured.
+func (s *WorkflowService) SetCandidateSource(source CandidateSource) {
+	s.candidates = source
 }
 
 func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*BriefRecord, error) {
@@ -80,7 +89,15 @@ func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*B
 	if len(response.Review) > 0 {
 		status = "needs_review"
 	}
-	record := &BriefRecord{BriefID: id, Title: input.Title, SourceType: input.SourceType, Language: input.Language, Status: status, CreatedAt: time.Now().UTC(), Text: input.Text, Requirements: response.Requirements, Review: response.Review, Diagnostics: response.Diagnostics}
+	record := &BriefRecord{
+		BriefID: id, Title: input.Title, SourceType: input.SourceType, Language: input.Language,
+		Status: status, RequestedStartWeek: input.RequestedStartWeek, DeadlineWeek: input.DeadlineWeek,
+		CreatedAt: time.Now().UTC(), Text: input.Text,
+		Requirements: response.Requirements, Review: response.Review, Diagnostics: response.Diagnostics,
+	}
+	if start, deadline, ok := briefTimeline(record); ok {
+		record.RequestedStartWeek, record.DeadlineWeek = start, deadline
+	}
 	s.mu.Lock()
 	s.briefs[id] = record
 	s.mu.Unlock()
@@ -158,7 +175,7 @@ func (s *WorkflowService) CreateRun(ctx context.Context, briefID string, input m
 	runID := fmt.Sprintf("run_%04d", seq)
 	createdAt := time.Now().UTC()
 
-	data, err := s.runData(b, runID, input, createdAt)
+	data, err := s.runData(ctx, b, runID, input, createdAt)
 	if err != nil {
 		return nil, err
 	}
@@ -303,12 +320,11 @@ func (s *WorkflowService) GetRun(id string) (map[string]any, bool) {
 }
 
 // runData builds the run snapshot input from the confirmed brief and the request body.
-// The candidate set is a deterministic synthetic stand-in until the profile repository is
-// wired into this vertical slice: one demo candidate per requirement, holding that
-// requirement's role and competency at the top level, fully available over the horizon and
-// without project history (so M4 is dropped and its weight is renormalized).
-func (s *WorkflowService) runData(b *BriefRecord, runID string, input map[string]any, createdAt time.Time) (runinput.Data, error) {
-	weeks, err := horizonWeeks(input)
+// When a CandidateSource is configured the pool comes from the employee, competency,
+// assignment and capacity tables; the deterministic stand-ins remain the fallback for the
+// in-memory vertical slice used by unit tests.
+func (s *WorkflowService) runData(ctx context.Context, b *BriefRecord, runID string, input map[string]any, createdAt time.Time) (runinput.Data, error) {
+	weeks, err := horizonWeeks(input, b)
 	if err != nil {
 		return runinput.Data{}, err
 	}
@@ -329,6 +345,17 @@ func (s *WorkflowService) runData(b *BriefRecord, runID string, input map[string
 		return runinput.Data{}, err
 	}
 
+	candidates := demoCandidates(requirements, weeks)
+	if s.candidates != nil {
+		candidates, err = s.candidates.Candidates(ctx, requirements, weeks, candidateFilterFromInput(input))
+		if err != nil {
+			return runinput.Data{}, err
+		}
+		if len(candidates) == 0 {
+			return runinput.Data{}, fmt.Errorf("%w: no active employees match the brief requirements", ErrInvalidRunInput)
+		}
+	}
+
 	return runinput.Data{
 		RunID:        runID,
 		BriefID:      b.BriefID,
@@ -339,7 +366,7 @@ func (s *WorkflowService) runData(b *BriefRecord, runID string, input map[string
 		Horizon:      weeks,
 		Weights:      weights,
 		Requirements: requirements,
-		Candidates:   demoCandidates(requirements, weeks),
+		Candidates:   candidates,
 		Constraints:  constraints,
 		Portfolio:    []runinput.PortfolioProject{},
 		CreatedAt:    createdAt,
@@ -467,16 +494,89 @@ func effortFromBrief(raw any) (runinput.Effort, error) {
 	return runinput.Effort{MinPersonDays: min, LikelyPersonDays: likely, MaxPersonDays: max}, nil
 }
 
-// horizonWeeks reads the requested horizon, defaulting to three weeks. Weeks are sorted
-// chronologically because ISO week keys sort lexicographically.
-func horizonWeeks(input map[string]any) ([]string, error) {
+// isoWeekInText finds ISO week mentions in brief text. Planning weeks are cited explicitly
+// in technical briefs; taking the first and last is deterministic and needs no LLM.
+var isoWeekInText = regexp.MustCompile(`\b20\d{2}-W\d{2}\b`)
+
+// briefTimeline returns the planning window recorded on a brief: explicit upload fields first,
+// then the first and last ISO week mentioned in the brief text.
+func briefTimeline(b *BriefRecord) (string, string, bool) {
+	start, deadline := b.RequestedStartWeek, b.DeadlineWeek
+	if !domain.ValidateWeekKey(start) {
+		start = ""
+	}
+	if !domain.ValidateWeekKey(deadline) {
+		deadline = ""
+	}
+	mentioned := make([]string, 0, 2)
+	for _, week := range isoWeekInText.FindAllString(b.Text, -1) {
+		if domain.ValidateWeekKey(week) {
+			mentioned = append(mentioned, week)
+		}
+	}
+	if start == "" && len(mentioned) > 0 {
+		start = mentioned[0]
+	}
+	if deadline == "" && len(mentioned) > 0 {
+		deadline = mentioned[len(mentioned)-1]
+	}
+	if start == "" || deadline == "" {
+		return "", "", false
+	}
+	if start > deadline {
+		start, deadline = deadline, start
+	}
+	return start, deadline, true
+}
+
+// addWeeks returns the ISO week key n weeks after start (n may be negative).
+func addWeeks(start string, n int) string {
+	year, week, err := domain.ParseWeek(start)
+	if err != nil {
+		return start
+	}
+	monday := domain.WeekMonday(year, week).AddDate(0, 0, n*7)
+	endYear, endWeek := monday.ISOWeek()
+	return domain.FormatWeek(endYear, endWeek)
+}
+
+// horizonWeeks reads the requested horizon. When the request omits it, the window comes from
+// the brief; the three-week default applies only when neither source provides one. Weeks are
+// sorted chronologically because ISO week keys sort lexicographically.
+func horizonWeeks(input map[string]any, b *BriefRecord) ([]string, error) {
 	raw, ok := input["horizon"].(map[string]any)
 	if !ok {
-		return []string{"2026-W10", "2026-W11", "2026-W12"}, nil
+		start, deadline, hasWindow := briefTimeline(b)
+		if !hasWindow {
+			return []string{"2026-W10", "2026-W11", "2026-W12"}, nil
+		}
+		if start == deadline {
+			deadline = addWeeks(start, 11)
+		}
+		weeks, err := domain.WeekRange(start, deadline)
+		if err != nil {
+			return nil, fmt.Errorf("%w: invalid brief horizon %s..%s: %v", ErrInvalidRunInput, start, deadline, err)
+		}
+		return weeks, nil
 	}
-	startWeek, hasStart := raw["start_week"].(string)
-	endWeek, hasEnd := raw["end_week"].(string)
-	if hasStart && hasEnd && startWeek != "" && endWeek != "" {
+	startWeek, _ := raw["start_week"].(string)
+	endWeek, _ := raw["end_week"].(string)
+	if startWeek != "" || endWeek != "" {
+		briefStart, briefEnd, _ := briefTimeline(b)
+		if startWeek == "" {
+			if briefStart != "" && (endWeek == "" || briefStart <= endWeek) {
+				startWeek = briefStart
+			} else if endWeek != "" {
+				startWeek = addWeeks(endWeek, -11)
+			}
+		}
+		if endWeek == "" {
+			if briefEnd != "" && briefEnd >= startWeek {
+				endWeek = briefEnd
+			} else if startWeek != "" {
+				endWeek = addWeeks(startWeek, 11)
+			}
+		}
 		weeks, err := domain.WeekRange(startWeek, endWeek)
 		if err != nil {
 			return nil, fmt.Errorf("%w: invalid horizon range %s..%s: %v", ErrInvalidRunInput, startWeek, endWeek, err)

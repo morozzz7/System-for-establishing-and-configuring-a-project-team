@@ -44,6 +44,7 @@ type VariantDeficit struct {
 // Requirement is the validator-local view of a brief requirement.
 type Requirement struct {
 	RequirementID string
+	RoleID        string
 	CompetencyID  string
 	Level         int
 	Criticality   string // must, should, nice
@@ -58,11 +59,12 @@ type RequirementEffort struct {
 }
 
 // RunInputCandidate carries employee-level data needed for validation.
-// It extends the openapi RunInputCandidate with competency levels, which the
-// optimizer request omits but the validator needs for G3 coverage checks.
+// It extends the openapi RunInputCandidate with competency levels and role profile,
+// which the optimizer request omits but the validator needs for G3 coverage checks.
 type RunInputCandidate struct {
 	EmployeeID       string
 	Grade            string
+	RoleProfileID    string
 	CostCoefficient  float64
 	CompetencyLevels map[string]int
 }

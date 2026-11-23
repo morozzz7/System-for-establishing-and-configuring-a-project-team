@@ -213,8 +213,8 @@ export async function createRun(briefId: string): Promise<TeamRun> {
       method: 'POST',
       body: JSON.stringify({
         brief_id: briefId,
+        // No horizon: the core derives the window from the confirmed brief.
         ...RUN_REQUEST_DEFAULTS,
-        horizon: { start_week: '2026-W07', end_week: '2026-W17' },
       }),
     });
   }

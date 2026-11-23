@@ -14,17 +14,17 @@ import (
 // Reason codes produced by the validator. They are a subset of the codes defined in
 // contracts/openapi.yaml and are never invented by an LLM.
 const (
-	reasonG1Unavailable       = "G1_UNAVAILABLE_ASSIGNED"
-	reasonG2Overload          = "G2_OVERLOAD"
-	reasonG3MustUncovered     = "G3_MUST_UNCOVERED"
-	reasonG4ForceInclude      = "G4_FORCE_INCLUDE_VIOLATED"
-	reasonG4ForceExclude      = "G4_FORCE_EXCLUDE_VIOLATED"
-	reasonG4TeamSizeExceeded  = "G4_TEAM_SIZE_EXCEEDED"
-	reasonG4BudgetExceeded    = "G4_BUDGET_EXCEEDED"
-	reasonG5UnknownEmployee   = "G5_UNKNOWN_EMPLOYEE"
+	reasonG1Unavailable        = "G1_UNAVAILABLE_ASSIGNED"
+	reasonG2Overload           = "G2_OVERLOAD"
+	reasonG3MustUncovered      = "G3_MUST_UNCOVERED"
+	reasonG4ForceInclude       = "G4_FORCE_INCLUDE_VIOLATED"
+	reasonG4ForceExclude       = "G4_FORCE_EXCLUDE_VIOLATED"
+	reasonG4TeamSizeExceeded   = "G4_TEAM_SIZE_EXCEEDED"
+	reasonG4BudgetExceeded     = "G4_BUDGET_EXCEEDED"
+	reasonG5UnknownEmployee    = "G5_UNKNOWN_EMPLOYEE"
 	reasonG5UnknownRequirement = "G5_UNKNOWN_REQUIREMENT"
-	reasonG5InvalidWeek       = "G5_INVALID_WEEK"
-	reasonG5InvalidRole       = "G5_INVALID_ROLE"
+	reasonG5InvalidWeek        = "G5_INVALID_WEEK"
+	reasonG5InvalidRole        = "G5_INVALID_ROLE"
 )
 
 // Validator validates team variants. It has no mutable state and is safe for concurrent use.
@@ -151,7 +151,9 @@ func (v *Validator) validateG2(input ValidateInput, res *ValidationResult) {
 
 // ---------- G3: must-requirement coverage ----------
 // Every must requirement must either be covered by assigned competent employees or
-// explicitly listed as a deficit. Coverage uses the M2 formula from METRICS.md.
+// explicitly listed as a deficit. The gate uses the conservative min_person_days
+// (ADR-007 §1); M2 and the reported deficits use likely_person_days. Covering min but
+// not likely is therefore feasible and surfaces a positive deficit.
 func (v *Validator) validateG3(input ValidateInput, res *ValidationResult) {
 	reqByID := make(map[string]Requirement, len(input.Requirements))
 	for _, r := range input.Requirements {
@@ -182,11 +184,18 @@ func (v *Validator) validateG3(input ValidateInput, res *ValidationResult) {
 		if !ok {
 			continue
 		}
-		lvl, hasComp := cand.CompetencyLevels[req.CompetencyID]
-		if !hasComp {
+		q := 1.0
+		if req.CompetencyID != "" {
+			lvl, hasComp := cand.CompetencyLevels[req.CompetencyID]
+			if !hasComp {
+				continue
+			}
+			q = math.Min(1.0, float64(lvl)/float64(req.Level))
+		} else if req.RoleID == "" || cand.RoleProfileID != req.RoleID {
+			// Role-only requirements are covered by a matching role profile (M1),
+			// exactly as the solver and the metrics package treat them.
 			continue
 		}
-		q := math.Min(1.0, float64(lvl)/float64(req.Level))
 		personDays := a.Hours / 8.0 * q // 8 working hours per day, simplified.
 		coveredPD[req.RequirementID] += personDays
 	}
@@ -195,7 +204,7 @@ func (v *Validator) validateG3(input ValidateInput, res *ValidationResult) {
 		if req.Criticality != "must" {
 			continue
 		}
-		if coveredPD[req.RequirementID] >= req.Effort.LikelyPersonDays {
+		if coveredPD[req.RequirementID] >= req.Effort.MinPersonDays {
 			continue
 		}
 		if deficitIDs[req.RequirementID] {
@@ -205,8 +214,8 @@ func (v *Validator) validateG3(input ValidateInput, res *ValidationResult) {
 		res.Violations.UncoveredMustNotInDeficit++
 		res.addReason(reasonG3MustUncovered)
 		res.addDetail(fmt.Sprintf(
-			"G3: must requirement %s covered %.1fpd but needs %.1fpd and is not listed as deficit",
-			req.RequirementID, coveredPD[req.RequirementID], req.Effort.LikelyPersonDays))
+			"G3: must requirement %s covered %.1fpd but needs at least %.1fpd (min) and is not listed as deficit",
+			req.RequirementID, coveredPD[req.RequirementID], req.Effort.MinPersonDays))
 	}
 }
 
