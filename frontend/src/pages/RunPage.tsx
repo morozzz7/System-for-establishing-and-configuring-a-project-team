@@ -30,6 +30,7 @@ import {
 import type {
   DecisionResponse,
   Explanation,
+  Project,
   RecalculateResponse,
   RejectedOverride,
   RunInputs,
@@ -39,11 +40,14 @@ import type {
 } from '../types';
 import { ApiError, reasonCodeLabel, toApiError } from '../api/errors';
 import {
+  createProject,
   createRun,
+  getBrief,
   getRun,
   getRunInputs,
   getVariant,
   getVariantExplanation,
+  listProjects,
   listRoles,
   recordDecision,
 } from '../api/client';
@@ -51,6 +55,7 @@ import ConstraintEditor from '../components/ConstraintEditor';
 import ExplanationPanel, { ExplanationLoading } from '../components/ExplanationPanel';
 import { GradeTag } from '../components/shared';
 import { formatDeficits, formatRatio, formatUnits, formatWeeks, factNumber, KEY_METRICS } from '../utils/metrics';
+import { projectFromRun } from '../utils/project';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -298,6 +303,8 @@ export default function RunPage() {
   const [deciding, setDeciding] = useState(false);
   const [decision, setDecision] = useState<DecisionResponse | null>(null);
   const [decisionError, setDecisionError] = useState<ApiError | null>(null);
+  const [createdProject, setCreatedProject] = useState<Project | null>(null);
+  const [projectError, setProjectError] = useState<ApiError | null>(null);
 
   const runId = run?.run_id;
 
@@ -448,6 +455,23 @@ export default function RunPage() {
     setRecalcResult(null);
   };
 
+  const saveProjectToPortfolio = async () => {
+    if (!run) return;
+    setProjectError(null);
+    try {
+      const brief = await getBrief(run.brief_id);
+      const candidate = projectFromRun(run, brief);
+      const existing = await listProjects();
+      const project =
+        existing.find((p) => p.project_id === candidate.project_id) ??
+        (await createProject(candidate));
+      setCreatedProject(project);
+      message.success(`Проект «${project.name}» добавлен в раздел «Проекты»`);
+    } catch (err) {
+      setProjectError(toApiError(err));
+    }
+  };
+
   const handleRecordDecision = async () => {
     if (!run || !selectedVariantId) return;
     setDeciding(true);
@@ -461,6 +485,7 @@ export default function RunPage() {
       setDecision(resp);
       setDecisionModalOpen(false);
       message.success('Решение утверждено и сохранено в аудите');
+      await saveProjectToPortfolio();
     } catch (err) {
       setDecisionError(toApiError(err));
     } finally {
@@ -508,8 +533,23 @@ export default function RunPage() {
             <Space direction="vertical" size={0}>
               <Text>Утверждён вариант: <Text strong>{decision.variant_id}</Text></Text>
               <Text type="secondary">Дата решения: {new Date(decision.decided_at).toLocaleString('ru-RU')}</Text>
+              {createdProject && (
+                <Text>
+                  Проект <Text strong>{createdProject.code}</Text> добавлен в портфель.{' '}
+                  <Link to="/projects">Открыть раздел «Проекты»</Link>
+                </Text>
+              )}
             </Space>
           }
+        />
+      )}
+
+      {projectError && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Решение сохранено, но проект не добавлен в портфель"
+          description={projectError.detail || projectError.code}
         />
       )}
 

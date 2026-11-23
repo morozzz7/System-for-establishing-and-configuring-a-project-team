@@ -8,7 +8,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import RunPage from './RunPage';
-import { resetMockState } from '../api/client';
+import { listProjects, resetMockState } from '../api/client';
 
 function renderPage() {
   return render(
@@ -42,6 +42,22 @@ describe('RunPage', () => {
     expect(screen.getAllByText(/P50 .* P80/).length).toBeGreaterThan(0);
     // Key metrics are rendered with their codes.
     expect(screen.getAllByText(/M1 · Покрытие компетенций/).length).toBeGreaterThan(0);
+  });
+
+  it('adds the approved team to the projects portfolio', async () => {
+    renderPage();
+    fireEvent.click(screen.getByRole('button', { name: 'Рассчитать варианты' }));
+    await screen.findByText(/Запуск run_/);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Утвердить состав' }));
+    await screen.findByText(/Вы утверждаете вариант/);
+    fireEvent.click(screen.getByRole('button', { name: 'Подтвердить решение' }));
+
+    await screen.findByTestId('decision-success');
+    expect(await screen.findByText('PRJ-TEST')).toBeDefined();
+
+    const projects = await listProjects();
+    expect(projects.map((p) => p.project_id)).toContain('prj_test');
   });
 
   it('opens the constraint editor with the snapshot hint and a disabled recalculation', async () => {

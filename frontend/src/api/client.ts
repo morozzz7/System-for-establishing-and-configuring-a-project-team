@@ -66,6 +66,7 @@ import {
 
 const mockBriefs: Brief[] = [];
 const mockRequirements: Record<string, Requirement[]> = {};
+const mockCreatedProjects: Project[] = [];
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
 /** Mock latency is skipped in unit tests so component tests stay fast and deterministic. */
@@ -300,6 +301,7 @@ export async function recordDecision(runId: string, request: DecisionRequest): P
 /** Test-only hook: clears the in-memory mock run store. */
 export function resetMockState(): void {
   resetMockRuns();
+  mockCreatedProjects.length = 0;
 }
 
 // ──── employees ────
@@ -447,15 +449,40 @@ export async function getEmployeeCapacity(
 
 // ──── projects ────
 
-export async function listProjects(_params?: {
+export async function listProjects(params?: {
   status?: string;
 }): Promise<Project[]> {
+  if (API_BASE) {
+    const query = new URLSearchParams({ limit: '200' });
+    if (params?.status) query.set('status', params.status);
+    return (await backend<{ items: Project[] }>(`/projects?${query.toString()}`)).items;
+  }
   await delay();
-  return [...mockProjects];
+  const projects = [...mockCreatedProjects, ...mockProjects];
+  return params?.status ? projects.filter((p) => p.status === params.status) : projects;
 }
 
 export async function createProject(prj: Project): Promise<Project> {
+  if (API_BASE) {
+    return backend<Project>('/projects', {
+      method: 'POST',
+      body: JSON.stringify({
+        project_id: prj.project_id,
+        code: prj.code,
+        name: prj.name,
+        status: prj.status,
+        priority: prj.priority,
+        criticality: prj.criticality,
+        start_week: prj.start_week,
+        end_week_planned: prj.end_week_planned,
+        replaces_other_projects: prj.replaces_other_projects,
+      }),
+    });
+  }
   await delay();
+  const existing = mockCreatedProjects.findIndex((p) => p.project_id === prj.project_id);
+  if (existing >= 0) mockCreatedProjects.splice(existing, 1, prj);
+  else mockCreatedProjects.unshift(prj);
   return prj;
 }
 
