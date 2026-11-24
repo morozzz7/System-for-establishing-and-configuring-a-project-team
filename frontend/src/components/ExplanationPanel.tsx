@@ -87,7 +87,7 @@ export default function ExplanationPanel({ explanation }: { explanation: Explana
           type="info"
           showIcon
           message="Компромисс"
-          description={explanation.tradeoff.text}
+          description={explanation.tradeoff?.text ?? ''}
         />
         <Space wrap size={[4, 4]}>
           {tradeoffCodes.map((code) => (

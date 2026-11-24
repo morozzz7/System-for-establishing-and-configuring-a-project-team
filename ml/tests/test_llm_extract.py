@@ -13,6 +13,7 @@ from app.extract.taxonomy import get_registry, reset_registry
 from app.llm.client import (
     LLMErrorResponse,
     LLMResponse,
+    LLMResponsesExhausted,
     LLMTimeoutError,
     LLMUnavailableError,
 )
@@ -76,7 +77,7 @@ class MockLLMClient:
         )
         idx = len(self.calls) - 1
         if idx >= len(self._responses):
-            raise LLMErrorResponse("No more mock responses")
+            raise LLMResponsesExhausted("No more mock responses")
         item = self._responses[idx]
         if isinstance(item, Exception):
             raise item

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 	"time"
 
 	"github.com/teamopt/backend/internal/domain"
@@ -22,6 +23,7 @@ type EmployeeService struct {
 	AsgRepo      repository.AssignmentRepo
 	AbsRepo      repository.AbsenceRepo
 	ProjectRepo  repository.ProjectRepo
+	CapacitySvc  *CapacityService // optional; when set, bulk import enforces G1/G2
 }
 
 type ProjectService struct {
@@ -80,8 +82,8 @@ func (s *EmployeeService) Create(ctx context.Context, input domain.EmployeeCreat
 		bench = *input.BenchFlag
 	}
 	cp := domain.CapacityProfile{
-		WeeklyHoursNorm:    40,
-		ReserveRatio:       0.2,
+		WeeklyHoursNorm:     40,
+		ReserveRatio:        0.2,
 		MaxUtilizationRatio: 0.95,
 	}
 	if input.CapacityProfile != nil {
@@ -269,13 +271,13 @@ func (s *EmployeeService) ReplaceCompetencies(ctx context.Context, employeeID st
 
 // EmployeeImportResult holds the result of a single employee import.
 type EmployeeImportResult struct {
-	EmployeeID          string
-	Status              string // created, updated, unchanged, error
+	EmployeeID           string
+	Status               string // created, updated, unchanged, error
 	CompetenciesUpserted int
-	AssignmentsCreated  int
-	AbsencesCreated     int
-	Warnings            []string
-	Error               string
+	AssignmentsCreated   int
+	AbsencesCreated      int
+	Warnings             []string
+	Error                string
 }
 
 // EmployeeImportResponse holds the full import response.
@@ -284,6 +286,139 @@ type EmployeeImportResponse struct {
 	Totals           domain.EmployeeImportTotals
 	Employees        []domain.EmployeeImportResultItem
 	ValidationErrors []domain.EmployeeImportValidationError
+}
+
+type importWeekKey struct {
+	employeeID string
+	week       string
+}
+
+// importPendingHours aggregates every assignment of the payload per employee-week. A
+// per-row check would let two rows for the same employee-week each fit the free capacity
+// while their sum overloads it.
+func importPendingHours(input domain.EmployeeImportRequest) map[importWeekKey]float64 {
+	out := make(map[importWeekKey]float64)
+	for _, item := range input.Employees {
+		for _, a := range item.Assignments {
+			out[importWeekKey{item.EmployeeID, a.Week}] += a.Hours
+		}
+	}
+	return out
+}
+
+func buildImportAssignments(item domain.EmployeeImportItem) []domain.Assignment {
+	assignments := make([]domain.Assignment, len(item.Assignments))
+	for i, a := range item.Assignments {
+		assignments[i] = domain.Assignment{
+			AssignmentID: domain.GenerateID("asg_", 6),
+			ProjectID:    a.ProjectID,
+			EmployeeID:   item.EmployeeID,
+			RoleID:       a.RoleID,
+			Week:         a.Week,
+			Hours:        a.Hours,
+			Source:       "plan",
+		}
+	}
+	return assignments
+}
+
+func buildImportAbsences(item domain.EmployeeImportItem) []domain.Absence {
+	absences := make([]domain.Absence, len(item.Absences))
+	for i, a := range item.Absences {
+		approved := true
+		if a.Approved != nil {
+			approved = *a.Approved
+		}
+		source := a.Source
+		if source == "" {
+			source = "hr_import"
+		}
+		absences[i] = domain.Absence{
+			AbsenceID:   domain.GenerateID("abs_", 6),
+			EmployeeID:  item.EmployeeID,
+			Type:        a.Type,
+			StartDate:   a.StartDate,
+			EndDate:     a.EndDate,
+			HoursPerDay: a.HoursPerDay,
+			Approved:    approved,
+			Source:      source,
+		}
+	}
+	return absences
+}
+
+// checkImportAssignmentWeek verifies G1/G2 for one employee-week of the payload. New
+// absences are not in the repository yet, so their absent minutes are added to the
+// request explicitly; the repository already accounts for all previously stored data.
+func (s *EmployeeService) checkImportAssignmentWeek(ctx context.Context, employeeID, week string, requestedMinutes int, absences []domain.Absence) *domain.EmployeeImportValidationError {
+	year, weekNumber, err := domain.ParseWeek(week)
+	if err != nil {
+		return &domain.EmployeeImportValidationError{
+			EmployeeID: employeeID, Field: "assignments", Code: "VALIDATION_FAILED", Detail: err.Error(),
+		}
+	}
+	approved := make([]domain.Absence, 0, len(absences))
+	for _, a := range absences {
+		if a.Approved {
+			approved = append(approved, a)
+		}
+	}
+	friday := domain.WeekMonday(year, weekNumber).AddDate(0, 0, 4)
+	for _, a := range approved {
+		if !a.StartDate.After(friday) && !a.EndDate.Before(friday) {
+			return &domain.EmployeeImportValidationError{
+				EmployeeID: employeeID, Field: "assignments", Code: "G1_UNAVAILABLE_ASSIGNED",
+				Detail: fmt.Sprintf("employee is absent in %s", week),
+			}
+		}
+	}
+
+	requestedMinutes += repository.ComputeAbsentMinutesInWeek(approved, year, weekNumber)
+	if err := s.CapacitySvc.CheckAvailability(ctx, employeeID, week, requestedMinutes); err != nil {
+		var problem domain.Problem
+		if errors.As(err, &problem) {
+			code := "G2_OVERLOAD"
+			if len(problem.ReasonCodes) > 0 {
+				code = problem.ReasonCodes[0]
+			}
+			return &domain.EmployeeImportValidationError{
+				EmployeeID: employeeID, Field: "assignments", Code: code, Detail: problem.Detail,
+			}
+		}
+		return &domain.EmployeeImportValidationError{
+			EmployeeID: employeeID, Field: "assignments", Code: "CAPACITY_CHECK_FAILED", Detail: err.Error(),
+		}
+	}
+	return nil
+}
+
+func checkImportAbsenceOverlap(ctx context.Context, repo repository.AbsenceRepo, employeeID string, absences []domain.Absence) *domain.EmployeeImportValidationError {
+	for i, a := range absences {
+		overlap, err := repo.HasOverlap(ctx, employeeID, a.StartDate, a.EndDate)
+		if err != nil {
+			return &domain.EmployeeImportValidationError{
+				EmployeeID: employeeID, Field: "absences", Code: "CAPACITY_CHECK_FAILED", Detail: err.Error(),
+			}
+		}
+		if overlap {
+			return &domain.EmployeeImportValidationError{
+				EmployeeID: employeeID, Field: "absences", Code: "ABSENCE_OVERLAP",
+				Detail: "overlaps with an existing absence",
+			}
+		}
+		for j, other := range absences {
+			if j <= i {
+				continue
+			}
+			if !a.EndDate.Before(other.StartDate) && !other.EndDate.Before(a.StartDate) {
+				return &domain.EmployeeImportValidationError{
+					EmployeeID: employeeID, Field: "absences", Code: "ABSENCE_OVERLAP",
+					Detail: "absences within payload overlap",
+				}
+			}
+		}
+	}
+	return nil
 }
 
 // ImportEmployees performs bulk import of employees with competencies, assignments, and absences.
@@ -298,6 +433,7 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 		mode = "upsert"
 	}
 	validateOnly := input.ValidateOnly != nil && *input.ValidateOnly
+	pendingHours := importPendingHours(input)
 
 	var results []EmployeeImportResult
 	var validationErrors []domain.EmployeeImportValidationError
@@ -390,14 +526,16 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 			continue
 		}
 
+		payloadAbsences := buildImportAbsences(item)
+
 		// Build employee domain object.
 		bench := false
 		if item.BenchFlag != nil {
 			bench = *item.BenchFlag
 		}
 		cp := domain.CapacityProfile{
-			WeeklyHoursNorm:    40,
-			ReserveRatio:       0.2,
+			WeeklyHoursNorm:     40,
+			ReserveRatio:        0.2,
 			MaxUtilizationRatio: 0.95,
 		}
 		if item.CapacityProfile != nil {
@@ -563,17 +701,29 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 
 		// Create assignments.
 		if len(item.Assignments) > 0 {
-			assignments := make([]domain.Assignment, len(item.Assignments))
-			for i, a := range item.Assignments {
-				assignments[i] = domain.Assignment{
-					AssignmentID: domain.GenerateID("asg_", 6),
-					ProjectID:    a.ProjectID,
-					EmployeeID:   item.EmployeeID,
-					RoleID:       a.RoleID,
-					Week:         a.Week,
-					Hours:        a.Hours,
-					Source:       "plan",
+			assignments := buildImportAssignments(item)
+			violationFound := false
+			if s.CapacitySvc != nil {
+				checkedWeeks := make(map[string]bool, len(assignments))
+				for _, a := range assignments {
+					if checkedWeeks[a.Week] {
+						continue
+					}
+					checkedWeeks[a.Week] = true
+					minutes := int(math.Round(pendingHours[importWeekKey{item.EmployeeID, a.Week}] * 60))
+					if violation := s.checkImportAssignmentWeek(ctx, item.EmployeeID, a.Week, minutes, payloadAbsences); violation != nil {
+						result.Status = "error"
+						result.Error = violation.Detail
+						validationErrors = append(validationErrors, *violation)
+						violationFound = true
+						break
+					}
 				}
+			}
+			if violationFound {
+				totals.Errors++
+				results = append(results, result)
+				continue
 			}
 			if err := s.AsgRepo.CreateBatch(ctx, assignments); err != nil {
 				if errors.Is(err, repository.ErrConflict) {
@@ -615,25 +765,15 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 
 		// Create absences.
 		if len(item.Absences) > 0 {
-			absences := make([]domain.Absence, len(item.Absences))
-			for i, a := range item.Absences {
-				approved := true
-				if a.Approved != nil {
-					approved = *a.Approved
-				}
-				source := a.Source
-				if source == "" {
-					source = "hr_import"
-				}
-				absences[i] = domain.Absence{
-					AbsenceID:   domain.GenerateID("abs_", 6),
-					EmployeeID:  item.EmployeeID,
-					Type:        a.Type,
-					StartDate:   a.StartDate,
-					EndDate:     a.EndDate,
-					HoursPerDay: a.HoursPerDay,
-					Approved:    approved,
-					Source:      source,
+			absences := payloadAbsences
+			if s.CapacitySvc != nil {
+				if violation := checkImportAbsenceOverlap(ctx, s.AbsRepo, item.EmployeeID, absences); violation != nil {
+					result.Status = "error"
+					result.Error = violation.Detail
+					validationErrors = append(validationErrors, *violation)
+					totals.Errors++
+					results = append(results, result)
+					continue
 				}
 			}
 			if err := s.AbsRepo.CreateBatch(ctx, absences); err != nil {
@@ -703,13 +843,13 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 	}
 	for i, r := range results {
 		resp.Employees[i] = domain.EmployeeImportResultItem{
-			EmployeeID:          r.EmployeeID,
-			Status:              r.Status,
+			EmployeeID:           r.EmployeeID,
+			Status:               r.Status,
 			CompetenciesUpserted: r.CompetenciesUpserted,
-			AssignmentsCreated:  r.AssignmentsCreated,
-			AbsencesCreated:     r.AbsencesCreated,
-			Warnings:            r.Warnings,
-			Error:               r.Error,
+			AssignmentsCreated:   r.AssignmentsCreated,
+			AbsencesCreated:      r.AbsencesCreated,
+			Warnings:             r.Warnings,
+			Error:                r.Error,
 		}
 	}
 
@@ -883,8 +1023,10 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 			fmt.Sprintf("%d field(s) failed validation", len(errs)), requestID, errs)
 	}
 
-	// Create each assignment with G1/G2 checks.
-	var results []domain.Assignment
+	// Check every row against the repository state and the hours of earlier rows before
+	// writing any of them: a per-row check would let two rows overload the same week.
+	checked := make([]domain.Assignment, 0, len(batch.Assignments))
+	pendingHours := make(map[importWeekKey]float64, len(batch.Assignments))
 	for i, ac := range batch.Assignments {
 		// Check employee exists and get capacity profile.
 		emp, err := s.EmployeeRepo.Get(ctx, ac.EmployeeID)
@@ -893,8 +1035,8 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 				p := domain.NewProblem(422, "VALIDATION_FAILED",
 					fmt.Sprintf("employee %s not found", ac.EmployeeID), requestID, []string{"VALIDATION_FAILED"})
 				p.Errors = []domain.FieldError{{
-					Field: fmt.Sprintf("assignments[%d].employee_id", i),
-					Code:  "NOT_FOUND",
+					Field:  fmt.Sprintf("assignments[%d].employee_id", i),
+					Code:   "NOT_FOUND",
 					Detail: fmt.Sprintf("employee %s does not exist", ac.EmployeeID),
 				}}
 				return nil, p
@@ -903,7 +1045,9 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 		}
 
 		// G1 + G2 enforcement via CapacityService (preferred) or legacy inline checks.
-		requestedMinutes := int(ac.Hours*60 + 0.5)
+		pendingKey := importWeekKey{ac.EmployeeID, ac.Week}
+		pending := pendingHours[pendingKey]
+		requestedMinutes := int(math.Round((ac.Hours + pending) * 60))
 		if s.CapacitySvc != nil {
 			if err := s.CapacitySvc.CheckAvailability(ctx, ac.EmployeeID, ac.Week, requestedMinutes); err != nil {
 				var p domain.Problem
@@ -949,7 +1093,7 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 				return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to check capacity", requestID, nil)
 			}
 			maxHours := emp.CapacityProfile.WeeklyHoursNorm * (1 - emp.CapacityProfile.ReserveRatio)
-			newTotal := existingHours + ac.Hours
+			newTotal := existingHours + ac.Hours + pending
 			if newTotal > maxHours && batch.OverloadOverride == nil {
 				p := domain.NewProblem(409, "CONFLICT_OVERLOAD",
 					fmt.Sprintf("%s would reach %.0f%% in %s",
@@ -965,8 +1109,8 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 				return nil, p
 			}
 		}
-
-		a := domain.Assignment{
+		pendingHours[pendingKey] = pending + ac.Hours
+		checked = append(checked, domain.Assignment{
 			AssignmentID: domain.GenerateID("asg_", 6),
 			ProjectID:    projectID,
 			EmployeeID:   ac.EmployeeID,
@@ -974,18 +1118,20 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 			Week:         ac.Week,
 			Hours:        ac.Hours,
 			Source:       "plan",
-		}
+		})
+	}
 
+	var results []domain.Assignment
+	for _, a := range checked {
 		if err := s.AssignmentRepo.Create(ctx, a); err != nil {
 			if errors.Is(err, repository.ErrConflict) {
 				p := domain.NewProblem(409, "CONFLICT_DUPLICATE",
 					fmt.Sprintf("duplicate assignment for %s in %s on project %s",
-						ac.EmployeeID, ac.Week, projectID), requestID, nil)
+						a.EmployeeID, a.Week, projectID), requestID, nil)
 				return nil, p
 			}
 			return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to create assignment", requestID, nil)
 		}
-
 		results = append(results, a)
 	}
 
@@ -1188,4 +1334,3 @@ func gradeToCost(grade string) float64 {
 		return 1.0
 	}
 }
-

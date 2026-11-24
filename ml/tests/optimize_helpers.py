@@ -19,6 +19,8 @@ the optimizer just respects whatever matrix it is given.
 from __future__ import annotations
 
 import json
+import math
+from collections import deque
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -292,6 +294,219 @@ def build_request_from_scenario(
 def scenario_ground_truth(scenario_id: str) -> dict:
     data = _load_scenario(scenario_id)
     return data["ground_truth"]
+
+
+class _Dinic:
+    """Small deterministic max-flow implementation used only by the test oracle."""
+
+    def __init__(self, n: int) -> None:
+        self.graph: list[list[list[int]]] = [[] for _ in range(n)]
+
+    def add_edge(self, u: int, v: int, cap: int) -> list[int]:
+        forward = [v, len(self.graph[v]), cap]
+        backward = [u, len(self.graph[u]), 0]
+        self.graph[u].append(forward)
+        self.graph[v].append(backward)
+        return backward
+
+    def max_flow(self, source: int, sink: int) -> int:
+        total = 0
+        n = len(self.graph)
+        while True:
+            level = [-1] * n
+            level[source] = 0
+            queue = deque([source])
+            while queue:
+                u = queue.popleft()
+                for v, _rev, cap in self.graph[u]:
+                    if cap > 0 and level[v] < 0:
+                        level[v] = level[u] + 1
+                        queue.append(v)
+            if level[sink] < 0:
+                return total
+            cursor = [0] * n
+
+            def dfs(u: int, pushed: int) -> int:
+                if u == sink:
+                    return pushed
+                while cursor[u] < len(self.graph[u]):
+                    edge = self.graph[u][cursor[u]]
+                    v, rev, cap = edge
+                    if cap > 0 and level[v] == level[u] + 1:
+                        sent = dfs(v, min(pushed, cap))
+                        if sent:
+                            edge[2] -= sent
+                            self.graph[v][rev][2] += sent
+                            return sent
+                    cursor[u] += 1
+                return 0
+
+            while pushed := dfs(source, 10**9):
+                total += pushed
+
+
+def _allocate_fairly(
+    slot_cap: list[int],
+    pending: list[tuple[object, int, list[int]]],
+    priority_rid: str | None = None,
+) -> dict[str, int]:
+    """Allocate shared slot capacity with max-min fairness across must requirements."""
+    allocated = {req.requirement_id: 0 for req, _demand, _edges in pending}
+    used = [0] * len(slot_cap)
+
+    def fill(active: list[tuple[object, int, list[int]]], fraction: float | None):
+        source = len(slot_cap) + len(active)
+        sink = source + 1
+        net = _Dinic(sink + 1)
+        slot_uses: list[tuple[int, list[int]]] = []
+        for si, cap in enumerate(slot_cap):
+            remaining = cap - used[si]
+            if remaining > 0:
+                net.add_edge(source, si, remaining)
+        req_sinks: list[list[int]] = []
+        targets: list[int] = []
+        for ri, (req, demand, edges) in enumerate(active):
+            if fraction is None:
+                target = demand
+            elif fraction > 0:
+                target = int(math.ceil(fraction * demand - 1e-9))
+            else:
+                target = 0
+            targets.append(target)
+            node = len(slot_cap) + ri
+            req_sinks.append(net.add_edge(node, sink, target))
+            for si in edges:
+                if slot_cap[si] - used[si] > 0:
+                    slot_uses.append((si, net.add_edge(si, node, 10**9)))
+        return net.max_flow(source, sink), sum(targets), req_sinks, slot_uses
+
+    active = list(pending)
+    if priority_rid is not None:
+        first = [item for item in active if item[0].requirement_id == priority_rid]
+        if first:
+            _sent, _needed, sinks, uses = fill(first, None)
+            for si, reverse in uses:
+                used[si] += reverse[2]
+            for (req, _demand, _edges), reverse in zip(first, sinks):
+                allocated[req.requirement_id] += reverse[2]
+            active = [item for item in active if item[0].requirement_id != priority_rid]
+
+    while active:
+        low, high = 0.0, 1.0
+        for _ in range(40):
+            mid = (low + high) / 2
+            sent, needed, _sinks, _uses = fill(active, mid)
+            if sent >= needed:
+                low = mid
+            else:
+                high = mid
+        _sent, _needed, sinks, uses = fill(active, low)
+        for si, reverse in uses:
+            used[si] += reverse[2]
+
+        still_pending = []
+        for (req, demand, edges), reverse in zip(active, sinks):
+            got = reverse[2]
+            allocated[req.requirement_id] += got
+            target = int(math.ceil(low * demand - 1e-9)) if low > 0 else 0
+            remaining_capacity = sum(max(0, slot_cap[si] - used[si]) for si in edges)
+            if got + 1 < target or remaining_capacity == 0:
+                continue
+            if demand - got > 0:
+                still_pending.append((req, demand - got, edges))
+        if len(still_pending) == len(active):
+            break
+        active = still_pending
+    return allocated
+
+
+def shared_capacity_deficits(request: OptimizeRequest) -> dict[str, float]:
+    """Reference deficits (likely person-days) derived from the scenario's own data.
+
+    Qualified employees are a *shared* pool: hours one must requirement takes are
+    unavailable to every other must requirement. Summing each competency's capacity
+    in isolation invents capacity and hides genuine shortages, so the oracle allocates
+    the scenario's capacity matrix with max-min fairness, applies the solver's
+    min-effort gate, and sizes shortfalls on the likely basis (ADR-007 §1).
+    """
+    weeks = request.horizon.weeks
+    week_idx = {w: i for i, w in enumerate(weeks)}
+    deadline_idx = (
+        week_idx.get(request.constraints.deadline_week)
+        if request.constraints.deadline_week
+        else None
+    )
+
+    slots: list[tuple[object, int, dict[str, int], bool]] = []
+    slot_cap: list[int] = []
+    for candidate in request.candidates:
+        external = candidate.employment_type in ("contractor", "external_partner")
+        for cw in candidate.capacity:
+            idx = week_idx.get(cw.week)
+            if idx is None or cw.unavailable:
+                continue
+            cap = int(math.floor(cw.free_hours + 1e-9))
+            if cap <= 0:
+                continue
+            comps = {cc.competency_id: cc.level for cc in candidate.competencies}
+            slots.append((candidate, idx, comps, external))
+            slot_cap.append(cap)
+
+    must_reqs = [r for r in request.requirements if r.criticality == "must"]
+    pending: list[tuple[object, int, list[int]]] = []
+    demand_by_id: dict[str, int] = {}
+    for req in must_reqs:
+        demand = int(math.ceil(req.effort.min_person_days * 8 - 1e-9))
+        demand_by_id[req.requirement_id] = demand
+        lo = week_idx.get(req.earliest_week, 0) if req.earliest_week else 0
+        hi = (
+            week_idx.get(req.latest_week, len(weeks) - 1)
+            if req.latest_week
+            else len(weeks) - 1
+        )
+        if deadline_idx is not None:
+            hi = min(hi, deadline_idx)
+        edges: list[int] = []
+        for si, (candidate, week, comps, external) in enumerate(slots):
+            if week < lo or week > hi:
+                continue
+            if request.constraints.forbid_external and external:
+                continue
+            if not req.allows_external and external:
+                continue
+            if req.competency_id is None:
+                qualified = candidate.role_profile_id == req.role_id
+            else:
+                qualified = comps.get(req.competency_id, 0) >= req.level
+            if qualified:
+                edges.append(si)
+        if demand > 0 and edges:
+            pending.append((req, demand, edges))
+
+    # Which shared requirement is served first is arbitrary across the solver's
+    # diverse variants, so average the shortfall over deterministic priority orders
+    # in which the requirement still misses the min-effort gate.
+    samples: dict[str, list[float]] = {}
+    priorities: list[str | None] = [None] + [req.requirement_id for req, _d, _e in pending]
+    for priority in priorities:
+        allocation = _allocate_fairly(slot_cap, pending, priority)
+        for req in must_reqs:
+            rid = req.requirement_id
+            got = allocation.get(rid, 0)
+            if got >= demand_by_id[rid]:
+                continue
+            uncovered = max(0.01, round(req.effort.likely_person_days - got / 8, 2))
+            samples.setdefault(rid, []).append(uncovered)
+
+    truth: dict[str, float] = {}
+    for req in must_reqs:
+        values = samples.get(req.requirement_id)
+        if not values:
+            continue
+        size = round(sum(values) / len(values), 2)
+        key = req.competency_id or f"role:{req.role_id}"
+        truth[key] = truth.get(key, 0.0) + size
+    return truth
 
 
 # ---------------------------------------------------------------------------

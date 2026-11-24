@@ -36,10 +36,10 @@ func NewPgCapacityRepo(pool *pgxpool.Pool) *PgCapacityRepo {
 // ---------- internal types for batch queries ----------
 
 type empProfile struct {
-	EmployeeID        string
-	WeeklyHoursNorm   int // hours (integer in DB)
-	ReserveRatio      float64
-	MaxUtilization    float64
+	EmployeeID      string
+	WeeklyHoursNorm int // hours (integer in DB)
+	ReserveRatio    float64
+	MaxUtilization  float64
 }
 
 // ---------- single-employee ----------
@@ -160,6 +160,9 @@ func (r *PgCapacityRepo) FindCandidatesByCompetency(ctx context.Context, compete
 		}
 		ids = append(ids, id)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate candidates: %w", err)
+	}
 	return ids, nil
 }
 
@@ -182,6 +185,9 @@ func (r *PgCapacityRepo) getProfiles(ctx context.Context, employeeIDs []string) 
 			return nil, fmt.Errorf("scan profile: %w", err)
 		}
 		profiles = append(profiles, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate profiles: %w", err)
 	}
 	return profiles, nil
 }
@@ -210,6 +216,9 @@ func (r *PgCapacityRepo) getAssignedMinutes(ctx context.Context, employeeIDs []s
 		}
 		result[empID][week] = minutes
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate assigned minutes: %w", err)
+	}
 	return result, nil
 }
 
@@ -233,6 +242,9 @@ func (r *PgCapacityRepo) getAbsences(ctx context.Context, employeeIDs []string, 
 			return nil, fmt.Errorf("scan absence: %w", err)
 		}
 		result[a.EmployeeID] = append(result[a.EmployeeID], a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate absences: %w", err)
 	}
 	return result, nil
 }

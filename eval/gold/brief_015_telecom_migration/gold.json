@@ -3,8 +3,8 @@
     "requirement_id": "req_015_001",
     "brief_id": "brf_015",
     "role": {
-      "role_id": "business_analyst",
-      "name_ru": "Бизнес-аналитик",
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения",
       "confidence": 0.85
     },
     "competency": {

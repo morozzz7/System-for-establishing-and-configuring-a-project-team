@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"math"
 
 	"github.com/teamopt/backend/internal/domain"
 	"github.com/teamopt/backend/internal/repository"
@@ -143,6 +144,66 @@ func (s *CapacityService) GetAvailableHours(ctx context.Context, employeeID stri
 		}
 	}
 	return result, nil
+}
+
+// GetCapacityWeeks shapes the capacity matrix into the contract's hour-based rows. The
+// available hours still come from GetAvailableHours; only the reporting units change.
+func (s *CapacityService) GetCapacityWeeks(ctx context.Context, employeeID string, weeks []string) ([]domain.CapacityWeek, error) {
+	if len(weeks) == 0 {
+		return []domain.CapacityWeek{}, nil
+	}
+	emp, err := s.empRepo.Get(ctx, employeeID)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return nil, fmt.Errorf("%w: employee %s", repository.ErrNotFound, employeeID)
+		}
+		return nil, fmt.Errorf("get employee: %w", err)
+	}
+	matrix, err := s.GetAvailableHours(ctx, employeeID, weeks)
+	if err != nil {
+		return nil, err
+	}
+	byWeek := make(map[string]domain.WeeklyCapacity, len(matrix))
+	for _, row := range matrix {
+		byWeek[row.Week] = row
+	}
+
+	out := make([]domain.CapacityWeek, 0, len(weeks))
+	for _, week := range weeks {
+		row, ok := byWeek[week]
+		if !ok {
+			continue
+		}
+		year, weekNumber, err := domain.ParseWeek(week)
+		if err != nil {
+			continue
+		}
+		limitMinutes := effectiveLimitMinutes(row.NormMinutes, emp.CapacityProfile.ReserveRatio, emp.CapacityProfile.MaxUtilizationRatio)
+		reservedMinutes := row.NormMinutes - limitMinutes
+		if reservedMinutes < 0 {
+			reservedMinutes = 0
+		}
+		normHours := float64(row.NormMinutes) / 60
+		assignedHours := float64(row.AssignedMinutes) / 60
+		absenceHours := float64(row.AbsentMinutes) / 60
+		loadRatio := assignedHours / math.Max(normHours, 1)
+		loadRatio = math.Max(0, math.Min(1.5, loadRatio))
+
+		workingDays := domain.WorkingDaysInWeek(year, weekNumber)
+		out = append(out, domain.CapacityWeek{
+			EmployeeID:    employeeID,
+			Week:          week,
+			WorkingDays:   workingDays,
+			NormHours:     normHours,
+			ReservedHours: float64(reservedMinutes) / 60,
+			AssignedHours: assignedHours,
+			AbsenceHours:  absenceHours,
+			FreeHours:     float64(row.AvailableMinutes) / 60,
+			LoadRatio:     loadRatio,
+			Unavailable:   workingDays == 0 || row.AbsentMinutes >= row.NormMinutes-reservedMinutes,
+		})
+	}
+	return out, nil
 }
 
 // FindAvailableEmployees returns employee IDs that:

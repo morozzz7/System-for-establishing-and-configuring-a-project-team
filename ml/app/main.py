@@ -109,7 +109,8 @@ async def readyz() -> dict[str, Any]:
             "llm": settings.model if settings.is_available else None,
             "embedding": EMBED_MODEL,
             "embedding_dim": EMBED_DIM,
-            "spacy_pipeline": "ru_core_news_lg",
+            # Contract requires a string here; no spaCy pipeline is used.
+            "spacy_pipeline": "not_used",
         },
         "solver": {
             "name": SOLVER_NAME,
@@ -135,13 +136,38 @@ async def readyz() -> dict[str, Any]:
 async def embed(request: Request) -> JSONResponse:
     """Embed a bounded batch in the deterministic shared vector space."""
     rid = _req_id(request)
+    resp_headers = {"X-Request-Id": rid}
     try:
-        body = EmbedRequest.model_validate(await request.json())
-        result = embed_request(body)
+        body = await request.json()
+    except Exception:
+        return JSONResponse(
+            status_code=422,
+            headers=resp_headers,
+            content=_problem(
+                422,
+                "INVALID_REQUEST",
+                "Invalid request body",
+                "Request body is not valid JSON",
+                rid,
+                reason_codes=["VALIDATION_FAILED"],
+            ),
+        )
+    try:
+        req = EmbedRequest.model_validate(body)
     except ValidationError as exc:
-        return JSONResponse(status_code=422, content=_problem(422, "VALIDATION_FAILED", "Invalid request", str(exc), rid))
+        return JSONResponse(
+            status_code=422,
+            headers=resp_headers,
+            content=_problem(422, "VALIDATION_FAILED", "Invalid request", str(exc), rid),
+        )
+    try:
+        result = embed_request(req)
     except ValueError as exc:
-        return JSONResponse(status_code=422, content=_problem(422, "UNSUPPORTED_MODEL", "Unsupported model", str(exc), rid))
-    response = JSONResponse(status_code=200, content=result.model_dump())
-    response.headers["X-Request-Id"] = rid
-    return response
+        return JSONResponse(
+            status_code=422,
+            headers=resp_headers,
+            content=_problem(422, "UNSUPPORTED_MODEL", "Unsupported model", str(exc), rid),
+        )
+    return JSONResponse(
+        status_code=200, content=result.model_dump(), headers=resp_headers
+    )

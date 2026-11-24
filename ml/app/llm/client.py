@@ -50,6 +50,14 @@ class LLMErrorResponse(LLMError):
         self.status_code = status_code
 
 
+class LLMResponsesExhausted(LLMError):
+    """Scripted stub signal: no further responses are queued for this replay.
+
+    The real client never raises it. Extraction treats it as the end of the scripted
+    answers, never as a transport failure.
+    """
+
+
 # ---------------------------------------------------------------------------
 # Client
 # ---------------------------------------------------------------------------

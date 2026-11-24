@@ -42,10 +42,11 @@ Run before every commit that touches this directory (wired into 1.3 `/setup` CI)
 npx --yes @stoplight/spectral-cli lint contracts/openapi.yaml contracts/ml-openapi.yaml \
   --ruleset contracts/spectral.yaml
 
-# JSON Schemas: meta-validation + fixtures
-npx --yes ajv-cli@5 compile -s contracts/json-schema/common.schema.json -s contracts/json-schema/requirement.schema.json \
-  -s contracts/json-schema/team-variant.schema.json -s contracts/json-schema/optimize-request.schema.json \
-  -s contracts/json-schema/optimize-response.schema.json -s contracts/json-schema/taxonomy.schema.json
+# JSON Schemas: meta-validation + $ref resolution (offline, no npx packages needed)
+python3 contracts/validate_schemas.py
+
+# Or run both gates exactly as CI does:
+make lint-contracts
 
 # Golden examples must round-trip: every `example` in the specs is validated against its schema
 # (implemented as a contract test in backend/internal/contracttest and ml/tests/test_contracts.py)

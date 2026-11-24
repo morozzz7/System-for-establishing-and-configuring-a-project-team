@@ -41,6 +41,12 @@ import type { ParsedEmployeeRow } from '../../utils/csvImport';
 
 const { Text } = Typography;
 
+const EMPLOYMENT_TYPE_LABELS: Record<string, string> = {
+  internal: 'Внутренний',
+  contractor: 'Подрядчик',
+  external_partner: 'Внешний партнёр',
+};
+
 export interface EmployeeImportModalProps {
   open: boolean;
   onClose: () => void;
@@ -206,7 +212,9 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }: Employ
       dataIndex: 'employment_type',
       key: 'employment_type',
       width: 110,
-      render: (type: string) => <Text style={{ fontSize: 12 }}>{type === 'full_time' ? '100% (FT)' : '50% (PT)'}</Text>,
+      render: (type: string) => (
+        <Text style={{ fontSize: 12 }}>{EMPLOYMENT_TYPE_LABELS[type] ?? (type || '—')}</Text>
+      ),
     },
     {
       title: 'Скамейка',

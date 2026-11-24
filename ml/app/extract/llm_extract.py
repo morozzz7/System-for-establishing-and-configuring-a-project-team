@@ -36,6 +36,7 @@ from ..llm.client import (
     LLMClient,
     LLMError,
     LLMErrorResponse,
+    LLMResponsesExhausted,
     LLMTimeoutError,
     LLMUnavailableError,
 )
@@ -61,6 +62,10 @@ from .taxonomy import TaxonomyRegistry
 from .validator import EvidenceValidator, find_quote_in_text
 
 _REQ_ID_RE = re.compile(r"^[A-Za-z0-9_-]{4,40}$")
+
+# ExtractDiagnostics.retries is capped by the contract at 2; never let an
+# inflated LLM_MAX_RETRIES produce an invalid response.
+MAX_EXTRACTION_RETRIES = 2
 
 _STRING_LEVEL_MAP: dict[str, int] = {
     "intern": 1,
@@ -574,7 +579,7 @@ async def _run_single_extraction_pass(
     stats = LLMStats()
     messages = list(base_messages)
     current_max_tokens = initial_max_tokens
-    max_attempts = 1 + settings.max_retries
+    max_attempts = 1 + min(settings.max_retries, MAX_EXTRACTION_RETRIES)
 
     estimator = EffortEstimator()
     role_validator = RoleCompetencyValidator(
@@ -597,7 +602,7 @@ async def _run_single_extraction_pass(
 
     for attempt in range(max_attempts):
         if attempt > 0:
-            stats.retries = attempt
+            stats.retries = min(MAX_EXTRACTION_RETRIES, attempt)
 
         t0 = time.monotonic()
         try:
@@ -609,21 +614,17 @@ async def _run_single_extraction_pass(
                 max_tokens=current_max_tokens,
                 timeout_ms=per_attempt_timeout_ms,
             )
+        except LLMResponsesExhausted:
+            stats.duration_ms += int((time.monotonic() - t0) * 1000)
+            break
         except LLMError as exc:
             stats.duration_ms += int((time.monotonic() - t0) * 1000)
-            if (
-                attempt > 0
-                and isinstance(exc, LLMErrorResponse)
-                and exc.status_code is None
-                and "no more mock responses" in str(exc).lower()
-            ):
-                break
             if (
                 isinstance(exc, LLMErrorResponse)
                 and (exc.status_code is None or exc.status_code >= 500)
                 and attempt + 1 < max_attempts
             ):
-                stats.retries += 1
+                stats.retries = min(MAX_EXTRACTION_RETRIES, stats.retries + 1)
                 messages = messages + [
                     {
                         "role": "user",
@@ -954,10 +955,12 @@ async def llm_extract(
         runs_valid = []
         first_raw_items = []
         pass_stats_list: list[LLMStats] = []
-        errors: list[Exception] = []
+        errors: list[BaseException] = []
 
         for res in results:
-            if isinstance(res, Exception):
+            if isinstance(res, LLMResponsesExhausted):
+                continue
+            if isinstance(res, BaseException):
                 errors.append(res)
             else:
                 v_list, r_list, p_stats = res
@@ -966,15 +969,19 @@ async def llm_extract(
                     first_raw_items = r_list
                 pass_stats_list.append(p_stats)
 
-        if not pass_stats_list:
+        # A transport failure in any pass invalidates the whole extraction: a
+        # partial ensemble is never a complete answer (ADR-004, fail loudly).
+        if errors:
             raise errors[0]
+        if not pass_stats_list:
+            raise LLMUnavailableError("All ensemble extraction passes ended without a result")
 
         stats = LLMStats(
             tokens_in=sum(s.tokens_in for s in pass_stats_list),
             tokens_out=sum(s.tokens_out for s in pass_stats_list),
             duration_ms=int((time.monotonic() - t_overall) * 1000),
-            retries=min(2, max(s.retries for s in pass_stats_list)),
-            json_valid=any(s.json_valid for s in pass_stats_list),
+            retries=min(MAX_EXTRACTION_RETRIES, max(s.retries for s in pass_stats_list)),
+            json_valid=all(s.json_valid for s in pass_stats_list),
             dropped_schema_invalid=pass_stats_list[0].dropped_schema_invalid,
             dropped_unknown_taxonomy=pass_stats_list[0].dropped_unknown_taxonomy,
             dropped_no_evidence=pass_stats_list[0].dropped_no_evidence,
@@ -1088,7 +1095,7 @@ async def llm_extract(
                 brief_text, batch_comps, batch_roles, locale
             )
             budget = _verification_budget(len(batch))
-            max_attempts = 1 + settings.max_retries
+            max_attempts = 1 + min(settings.max_retries, MAX_EXTRACTION_RETRIES)
             ver_items: list[Any] | None = None
             last_error = "no verification attempt made"
 

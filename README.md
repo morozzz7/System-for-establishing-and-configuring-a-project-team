@@ -37,7 +37,7 @@ M8 formula from [`docs/METRICS.md`](docs/METRICS.md).
 | --- | --- |
 | Backend/core | Go, chi, pgx, Goose, slog |
 | Database | PostgreSQL 16 + pgvector |
-| ML service | Python 3.12, FastAPI, Pydantic, spaCy/Transformers-ready pipeline, OR-Tools CP-SAT |
+| ML service | Python 3.12, FastAPI, Pydantic, deterministic hashing embeddings, OR-Tools CP-SAT |
 | LLM integration | OpenAI-compatible endpoint; OpenRouter is the MVP provider, optional |
 | Frontend | React 18, TypeScript, Vite, Ant Design, React Router |
 | Tests | Go test/testify/testcontainers, pytest, Vitest |

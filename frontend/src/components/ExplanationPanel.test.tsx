@@ -111,6 +111,18 @@ describe('ExplanationPanel', () => {
     expect(screen.getByText('Контрфактических сценариев нет.')).toBeDefined();
   });
 
+  it('does not blank the screen when tradeoff is null', () => {
+    const malformed = { ...base, tradeoff: null } as unknown as Explanation;
+    render(
+      <ConfigProvider locale={ruRU}>
+        <ExplanationPanel explanation={malformed} />
+      </ConfigProvider>,
+    );
+    expect(screen.getByText(/Сбалансированный: состав 5 чел/)).toBeDefined();
+    expect(screen.getByText('Компромисс')).toBeDefined();
+    expect(screen.getByText('Включены (1)')).toBeDefined();
+  });
+
   it('renderes the loading placeholder', () => {
     render(<ExplanationLoading />);
     expect(screen.getByText('Почему этот состав')).toBeDefined();

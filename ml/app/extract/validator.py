@@ -455,7 +455,8 @@ class EvidenceValidator:
                     first_ev.char_end,
                 ):
                     stats.flagged_no_lexical_anchor += 1
-                    # Lower confidence without dropping below min_confidence (never delete!)
+                    # Keep the item above min_confidence so it survives to the review
+                    # queue instead of being silently dropped; needs_review routes it.
                     floor_conf = max(min_confidence, 0.56)
                     lowered_conf = max(
                         floor_conf, round(min(updated_req.confidence * 0.70, 0.58), 2)

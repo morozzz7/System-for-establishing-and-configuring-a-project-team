@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"sort"
@@ -8,6 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"gopkg.in/yaml.v3"
+
+	"github.com/teamopt/backend/internal/domain"
+	"github.com/teamopt/backend/internal/service"
 )
 
 type taxonomyFile struct {
@@ -17,16 +21,73 @@ type taxonomyFile struct {
 		Synonyms []string `yaml:"synonyms"`
 	} `yaml:"competencies"`
 }
-type TaxonomyHandler struct{ path string }
+type TaxonomyHandler struct {
+	path string
+	Svc  *service.TaxonomyService
+}
 
-func NewTaxonomyHandler() *TaxonomyHandler {
+func NewTaxonomyHandler(svc *service.TaxonomyService) *TaxonomyHandler {
 	path := os.Getenv("TAXONOMY_PATH")
 	if path == "" {
 		path = "contracts/taxonomy.yaml"
 	}
-	return &TaxonomyHandler{path: path}
+	return &TaxonomyHandler{path: path, Svc: svc}
 }
-func (h *TaxonomyHandler) Register(r chi.Router) { r.Post("/taxonomy/normalize", h.Normalize) }
+
+func (h *TaxonomyHandler) Register(r chi.Router) {
+	r.Get("/taxonomy/roles", h.ListRoles)
+	r.Get("/taxonomy/competencies", h.ListCompetencies)
+	r.Post("/taxonomy/normalize", h.Normalize)
+}
+
+func (h *TaxonomyHandler) ListRoles(w http.ResponseWriter, r *http.Request) {
+	rid := requestID(r)
+	echoRequestID(w, rid)
+	if h.Svc == nil {
+		writeProblem(w, domain.NewProblem(503, "SERVICE_UNAVAILABLE", "taxonomy reference data is unavailable", rid, nil))
+		return
+	}
+	page, err := h.Svc.ListRoles(r.Context(), domain.RoleFilter{
+		Q:      r.URL.Query().Get("q"),
+		Family: r.URL.Query().Get("family"),
+		Limit:  parseIntQuery(r, "limit", 20),
+		Offset: parseIntQuery(r, "offset", 0),
+	})
+	if err != nil {
+		h.writeTaxonomyError(w, r, rid, err)
+		return
+	}
+	writeJSON(w, 200, page)
+}
+
+func (h *TaxonomyHandler) ListCompetencies(w http.ResponseWriter, r *http.Request) {
+	rid := requestID(r)
+	echoRequestID(w, rid)
+	if h.Svc == nil {
+		writeProblem(w, domain.NewProblem(503, "SERVICE_UNAVAILABLE", "taxonomy reference data is unavailable", rid, nil))
+		return
+	}
+	page, err := h.Svc.ListCompetencies(r.Context(), domain.CompetencyFilter{
+		RoleID:   r.URL.Query().Get("role_id"),
+		Category: r.URL.Query().Get("category"),
+		Q:        r.URL.Query().Get("q"),
+		Limit:    parseIntQuery(r, "limit", 20),
+		Offset:   parseIntQuery(r, "offset", 0),
+	})
+	if err != nil {
+		h.writeTaxonomyError(w, r, rid, err)
+		return
+	}
+	writeJSON(w, 200, page)
+}
+
+func (h *TaxonomyHandler) writeTaxonomyError(w http.ResponseWriter, r *http.Request, rid string, err error) {
+	if errors.Is(err, service.ErrTaxonomyUnavailable) {
+		writeProblem(w, domain.NewProblem(503, "SERVICE_UNAVAILABLE", err.Error(), rid, nil))
+		return
+	}
+	writeProblem(w, domain.NewProblem(500, "INTERNAL_ERROR", err.Error(), rid, nil))
+}
 func (h *TaxonomyHandler) Normalize(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Text     string `json:"text"`

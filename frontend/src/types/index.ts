@@ -645,7 +645,7 @@ export interface RecalculateResponse {
 
 export interface DecisionRequest {
   variant_id: string;
-  decided_by: string;
+  decided_by?: string;
   comment?: string;
   edits_applied?: ConstraintOverride[];
 }

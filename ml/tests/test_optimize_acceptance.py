@@ -33,6 +33,7 @@ from tests.optimize_helpers import (
     build_request_from_scenario,
     build_scale_request,
     scenario_ground_truth,
+    shared_capacity_deficits,
 )
 
 OPTIMAL_COMPETING = [
@@ -221,49 +222,13 @@ def test_variant_set_sorted_by_score_and_labels(scenario_outcomes) -> None:
 # ---------------------------------------------------------------------------
 
 def _true_deficit_competencies(request) -> dict[str, float]:
-    """Independent, data-derived deficit oracle (no solver involved).
+    """Independent oracle: simulate shared qualified capacity across all must requirements.
 
-    A ``must`` requirement is a true deficit when *no* assignable candidate is qualified
-    at the required level, or when the qualified candidates' total free hours inside the
-    requirement window are below the minimum effort. The reference size is the full
-    ``likely`` effort of the uncoverable requirements (that work has to come from outside).
+    The planted capacity matrix is consumed by every requirement that can use it, so a
+    per-competency sum overstates what is available; the helper allocates it with
+    max-min fairness and sizes only requirements that miss the min-effort gate.
     """
-    weeks = request.horizon.weeks
-    week_idx = {w: i for i, w in enumerate(weeks)}
-    deadline = request.constraints.deadline_week
-    deadline_idx = week_idx.get(deadline) if deadline else None
-    truth: dict[str, float] = {}
-    for r in request.requirements:
-        if r.criticality != "must":
-            continue
-        lo = week_idx.get(r.earliest_week, 0) if r.earliest_week else 0
-        hi = week_idx.get(r.latest_week, len(weeks) - 1) if r.latest_week else len(weeks) - 1
-        if deadline_idx is not None:
-            hi = min(hi, deadline_idx)
-        qualified = []
-        for c in request.candidates:
-            comps = {cc.competency_id: cc.level for cc in c.competencies}
-            if r.competency_id is None:
-                ok = c.role_profile_id == r.role_id
-            else:
-                ok = comps.get(r.competency_id, 0) >= r.level
-            if ok:
-                qualified.append(c)
-        hours = 0.0
-        for c in qualified:
-            for cw in c.capacity:
-                if deadline is not None and cw.week > deadline:
-                    continue
-                idx = week_idx.get(cw.week)
-                if idx is None or idx < lo or idx > hi:
-                    continue
-                if not cw.unavailable:
-                    hours += cw.free_hours
-        need = r.effort.min_person_days * 8
-        if not qualified or hours + 1e-9 < need:
-            key = r.competency_id or f"role:{r.role_id}"
-            truth[key] = truth.get(key, 0.0) + r.effort.likely_person_days
-    return truth
+    return shared_capacity_deficits(request)
 
 
 def test_deficit_scenarios_report_the_planted_shortage(scenario_outcomes) -> None:

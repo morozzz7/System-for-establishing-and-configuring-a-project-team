@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/teamopt/backend/internal/domain"
+	"github.com/teamopt/backend/internal/repository"
 	"github.com/teamopt/backend/internal/service"
 )
 
@@ -464,22 +465,31 @@ func (h *CapacityHandler) GetEmployeeCapacity(w http.ResponseWriter, r *http.Req
 	echoRequestID(w, rid)
 
 	employeeID := chi.URLParam(r, "employeeId")
-	startWeek := r.URL.Query().Get("start_week")
-	endWeek := r.URL.Query().Get("end_week")
+	fromWeek := r.URL.Query().Get("from_week")
+	toWeek := r.URL.Query().Get("to_week")
 
-	if startWeek == "" || endWeek == "" {
+	if fromWeek == "" || toWeek == "" {
 		writeProblem(w, domain.NewProblem(400, "VALIDATION_FAILED",
-			"start_week and end_week query parameters are required", rid, []string{"VALIDATION_FAILED"}))
+			"from_week and to_week query parameters are required", rid, []string{"VALIDATION_FAILED"}))
 		return
 	}
-	if !domain.ValidateWeekKey(startWeek) || !domain.ValidateWeekKey(endWeek) {
+	if !domain.ValidateWeekKey(fromWeek) || !domain.ValidateWeekKey(toWeek) {
 		writeProblem(w, domain.NewProblem(422, "VALIDATION_FAILED",
-			"start_week and end_week must be valid ISO week keys (YYYY-WNN)", rid, []string{"VALIDATION_FAILED"}))
+			"from_week and to_week must be valid ISO week keys (YYYY-WNN)", rid, []string{"VALIDATION_FAILED"}))
 		return
 	}
 
-	caps, err := h.Svc.GetAvailableHours(r.Context(), employeeID, mustWeekRange(startWeek, endWeek))
+	weeks, err := domain.WeekRange(fromWeek, toWeek)
 	if err != nil {
+		writeProblem(w, domain.NewProblem(422, "VALIDATION_FAILED", err.Error(), rid, []string{"VALIDATION_FAILED"}))
+		return
+	}
+	caps, err := h.Svc.GetCapacityWeeks(r.Context(), employeeID, weeks)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			writeProblem(w, domain.NewProblem(404, "NOT_FOUND", err.Error(), rid, []string{"NOT_FOUND"}))
+			return
+		}
 		var p domain.Problem
 		if errors.As(err, &p) {
 			writeProblem(w, p)
@@ -489,10 +499,7 @@ func (h *CapacityHandler) GetEmployeeCapacity(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	writeJSON(w, 200, domain.CapacityMatrix{
-		EmployeeID: employeeID,
-		Weeks:      caps,
-	})
+	writeJSON(w, 200, caps)
 }
 
 // CapacityMatrixHandler serves the batch capacity matrix endpoint.

@@ -58,18 +58,21 @@ With verification live, these candidates would reach the LLM and could be confir
 
 ### 2. Low-confidence pairs are routed to a separate review list
 
-- A requirement with `competency != null`, `needs_review == true` and `confidence <= 0.60` is returned in
-  `requirements_for_review`, not in `requirements`.
+- A requirement with `competency != null` and `needs_review == true` is returned in
+  `requirements_for_review`, not in `requirements`. Routing follows the flag, not a confidence
+  comparison: a caller-supplied `min_confidence` must not be able to keep an uncertain pair in the
+  optimizer input.
 - Role-only requirements (`competency == null`) stay in `requirements` with `needs_review = true`: a role
   without a technology produces no pair false positive and is still useful for staffing.
 - `requirements_for_review` is an **additive** response field (`default: []`); clients that do not know it
   still receive a valid response. Items in it are never sent to `/v1/optimize` until a human confirms them.
-- Threshold `0.60` is a starting hypothesis (same class as the `METRICS.md` weights) and is calibrated
-  against expert review decisions later; it is a single named constant, not scattered literals.
+- Confidence `0.60` remains the starting hypothesis for assigning `needs_review` and for reporting
+  uncertainty, but it is no longer a routing condition. It is a single named constant
+  (`REVIEW_CONFIDENCE_MAX`), not scattered literals.
 - Acceptance on the archived `eval/runs/long_brief_latest.json` artifact (offline replay, deterministic):
   the 3 low-confidence false positives appear in `requirements_for_review` and **0** of them appear in
   `requirements`; `devops_engineer/cloud_docker` is dropped by §3; main pair **precision 0.8261 -> 1.0**.
-  The rule is confidence-based, so the 0.58 gold pair `solution_architect/arch_event_driven` (found in
+  The rule is flag-based, so the 0.58 gold pair `solution_architect/arch_event_driven` (found in
   1 of 3 ensemble runs) also moves to review: main pair recall is **18/19 = 0.9474**, review recall is
   **1/19 = 0.0526** (TP=1, FN=18 — the missing gold pair is in the review queue, not lost; main+review recall is 19/19 = 1.0), and main+review precision is
   **0.8636** (the 3 remaining false positives are confined to the review queue). This is the intended
@@ -121,8 +124,8 @@ A deterministic gate runs after the lexical anchor check and before deduplicatio
   is removed deterministically; every removal is counted and explained.
 - **Negative / risks:** the marker/task-cue lists are language-specific (ru/en) and will need extension;
   a legitimately phrased generic mention can be dropped, which is why the gate is limited to sentences
-  with a marker and no task cue and is covered by gold-quote regression tests. The `0.60` threshold is a
-  hypothesis and may move after calibration.
+  with a marker and no task cue and is covered by gold-quote regression tests. The `0.60` confidence
+  hypothesis may move after calibration; review routing is independent of it.
 - **Testable:** unit tests for batch budgeting/retry/accounting, review routing, the generic gate on all
   gold quotes, and the scanner stop list; live `eval/run_long_brief.py` must report
   `requirements_for_review`, `dropped_generic_mention` and `diagnostics.verification`.

@@ -51,7 +51,8 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 4. Go builds availability: capacity(employee, week) = norm - current assignments - absences
    (fixed 5-day week; **target:** Russian production calendar). The candidate pool comes from
    active employees, their competency levels and current assignments (`internal/service/candidates.go`),
-   filtered by `CandidateFilter`; the in-memory stand-ins remain only for tests.
+   filtered by `CandidateFilter`; the in-memory stand-ins remain only for tests. Bulk import
+   (`PUT /api/v1/employees`) applies the same G1/G2 checks before writing assignments and absences.
 5. Go -> ML `POST /v1/optimize` (candidates, requirements, constraints, weights, k) -> variants.
 6. Go: validator -> schedule engine (duration, P50/P80) -> deficits -> portfolio impact -> metrics.
    The G3 gate and solver feasibility use `min_person_days`; M2 and reported deficits use `likely_person_days`
@@ -90,10 +91,12 @@ docs/             PLAN.md (task status), ADR/, METRICS.md
 
 ## Verification commands
 ```bash
-make test          # contracts lint + Go tests + pytest (frontend excluded)
+make lint-contracts # spectral + JSON Schema validation (offline Python gate)
+make fixtures      # regenerate eval/gold briefs and eval/synth scenarios (gitignored)
+make test          # contracts + fixtures + Go tests + pytest (frontend excluded)
 make lint-backend  # golangci-lint
 make lint-ml       # ruff + black --check
-make test-e2e      # full Docker stack + Playwright journey (deterministic LLM stub)
+make test-e2e      # full Docker stack + Playwright journey; needs frontend npm ci first
 cd frontend && npm test -- --run && npm run lint && npm run build
 ```
 Runtime ports, gateway URLs and the mock/API switch (`VITE_API_BASE_URL`) are documented in `README.md`

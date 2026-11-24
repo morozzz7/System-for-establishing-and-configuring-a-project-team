@@ -207,6 +207,9 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 		}
 		employees = append(employees, e)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate employees: %w", err)
+	}
 	if employees == nil {
 		employees = []domain.Employee{}
 	}
@@ -306,6 +309,9 @@ func (r *PgEmployeeRepo) ListIDs(ctx context.Context) ([]string, error) {
 		}
 		ids = append(ids, id)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate employee IDs: %w", err)
+	}
 	if ids == nil {
 		ids = []string{}
 	}
@@ -336,6 +342,9 @@ func (r *PgEmployeeCompetencyRepo) ListByEmployee(ctx context.Context, employeeI
 			return nil, fmt.Errorf("scan competency: %w", err)
 		}
 		comps = append(comps, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate competencies: %w", err)
 	}
 	if comps == nil {
 		comps = []domain.EmployeeCompetency{}
@@ -434,6 +443,9 @@ func (r *PgProjectRepo) List(ctx context.Context, f domain.ProjectFilter) ([]dom
 			return nil, 0, fmt.Errorf("scan project: %w", err)
 		}
 		projects = append(projects, p)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate projects: %w", err)
 	}
 	if projects == nil {
 		projects = []domain.Project{}
@@ -589,6 +601,9 @@ func scanAssignments(rows pgx.Rows) ([]domain.Assignment, error) {
 		a.Hours = float64(hoursMin) / 60.0
 		assignments = append(assignments, a)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate assignments: %w", err)
+	}
 	if assignments == nil {
 		assignments = []domain.Assignment{}
 	}
@@ -738,6 +753,9 @@ func (r *PgAbsenceRepo) List(ctx context.Context, f domain.AbsenceFilter) ([]dom
 			return nil, 0, fmt.Errorf("scan absence: %w", err)
 		}
 		absences = append(absences, a)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, fmt.Errorf("iterate absences: %w", err)
 	}
 	if absences == nil {
 		absences = []domain.Absence{}

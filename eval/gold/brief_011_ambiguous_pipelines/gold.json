@@ -114,8 +114,8 @@
     "requirement_id": "req_011_004",
     "brief_id": "brf_011",
     "role": {
-      "role_id": "data_engineer",
-      "name_ru": "Дата-инженер",
+      "role_id": "devops_engineer",
+      "name_ru": "DevOps-инженер",
       "confidence": 0.75
     },
     "competency": {

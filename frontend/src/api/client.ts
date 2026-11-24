@@ -135,6 +135,15 @@ async function backend<T>(path: string, init?: FetchInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+function unsupportedEndpoint(path: string): never {
+  throw new ApiError({
+    status: 501,
+    code: 'NOT_IMPLEMENTED',
+    detail: `Эндпоинт ${path} не реализован в ядре`,
+    reasonCodes: [],
+  });
+}
+
 // ──── briefs ────
 
 export async function createBrief(input: { title: string; text: string; language?: 'ru' | 'en' }): Promise<Brief> {
@@ -292,7 +301,7 @@ export async function recordDecision(runId: string, request: DecisionRequest): P
     run_id: runId,
     variant_id: request.variant_id,
     decided_at: new Date().toISOString(),
-    decided_by: request.decided_by,
+    decided_by: request.decided_by ?? 'system',
     edits_count: request.edits_applied?.length ?? 0,
     audit_event_id: `aud_${Date.now().toString(36)}`,
   };
@@ -374,6 +383,20 @@ export async function getEmployee(employeeId: string): Promise<Employee | null> 
 }
 
 export async function createEmployee(emp: Employee): Promise<Employee> {
+  if (API_BASE) {
+    return backend<Employee>('/employees', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: emp.employee_id,
+        grade: emp.grade,
+        role_profile_id: emp.role_profile_id,
+        unit_id: emp.unit_id,
+        employment_type: emp.employment_type,
+        bench_flag: emp.bench_flag,
+        capacity_profile: emp.capacity_profile,
+      }),
+    });
+  }
   await delay();
   return emp;
 }
@@ -382,6 +405,17 @@ export async function patchEmployee(
   employeeId: string,
   patch: Partial<Employee>,
 ): Promise<Employee> {
+  if (API_BASE) {
+    const body = Object.fromEntries(
+      (['grade', 'role_profile_id', 'unit_id', 'employment_type', 'bench_flag', 'capacity_profile', 'active'] as const)
+        .filter((key) => patch[key] !== undefined)
+        .map((key) => [key, patch[key]]),
+    );
+    return backend<Employee>(`/employees/${encodeURIComponent(employeeId)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    });
+  }
   await delay();
   const existing = mockEmployees.find((e) => e.employee_id === employeeId);
   if (!existing) throw new ApiError({ status: 404, code: 'NOT_FOUND', detail: 'Сотрудник не найден', reasonCodes: [] });
@@ -400,8 +434,13 @@ export async function replaceEmployeeCompetencies(
   employeeId: string,
   comps: EmployeeCompetency[],
 ): Promise<EmployeeCompetency[]> {
+  if (API_BASE) {
+    return backend<EmployeeCompetency[]>(`/employees/${encodeURIComponent(employeeId)}/competencies`, {
+      method: 'PUT',
+      body: JSON.stringify(comps),
+    });
+  }
   await delay();
-  // In real API this would persist; for mocks just return
   void employeeId;
   return comps;
 }
@@ -412,7 +451,7 @@ export async function getEmployeeCapacity(
   toWeek: string,
 ): Promise<CapacityWeek[]> {
   if (API_BASE) {
-    const query = new URLSearchParams({ start_week: fromWeek, end_week: toWeek });
+    const query = new URLSearchParams({ from_week: fromWeek, to_week: toWeek });
     return backend<CapacityWeek[]>(`/employees/${encodeURIComponent(employeeId)}/capacity?${query}`);
   }
   await delay();
@@ -488,7 +527,20 @@ export async function createProject(prj: Project): Promise<Project> {
 
 // ──── assignments ────
 
-export async function listAssignments(_projectId?: string): Promise<Assignment[]> {
+export async function listAssignments(projectId?: string): Promise<Assignment[]> {
+  if (API_BASE) {
+    if (projectId) {
+      return backend<Assignment[]>(`/projects/${encodeURIComponent(projectId)}/assignments`);
+    }
+    // The core has no global assignments route; compose the view from its project-scoped route.
+    const projects = await listProjects();
+    const batches = await Promise.all(
+      projects.map((project) =>
+        backend<Assignment[]>(`/projects/${encodeURIComponent(project.project_id)}/assignments`),
+      ),
+    );
+    return batches.flat();
+  }
   await delay();
   return [...mockAssignments];
 }
@@ -496,6 +548,36 @@ export async function listAssignments(_projectId?: string): Promise<Assignment[]
 export async function createAssignments(
   assignments: Omit<Assignment, 'assignment_id'>[],
 ): Promise<Assignment[]> {
+  if (API_BASE) {
+    const byProject = new Map<string, Array<Pick<Assignment, 'employee_id' | 'role_id' | 'week' | 'hours'>>>();
+    for (const assignment of assignments) {
+      if (!assignment.project_id) {
+        throw new ApiError({
+          status: 422,
+          code: 'VALIDATION_FAILED',
+          detail: 'Для назначения требуется project_id',
+          reasonCodes: ['VALIDATION_FAILED'],
+        });
+      }
+      const items = byProject.get(assignment.project_id) ?? [];
+      items.push({
+        employee_id: assignment.employee_id,
+        role_id: assignment.role_id,
+        week: assignment.week,
+        hours: assignment.hours,
+      });
+      byProject.set(assignment.project_id, items);
+    }
+    const batches = await Promise.all(
+      [...byProject].map(([projectId, items]) =>
+        backend<Assignment[]>(`/projects/${encodeURIComponent(projectId)}/assignments`, {
+          method: 'POST',
+          body: JSON.stringify({ assignments: items }),
+        }),
+      ),
+    );
+    return batches.flat();
+  }
   await delay();
   return assignments.map((a, i) => ({
     ...a,
@@ -505,32 +587,58 @@ export async function createAssignments(
 
 // ──── absences ────
 
-export async function listAbsences(_params?: {
+export async function listAbsences(params?: {
   employee_id?: string;
   from?: string;
   to?: string;
 }): Promise<Absence[]> {
+  if (API_BASE) {
+    const query = new URLSearchParams({ limit: '200' });
+    if (params?.employee_id) query.set('employee_id', params.employee_id);
+    if (params?.from) query.set('from', params.from);
+    if (params?.to) query.set('to', params.to);
+    return (await backend<{ items: Absence[] }>(`/absences?${query.toString()}`)).items;
+  }
   await delay();
   return [...mockAbsences];
 }
 
 export async function createAbsence(absence: Omit<Absence, 'absence_id'>): Promise<Absence> {
+  if (API_BASE) {
+    return backend<Absence>('/absences', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee_id: absence.employee_id,
+        type: absence.type,
+        start_date: absence.start_date,
+        end_date: absence.end_date,
+        hours_per_day: absence.hours_per_day,
+        approved: absence.approved,
+      }),
+    });
+  }
   await delay();
   return { ...absence, absence_id: 'abs_new_0001' };
 }
 
-export async function deleteAbsence(_absenceId: string): Promise<void> {
+export async function deleteAbsence(absenceId: string): Promise<void> {
+  if (API_BASE) {
+    await backend<void>(`/absences/${encodeURIComponent(absenceId)}`, { method: 'DELETE' });
+    return;
+  }
   await delay();
 }
 
 // ──── taxonomy / reference ────
 
 export async function listRoles(): Promise<Role[]> {
+  if (API_BASE) return unsupportedEndpoint('/taxonomy/roles');
   await delay();
   return [...mockRoles];
 }
 
 export async function listCompetencies(): Promise<Competency[]> {
+  if (API_BASE) return unsupportedEndpoint('/taxonomy/competencies');
   await delay();
   return [...mockCompetencies];
 }

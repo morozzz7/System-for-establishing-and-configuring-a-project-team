@@ -479,7 +479,6 @@ export default function RunPage() {
     try {
       const resp = await recordDecision(run.run_id, {
         variant_id: selectedVariantId,
-        decided_by: 'emp_manager1',
         comment: decisionComment.trim() || undefined,
       });
       setDecision(resp);

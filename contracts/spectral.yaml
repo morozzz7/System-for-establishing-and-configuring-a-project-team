@@ -34,9 +34,5 @@ rules:
   openapi-tags: error
 
   # Not applicable / too noisy for this project.
-  info-license: off
-  license-url: off
-  contact-url: off
-  contact-email: off
   operation-singular-tag: off
   oas3-unused-component: warn

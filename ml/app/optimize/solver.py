@@ -74,6 +74,7 @@ CRIT_COEF = {"must": 100, "should": 50, "nice": 20}
 COVER_BONUS = 1000
 HOURS_PER_DAY = 8
 COST_SCALE = 100
+_DEFICIT_EPS_PD = 0.01
 #: Safety margin added to the requested Jaccard threshold in the *model* constraint so
 #: floating-point rounding in the post-hoc check can never turn a cut into a near-miss.
 DIVERSITY_EPS = 0.001
@@ -749,7 +750,7 @@ class _Model:
 
         metrics = compute_advisory_metrics(pre.request, set(members), assignments)
 
-        deficits = _build_deficits(pre, slack_h, cost)
+        deficits = _build_deficits(pre, slack_h, assigned_hours_by_req, cost)
         unscheduled = sorted(
             rid for rid in pre.req_ids if assigned_hours_by_req.get(rid, 0) == 0
         )
@@ -805,12 +806,18 @@ def _clamp01(x: float) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _build_deficits(pre: _Pre, slack_h: dict[str, int], cost: float) -> list[MlDeficit]:
+def _build_deficits(
+    pre: _Pre,
+    slack_h: dict[str, int],
+    assigned_hours_by_req: dict[str, int],
+    cost: float,
+) -> list[MlDeficit]:
     """Group the ``must`` slack into ``MlDeficit`` entries with accurate reason codes.
 
-    ``person_days`` is the uncovered *minimum* effort (slack / 8) when some qualified
-    person is assignable; when *nobody* is assignable the whole requirement is external and
-    the full ``likely`` effort is reported instead (that is the effort at risk).
+    Slack against ``min_person_days`` decides *feasibility* (G3), but the reported
+    ``person_days`` uses the likely basis (ADR-007 §1): ``likely - assigned / 8``.
+    When nobody is assignable nothing was allocated, so the full likely effort is
+    reported as the work at risk.
 
     Reason codes follow the recommended action from METRICS.md "Level 2":
     ``DEFICIT_EXTERNAL_CONTRACTOR`` (nobody holds the competency),
@@ -828,9 +835,15 @@ def _build_deficits(pre: _Pre, slack_h: dict[str, int], cost: float) -> list[MlD
         if short_h <= 0:
             continue
         r = pre.req[rid]
+        person_days = max(
+            _DEFICIT_EPS_PD,
+            round(
+                pre.likely_pd[rid] - assigned_hours_by_req.get(rid, 0) / HOURS_PER_DAY,
+                2,
+            ),
+        )
         assignable = pre.assignable_candidates(r)
         if not assignable:
-            person_days = max(0.25, round(pre.likely_pd[rid], 2))
             action = (
                 "DEFICIT_EXTERNAL_CONTRACTOR"
                 if not pre.holding_competency(r)
@@ -839,7 +852,6 @@ def _build_deficits(pre: _Pre, slack_h: dict[str, int], cost: float) -> list[MlD
                 else "DEFICIT_DEADLINE_SHIFT"
             )
         else:
-            person_days = max(0.25, round(short_h / HOURS_PER_DAY, 2))
             lo, hi = pre.week_window(r)
             if hi < lo:
                 action = "DEFICIT_DEADLINE_SHIFT"
@@ -1111,7 +1123,9 @@ def _analyze_infeasibility(pre: _Pre) -> InfeasibilityReport:
 
         if shortage or bus_shortage:
             unscheduled.append(rid)
-            person_days = max(0.5, round(pre.eff_min_h[rid] / HOURS_PER_DAY, 2))
+            # No plan exists here, so nothing was allocated: report the whole
+            # likely effort at risk, not the conservative G3 feasibility bound.
+            person_days = max(_DEFICIT_EPS_PD, round(pre.likely_pd[rid], 2))
             deficits.append(
                 MlDeficit(
                     competency_id=r.competency_id,

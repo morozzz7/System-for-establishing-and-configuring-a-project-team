@@ -34,9 +34,13 @@ type WeeklyAssignment struct {
 	Share         float64
 }
 
-// VariantDeficit lists a requirement that cannot be covered internally.
+// VariantDeficit lists work that cannot be covered internally. The solver may identify
+// it by requirement ids or describe every matching requirement by role/competency.
 type VariantDeficit struct {
 	RequirementID     string
+	RequirementIDs    []string
+	CompetencyID      *string
+	RoleID            string
 	PersonDays        float64
 	RecommendedAction string
 }

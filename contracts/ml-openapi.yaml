@@ -57,6 +57,7 @@ paths:
       tags: [Health]
       operationId: mlLiveness
       summary: Liveness probe.
+      description: Process-local liveness check; no dependency on the LLM or solver.
       responses:
         '200':
           description: Process is alive.
@@ -94,7 +95,7 @@ paths:
                   llm: qwen2.5-14b-instruct
                   embedding: hashing-char-ngram-v1
                   embedding_dim: 1024
-                  spacy_pipeline: ru_core_news_lg
+                  spacy_pipeline: not_used
                 solver:
                   name: ortools-cp-sat
                   version: 9.11.4210
@@ -121,7 +122,7 @@ paths:
                   llm: null
                   embedding: hashing-char-ngram-v1
                   embedding_dim: 1024
-                  spacy_pipeline: ru_core_news_lg
+                  spacy_pipeline: not_used
                 solver:
                   name: ortools-cp-sat
                   version: 9.11.4210
@@ -288,6 +289,7 @@ paths:
         '408':
           $ref: '#/components/responses/Problem408'
         '422':
+          description: LLM response failed schema validation after retries (ML_SCHEMA_INVALID, not retryable).
           $ref: '#/components/responses/Problem422'
         '503':
           $ref: '#/components/responses/Problem503'
@@ -430,6 +432,7 @@ paths:
                     min_person_days: 40
                     likely_person_days: 55
                     max_person_days: 80
+                    unit: person_days
                   earliest_week: '2026-W02'
                   latest_week: '2026-W14'
               candidates:

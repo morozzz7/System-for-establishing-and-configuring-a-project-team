@@ -58,6 +58,7 @@ paths:
     get:
       tags: [Health]
       operationId: getLiveness
+      description: Liveness probe (process only, no dependencies).
       summary: Liveness probe (process only, no dependencies).
       responses:
         '200':
@@ -75,6 +76,7 @@ paths:
     get:
       tags: [Health]
       operationId: getReadiness
+      description: Readiness probe with dependency status (db, ml, taxonomy).
       summary: Readiness probe with dependency status (db, ml, taxonomy).
       responses:
         '200':
@@ -201,6 +203,7 @@ paths:
     get:
       tags: [Briefs]
       operationId: listBriefs
+      description: List briefs (newest first).
       summary: List briefs (newest first).
       parameters:
         - $ref: '#/components/parameters/Limit'
@@ -240,6 +243,7 @@ paths:
     get:
       tags: [Briefs]
       operationId: getBrief
+      description: Get a brief with extraction status and diagnostics.
       summary: Get a brief with extraction status and diagnostics.
       responses:
         '200':
@@ -357,9 +361,11 @@ paths:
                         - competency_id: lang_go
                           name_ru: Go
                           score: 0.97
+                          method: exact_synonym
                         - competency_id: lang_java
                           name_ru: Java
                           score: 0.21
+                          method: exact_synonym
                     evidence:
                       - kind: brief_span
                         quote: 2 бэкенд-разработчика со знанием Go
@@ -430,6 +436,7 @@ paths:
                     - competency_id: lang_go
                       name_ru: Go
                       score: 0.97
+                      method: exact_synonym
                 evidence:
                   - kind: brief_span
                     quote: 2 бэкенд-разработчика со знанием Go
@@ -462,6 +469,7 @@ paths:
     post:
       tags: [Briefs]
       operationId: confirmRequirements
+      description: Confirm the reviewed requirement set; unlocks optimization runs.
       summary: Confirm the reviewed requirement set; unlocks optimization runs.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -521,9 +529,10 @@ paths:
       operationId: createRun
       summary: Start an optimization run for a confirmed brief.
       description: |
-        Go snapshots requirements, candidate profiles and the weekly capacity matrix, then calls ML
-        `/v1/optimize`. The returned `run` is `queued`/`running`; poll `GET /runs/{runId}`.
-        ML results are advisory: every variant is re-validated (G1-G5) and re-measured by Go.
+        Go snapshots requirements, candidate profiles and the weekly capacity matrix, calls ML
+        `/v1/optimize`, re-validates every variant (G1-G5) and re-measures M1-M12 before responding.
+        ML results are advisory; the returned run is `succeeded` or `partial` and already contains
+        the variant set. Recalculation creates an immutable child run; `GET /runs/{runId}` re-reads it.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
         - $ref: '#/components/parameters/AcceptLanguage'
@@ -547,16 +556,11 @@ paths:
                 include_external: false
                 max_candidates: 500
       responses:
-        '202':
-          description: Run accepted and queued.
+        '200':
+          description: Run computed; the variant set is included.
           headers:
             X-Request-Id:
               $ref: '#/components/headers/XRequestId'
-            Location:
-              description: URL of the created run.
-              schema:
-                type: string
-                format: uri-reference
           content:
             application/json:
               schema:
@@ -564,7 +568,7 @@ paths:
               example:
                 run_id: run_9b2e
                 brief_id: brf_01HX7Q
-                status: queued
+                status: succeeded
                 preset: balanced
                 k: 3
                 seed: 42
@@ -602,6 +606,7 @@ paths:
     get:
       tags: [Runs]
       operationId: getRun
+      description: Run status, diagnostics and (when finished) the variant set.
       summary: Run status, diagnostics and (when finished) the variant set.
       responses:
         '200':
@@ -672,6 +677,7 @@ paths:
     get:
       tags: [Runs]
       operationId: listVariants
+      description: Compare variants (metric vectors, duration, deficits).
       summary: Compare variants (metric vectors, duration, deficits).
       responses:
         '200':
@@ -721,6 +727,7 @@ paths:
     get:
       tags: [Runs]
       operationId: getVariant
+      description: Full variant detail - members, weekly assignments, metric breakdown, deficits.
       summary: Full variant detail - members, weekly assignments, metric breakdown, deficits.
       responses:
         '200':
@@ -877,7 +884,7 @@ paths:
                 variant_id: var_a1
                 run_id: run_9b2e
                 locale: ru
-                headline: Быстрый вариант: P50 11.4 недели, но P80 на 0.9 недели выходит за дедлайн (P(в срок) = 0.64), и есть дефицит по Go.
+                headline: 'Быстрый вариант: P50 11.4 недели, но P80 на 0.9 недели выходит за дедлайн (P(в срок) = 0.64), и есть дефицит по Go.'
                 tradeoff:
                   text: Скорость куплена ценой 12 человеко-дней дефицита по Go и 2 затронутых проектов.
                   reason_codes: [TRADEOFF_SPEED_VS_DEFICIT]
@@ -1025,6 +1032,7 @@ paths:
     post:
       tags: [Runs]
       operationId: recordDecision
+      description: Record the human decision (human-in-the-loop; never automated).
       summary: Record the human decision (human-in-the-loop; never automated).
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1080,6 +1088,7 @@ paths:
     get:
       tags: [Runs]
       operationId: listRunAudit
+      description: Audit trail for a run (who changed what, when, with which request id).
       summary: Audit trail for a run (who changed what, when, with which request id).
       responses:
         '200':
@@ -1170,6 +1179,7 @@ paths:
     get:
       tags: [Employees]
       operationId: listEmployees
+      description: List pseudonymized employee profiles.
       summary: List pseudonymized employee profiles.
       parameters:
         - $ref: '#/components/parameters/Limit'
@@ -1223,6 +1233,7 @@ paths:
     post:
       tags: [Employees]
       operationId: createEmployee
+      description: Create a pseudonymized employee profile.
       summary: Create a pseudonymized employee profile.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1243,7 +1254,6 @@ paths:
                 weekly_hours_norm: 40
                 reserve_ratio: 0.2
                 max_utilization_ratio: 0.95
-              cost_coefficient: 1.4
       responses:
         '201':
           description: Employee created.
@@ -1325,16 +1335,19 @@ paths:
                       last_used: '2026-09-15'
                       source: project_history
                   assignments:
-                    - project_id: prj_0a11
+                    - employee_id: emp_5c81
+                      project_id: prj_0a11
                       role_id: qa_engineer
                       week: '2026-W02'
                       hours: 20
-                    - project_id: prj_0a11
+                    - employee_id: emp_5c81
+                      project_id: prj_0a11
                       role_id: qa_engineer
                       week: '2026-W03'
                       hours: 20
                   absences:
-                    - type: vacation
+                    - employee_id: emp_5c81
+                      type: vacation
                       start_date: '2026-01-26'
                       end_date: '2026-02-06'
                       hours_per_day: 8
@@ -1378,69 +1391,13 @@ paths:
           $ref: '#/components/responses/Problem400'
         '422':
           $ref: '#/components/responses/Problem422'
-      parameters:
-        - $ref: '#/components/parameters/RequestIdHeader'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/EmployeeCreate'
-            example:
-              employee_id: emp_5c81
-              grade: M
-              role_profile_id: qa_engineer
-              unit_id: unt_qa
-              employment_type: internal
-              bench_flag: true
-              capacity_profile:
-                weekly_hours_norm: 40
-                reserve_ratio: 0.2
-                max_utilization_ratio: 0.95
-              cost_coefficient: 1.4
-      responses:
-        '201':
-          description: Employee created.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Employee'
-              example:
-                employee_id: emp_5c81
-                grade: M
-                role_profile_id: qa_engineer
-                unit_id: unt_qa
-                employment_type: internal
-                bench_flag: true
-                capacity_profile:
-                  weekly_hours_norm: 40
-                  reserve_ratio: 0.2
-                  max_utilization_ratio: 0.95
-                cost_coefficient: 1.4
-                active: true
-        '409':
-          description: Employee id already exists.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Problem'
-              example:
-                type: https://teamopt.internal/problems/duplicate-id
-                title: Duplicate employee id
-                status: 409
-                code: CONFLICT_DUPLICATE_ID
-                detail: emp_5c81 already exists.
-                request_id: req_01HXc0
-                reason_codes: [DUPLICATE_EMPLOYEE_ID]
-        '422':
-          $ref: '#/components/responses/Problem422'
-
   /employees/{employeeId}:
     parameters:
       - $ref: '#/components/parameters/EmployeeId'
     get:
       tags: [Employees]
       operationId: getEmployee
+      description: Employee profile.
       summary: Employee profile.
       responses:
         '200':
@@ -1467,6 +1424,7 @@ paths:
     patch:
       tags: [Employees]
       operationId: patchEmployee
+      description: Update mutable profile fields (grade, role profile, employment type, bench flag).
       summary: Update mutable profile fields (grade, role profile, employment type, bench flag).
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1510,6 +1468,7 @@ paths:
     get:
       tags: [Employees]
       operationId: listEmployeeCompetencies
+      description: Competency levels with confidence and last-used date.
       summary: Competency levels with confidence and last-used date.
       responses:
         '200':
@@ -1536,6 +1495,7 @@ paths:
     put:
       tags: [Employees]
       operationId: replaceEmployeeCompetencies
+      description: Replace the competency set of an employee (full upsert).
       summary: Replace the competency set of an employee (full upsert).
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1643,6 +1603,7 @@ paths:
     get:
       tags: [Projects]
       operationId: listProjects
+      description: List projects (portfolio context for M8).
       summary: List projects (portfolio context for M8).
       parameters:
         - $ref: '#/components/parameters/Limit'
@@ -1676,6 +1637,7 @@ paths:
     post:
       tags: [Projects]
       operationId: createProject
+      description: Create a project.
       summary: Create a project.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1720,6 +1682,7 @@ paths:
     get:
       tags: [Projects]
       operationId: listAssignments
+      description: Assignments of a project (weekly load entries).
       summary: Assignments of a project (weekly load entries).
       parameters:
         - name: from_week
@@ -1752,6 +1715,7 @@ paths:
     post:
       tags: [Projects]
       operationId: createAssignments
+      description: Create or update weekly assignments (bulk).
       summary: Create or update weekly assignments (bulk).
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1820,6 +1784,7 @@ paths:
     get:
       tags: [Projects]
       operationId: listAbsences
+      description: List approved absences in a date range.
       summary: List approved absences in a date range.
       parameters:
         - name: from
@@ -1862,6 +1827,7 @@ paths:
     post:
       tags: [Projects]
       operationId: createAbsence
+      description: Create an absence.
       summary: Create an absence.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1917,6 +1883,7 @@ paths:
     delete:
       tags: [Projects]
       operationId: deleteAbsence
+      description: Cancel an absence (soft delete, audited).
       summary: Cancel an absence (soft delete, audited).
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
@@ -1930,7 +1897,8 @@ paths:
     get:
       tags: [Taxonomy]
       operationId: listRoles
-      summary: Roles of the competency taxonomy (v1 seed: 12 IT roles).
+      description: 'Roles of the competency taxonomy (v1 seed: 12 IT roles).'
+      summary: 'Roles of the competency taxonomy (v1 seed: 12 IT roles).'
       parameters:
         - name: q
           in: query
@@ -1968,6 +1936,7 @@ paths:
     get:
       tags: [Taxonomy]
       operationId: listCompetencies
+      description: Competencies, optionally filtered by role or text.
       summary: Competencies, optionally filtered by role or text.
       parameters:
         - name: role_id
@@ -2056,6 +2025,7 @@ paths:
     get:
       tags: [Reference]
       operationId: listGrades
+      description: Grade reference data with dimensionless cost coefficients (no salaries).
       summary: Grade reference data with dimensionless cost coefficients (no salaries).
       responses:
         '200':
@@ -2092,6 +2062,7 @@ paths:
     get:
       tags: [Reference]
       operationId: listWeightPresets
+      description: Score weight presets (Fast / Economical / Balanced / Low-risk) from METRICS.md.
       summary: Score weight presets (Fast / Economical / Balanced / Low-risk) from METRICS.md.
       responses:
         '200':
@@ -2120,23 +2091,24 @@ paths:
                       M12: 0.02
                     sum_check: 1.0
                 metrics:
-                  M1: {name_ru: Покрытие компетенций, name_en: Competency Coverage, description_ru: Доля требуемых компетенций, покрытых командой на нужном уровне}
-                  M2: {name_ru: Покрытие трудозатрат, name_en: Effort Coverage, description_ru: Доля плановых человеко-дней, которые команда может закрыть}
+                  M1: {name_ru: Покрытие компетенций, name_en: Competency Coverage, description_ru: 'Доля требуемых компетенций, покрытых командой на нужном уровне'}
+                  M2: {name_ru: Покрытие трудозатрат, name_en: Effort Coverage, description_ru: 'Доля плановых человеко-дней, которые команда может закрыть'}
                   M3: {name_ru: Соответствие уровней, name_en: Level Fit, description_ru: Насколько уровни сотрудников близки к требуемым (штраф за пере/недоквалификацию)}
                   M4: {name_ru: Релевантность опыта, name_en: Experience Relevance, description_ru: Семантическая близость прошлых проектов сотрудников к текущему ТЗ}
                   M5: {name_ru: График, name_en: Schedule, description_ru: Вероятность уложиться в дедлайн или относительная скорость (P50)}
                   M6: {name_ru: Стоимость, name_en: Cost, description_ru: Относительная стоимость команды (чем ниже — тем лучше)}
                   M7: {name_ru: Здоровье нагрузки, name_en: Load Health, description_ru: Отсутствие перегрузов (>90% утилизации) и простоев}
                   M8: {name_ru: Влияние на портфель, name_en: Portfolio Impact, description_ru: Задержки других проектов из-за вытягивания людей}
-                  M9: {name_ru: Bus-factor, name_en: Bus Factor, description_ru: Доля must-компетенций, закрытых минимум 2 людьми}
-                  M10: {name_ru: Фокус, name_en: Focus, description_ru: Низкая фрагментация, мало параллельных проектов, оптимальный размер команды}
-                  M11: {name_ru: Использование бенча, name_en: Bench Utilization, description_ru: Доля часов сотрудников с bench_flag, вовлеченных в проект}
+                  M9: {name_ru: Bus-factor, name_en: Bus Factor, description_ru: 'Доля must-компетенций, закрытых минимум 2 людьми'}
+                  M10: {name_ru: Фокус, name_en: Focus, description_ru: 'Низкая фрагментация, мало параллельных проектов, оптимальный размер команды'}
+                  M11: {name_ru: Использование бенча, name_en: Bench Utilization, description_ru: 'Доля часов сотрудников с bench_flag, вовлеченных в проект'}
                   M12: {name_ru: Устойчивость, name_en: Resilience, description_ru: Способность команды сохранить выполнимость при отвале любого участника на 2 недели}
 
   /reference/metrics:
     get:
       tags: [Reference]
       operationId: listMetricDefinitions
+      description: Metric definitions with formulas and interpretation (for weight-selection UI).
       summary: Metric definitions with formulas and interpretation (for weight-selection UI).
       responses:
         '200':
@@ -2236,6 +2208,7 @@ paths:
     get:
       tags: [Reference]
       operationId: getPlanningParams
+      description: Effective planning parameters (time model, solver limits, metric constants).
       summary: Effective planning parameters (time model, solver limits, metric constants).
       responses:
         '200':
@@ -3713,6 +3686,9 @@ components:
           $ref: '#/components/schemas/WeekKey'
         end_week_planned:
           $ref: '#/components/schemas/WeekKey'
+        replaces_other_projects:
+          type: boolean
+          description: Project this one supersedes in the portfolio.
     ProjectPage:
       type: object
       additionalProperties: false
@@ -3758,6 +3734,10 @@ components:
         employee_id:
           type: string
           pattern: '^emp_[a-z0-9]{4,12}$'
+        project_id:
+          type: string
+          pattern: '^prj_[a-z0-9]{2,12}$'
+          description: Required for bulk import; ignored for the per-project batch endpoint where the id comes from the path.
         role_id:
           type: string
         week:
@@ -3848,6 +3828,9 @@ components:
         approved:
           type: boolean
           default: true
+        source:
+          type: string
+          description: Provenance of the absence record (hr_import, manager_input).
     AbsencePage:
       type: object
       additionalProperties: false
@@ -4424,7 +4407,6 @@ components:
           description: Type-dependent literal (integer, string week, boolean, list).
           oneOf:
             - type: integer
-            - type: number
             - type: boolean
             - type: string
             - type: array
@@ -4758,7 +4740,7 @@ components:
     DecisionRequest:
       type: object
       additionalProperties: false
-      required: [variant_id, decided_by]
+      required: [variant_id]
       properties:
         variant_id:
           type: string

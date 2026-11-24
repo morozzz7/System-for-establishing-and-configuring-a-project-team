@@ -314,7 +314,7 @@ func buildOptimizeRequest(snap *runinput.Snapshot, requestID string) (optimizeRe
 // ---------- solver response -> metrics proposals ----------
 
 // proposalsFromResponse turns the decoded solver variants into the metrics package's
-// proposal type. Member grades come from the snapshot, never from the solver.
+// proposal type. Member grades and role profiles come from the snapshot, never from the solver.
 func proposalsFromResponse(resp optimizeResponse, snap *runinput.Snapshot) []metrics.Proposal {
 	proposals := make([]metrics.Proposal, 0, len(resp.Variants))
 	for _, v := range resp.Variants {
@@ -326,12 +326,13 @@ func proposalsFromResponse(resp optimizeResponse, snap *runinput.Snapshot) []met
 			MLDeficits:  make([]metrics.MLDeficit, 0, len(v.Deficits)),
 		}
 		for _, m := range v.Members {
-			grade := ""
+			grade, roleID := "", ""
 			if cand, ok := snap.CandidateByID(m.EmployeeID); ok {
 				grade = cand.Grade
+				roleID = cand.RoleProfileID
 			}
 			proposal.Members = append(proposal.Members, metrics.ProposalMember{
-				EmployeeID: m.EmployeeID, RoleID: m.RoleID, Grade: grade,
+				EmployeeID: m.EmployeeID, RoleID: roleID, Grade: grade,
 			})
 		}
 		for _, a := range v.Assignments {
@@ -465,13 +466,16 @@ func variantForValidator(proposal metrics.Proposal, runID string, resp optimizeR
 		})
 	}
 	// The solver's declared deficits are the only ones G3 accepts: Go-computed deficits
-	// are an output of the metrics package, not an input of the gate.
+	// are an output of the metrics package, not an input of the gate. Requirement ids and
+	// role/competency descriptions are both forwarded so G3 expands them identically to
+	// the metrics gate.
 	for _, d := range proposal.MLDeficits {
-		for _, reqID := range d.RequirementIDs {
-			out.Deficits = append(out.Deficits, validator.VariantDeficit{
-				RequirementID: reqID, PersonDays: d.PersonDays,
-			})
-		}
+		out.Deficits = append(out.Deficits, validator.VariantDeficit{
+			RequirementIDs: append([]string(nil), d.RequirementIDs...),
+			CompetencyID:   d.CompetencyID,
+			RoleID:         d.RoleID,
+			PersonDays:     d.PersonDays,
+		})
 	}
 	return out
 }

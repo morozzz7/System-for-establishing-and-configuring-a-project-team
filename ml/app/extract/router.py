@@ -21,12 +21,16 @@ from ..llm.client import LLMClient, LLMError, LLMTimeoutError, LLMUnavailableErr
 from ..llm.config import get_settings
 from .diagnostics import build_diagnostics
 from .llm_extract import LLMStats, llm_extract
-from .review import REVIEW_CONFIDENCE_MAX, split_for_review
+from .review import split_for_review
 from .schemas import ExtractRequest, ExtractResponse
 from .taxonomy import get_registry
 from .validator import EvidenceValidator
 
 router = APIRouter()
+
+# ADR-004 §7: the caller's deadline is the ceiling; the service never waits longer
+# than its own hard cap, regardless of the configured default.
+_HARD_TIMEOUT_CAP_MS = 60_000
 
 
 def _problem(
@@ -135,15 +139,19 @@ async def extract_handler(request: Request) -> JSONResponse:
 
     registry = get_registry()
 
+    effective_timeout_ms = min(
+        req.options.timeout_ms, settings.timeout_ms, _HARD_TIMEOUT_CAP_MS
+    )
+    effective_settings = settings.model_copy(update={"timeout_ms": effective_timeout_ms})
+
     try:
-        client = LLMClient(settings)
-        effective_timeout_ms = max(req.options.timeout_ms, settings.timeout_ms)
+        client = LLMClient(effective_settings)
         llm_reqs, llm_stats = await llm_extract(
             brief_text,
             locale,
             registry,
             client,
-            settings,
+            effective_settings,
             allowed_role_ids=req.taxonomy.role_ids,
             allowed_competency_ids=req.taxonomy.competency_ids,
             max_requirements=req.options.max_requirements,
@@ -231,8 +239,8 @@ async def extract_handler(request: Request) -> JSONResponse:
 
     if review_reqs:
         warnings.append(
-            f"{len(review_reqs)} low-confidence pair(s) moved to requirements_for_review "
-            f"(needs_review=True, confidence<={REVIEW_CONFIDENCE_MAX:g})"
+            f"{len(review_reqs)} pair(s) moved to requirements_for_review "
+            "(needs_review=True)"
         )
 
     if review_reqs or any(r.needs_review for r in main_reqs):
@@ -245,23 +253,33 @@ async def extract_handler(request: Request) -> JSONResponse:
 
     if not main_reqs and not review_reqs:
         if not llm_stats.json_valid:
-            warnings.append(
-                "LLM output failed JSON/schema validation after retries; 0 requirements returned"
+            return JSONResponse(
+                status_code=422,
+                headers=resp_headers,
+                content=_problem(
+                    status=422,
+                    code="ML_SCHEMA_INVALID",
+                    title="LLM output failed schema validation",
+                    detail=(
+                        "LLM output failed JSON/schema validation after retries; "
+                        "no requirements were produced."
+                    ),
+                    request_id=request_id,
+                    retryable=False,
+                    reason_codes=["ML_SCHEMA_INVALID"],
+                ),
             )
-            if "ML_SCHEMA_INVALID" not in reason_codes:
-                reason_codes.append("ML_SCHEMA_INVALID")
-        else:
-            warnings.append(
-                "No valid requirements survived deterministic validation for this brief"
-            )
-            if "REQ_LOW_CONFIDENCE" not in reason_codes:
-                reason_codes.append("REQ_LOW_CONFIDENCE")
+        warnings.append(
+            "No valid requirements survived deterministic validation for this brief"
+        )
+        if "REQ_LOW_CONFIDENCE" not in reason_codes:
+            reason_codes.append("REQ_LOW_CONFIDENCE")
 
     duration_ms = int((time.monotonic() - t_start) * 1000)
     diagnostics = build_diagnostics(
         llm_stats=llm_stats,
         engine="llm",
-        model=settings.model,
+        model=effective_settings.model,
         duration_ms=duration_ms,
         dropped_no_evidence=dropped_no_evidence,
         post_processor_dropped=post_processor_dropped,

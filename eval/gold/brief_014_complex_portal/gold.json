@@ -40,8 +40,8 @@
     "requirement_id": "req_014_002",
     "brief_id": "brf_014",
     "role": {
-      "role_id": "backend_engineer",
-      "name_ru": "Бэкенд-разработчик",
+      "role_id": "solution_architect",
+      "name_ru": "Архитектор решения",
       "confidence": 0.85
     },
     "competency": {

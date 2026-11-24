@@ -23,3 +23,18 @@ type CapacityMatrix struct {
 	EmployeeID string           `json:"employee_id"`
 	Weeks      []WeeklyCapacity `json:"weeks"`
 }
+
+// CapacityWeek mirrors the contract CapacityWeek shape exposed by
+// GET /employees/{employeeId}/capacity. All fields are hours except load_ratio.
+type CapacityWeek struct {
+	EmployeeID    string  `json:"employee_id"`
+	Week          string  `json:"week"`
+	WorkingDays   int     `json:"working_days"`
+	NormHours     float64 `json:"norm_hours"`
+	ReservedHours float64 `json:"reserved_hours"`
+	AssignedHours float64 `json:"assigned_hours"`
+	AbsenceHours  float64 `json:"absence_hours"`
+	FreeHours     float64 `json:"free_hours"`
+	LoadRatio     float64 `json:"load_ratio"`
+	Unavailable   bool    `json:"unavailable"`
+}

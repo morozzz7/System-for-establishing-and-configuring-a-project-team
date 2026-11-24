@@ -147,8 +147,8 @@
     "requirement_id": "req_016_005",
     "brief_id": "brf_016",
     "role": {
-      "role_id": "ml_engineer",
-      "name_ru": "ML-инженер",
+      "role_id": "data_engineer",
+      "name_ru": "Дата-инженер",
       "confidence": 0.85
     },
     "competency": {

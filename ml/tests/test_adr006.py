@@ -388,7 +388,7 @@ class TestVerificationRobustness:
 
 
 class TestReviewRouting:
-    def test_split_for_review_threshold_and_role_only(self):
+    def test_split_for_review_flags_and_role_only(self):
         low_conf_pair = _requirement(
             quote="Дизайн интерфейсов делает UX/UI-дизайнер",
             role_id="ux_ui_designer",
@@ -414,8 +414,8 @@ class TestReviewRouting:
 
         main, review = split_for_review([low_conf_pair, role_only, high_conf])
 
-        assert [r.requirement_id for r in review] == ["req_lowconf1"]
-        assert [r.requirement_id for r in main] == ["req_roleonly", "req_highconf"]
+        assert [r.requirement_id for r in review] == ["req_lowconf1", "req_highconf"]
+        assert [r.requirement_id for r in main] == ["req_roleonly"]
         assert REVIEW_CONFIDENCE_MAX == 0.60
 
     def test_boundary_confidence_060_goes_to_review(self):

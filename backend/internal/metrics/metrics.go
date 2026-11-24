@@ -35,9 +35,10 @@ func ComputeRun(in RunInput) (RunResult, error) {
 	}
 
 	// Pass 1: everything that does not depend on the other variants of the run.
+	// Cost is computed before the gate because G4 checks the budget cap against c.cost.
 	for _, c := range comps {
-		c.computeGate()
 		c.computeCost()
+		c.computeGate()
 		c.computeSchedule()
 		c.computeStaticComponents()
 	}

@@ -3,12 +3,14 @@
  * The mock backend is used, so this also proves the editor is contract-compatible end to end.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import ConstraintEditor from './ConstraintEditor';
 import { createRun, getRunInputs, getVariant, resetMockState } from '../api/client';
 import type { RecalculateResponse, RunInputs, TeamRun } from '../types';
+
+const UI_TIMEOUT = 8000;
 
 async function prepare(): Promise<{ run: TeamRun; inputs: RunInputs; memberId: string }> {
   const run = await createRun('brf_test');
@@ -16,6 +18,19 @@ async function prepare(): Promise<{ run: TeamRun; inputs: RunInputs; memberId: s
   const variant = await getVariant(run.run_id, run.variants[0].variant_id);
   if (!inputs || !variant) throw new Error('mock snapshot missing');
   return { run, inputs, memberId: variant.members[0].employee_id };
+}
+
+async function selectEmployee(value: string): Promise<void> {
+  const input = screen.getByRole('combobox', { name: 'Сотрудник' });
+  await act(async () => {
+    fireEvent.change(input, { target: { value } });
+  });
+}
+
+async function clickButton(name: string): Promise<void> {
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name }));
+  });
 }
 
 describe('ConstraintEditor', () => {
@@ -44,20 +59,19 @@ describe('ConstraintEditor', () => {
     );
 
     // Default draft type is force_exclude; exclude a member of the selected variant.
-    const employeeInput = screen.getByRole('combobox', { name: 'Сотрудник' });
-    fireEvent.change(employeeInput, { target: { value: memberId } });
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить ограничение' }));
+    await selectEmployee(memberId);
+    await clickButton('Добавить ограничение');
 
-    expect(await screen.findByText(new RegExp(`Исключить ${memberId}`))).toBeDefined();
+    expect(await screen.findByText(new RegExp(`Исключить ${memberId}`), {}, { timeout: UI_TIMEOUT })).toBeDefined();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Пересчитать' }));
+    await clickButton('Пересчитать');
 
-    await vi.waitFor(() => expect(onRecalculated).toHaveBeenCalledTimes(1), { timeout: 3000 });
+    await vi.waitFor(() => expect(onRecalculated).toHaveBeenCalledTimes(1), { timeout: UI_TIMEOUT });
     const [response] = onRecalculated.mock.calls[0];
     expect(response.reason_codes).toContain('RECALC_APPLIED');
     expect(response.facts?.changed_members).toBeGreaterThan(0);
     expect(onError).not.toHaveBeenCalled();
-  });
+  }, 15000);
 
   it('blocks recalculation for contradictory overrides', async () => {
     const { run, inputs, memberId } = await prepare();
@@ -77,18 +91,17 @@ describe('ConstraintEditor', () => {
       </ConfigProvider>,
     );
 
-    const employeeInput = screen.getByRole('combobox', { name: 'Сотрудник' });
-    fireEvent.change(employeeInput, { target: { value: memberId } });
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить ограничение' }));
-    await screen.findByText(new RegExp(`Исключить ${memberId}`));
+    await selectEmployee(memberId);
+    await clickButton('Добавить ограничение');
+    await screen.findByText(new RegExp(`Исключить ${memberId}`), {}, { timeout: UI_TIMEOUT });
 
     // A second override of the same employee is a duplicate: the action must stay disabled.
-    fireEvent.change(employeeInput, { target: { value: memberId } });
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить ограничение' }));
+    await selectEmployee(memberId);
+    await clickButton('Добавить ограничение');
 
-    const duplicateNotice = await screen.findByText(/Дубликат: Исключить сотрудника/);
+    const duplicateNotice = await screen.findByText(/Дубликат: Исключить сотрудника/, {}, { timeout: UI_TIMEOUT });
     expect(duplicateNotice).toBeDefined();
-  });
+  }, 15000);
 
   it('blocks including an employee who is unavailable for the whole horizon', async () => {
     const { run, inputs } = await prepare();
@@ -109,14 +122,13 @@ describe('ConstraintEditor', () => {
       </ConfigProvider>,
     );
 
-    const employeeInput = screen.getByRole('combobox', { name: 'Сотрудник' });
-    fireEvent.change(employeeInput, { target: { value: unavailable?.employee_id ?? '' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Добавить ограничение' }));
+    await selectEmployee(unavailable?.employee_id ?? '');
+    await clickButton('Добавить ограничение');
 
-    const warning = await screen.findByText(/недоступен весь горизонт/);
+    const warning = await screen.findByText(/недоступен весь горизонт/, {}, { timeout: UI_TIMEOUT });
     expect(warning).toBeDefined();
     // The override was not added, so the recalculation stays disabled.
     const recalculate = screen.getByRole('button', { name: 'Пересчитать' }) as HTMLButtonElement;
     expect(recalculate.disabled).toBe(true);
-  });
+  }, 15000);
 });

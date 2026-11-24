@@ -167,7 +167,23 @@ func (v *Validator) validateG3(input ValidateInput, res *ValidationResult) {
 
 	deficitIDs := make(map[string]bool, len(input.Variant.Deficits))
 	for _, d := range input.Variant.Deficits {
-		deficitIDs[d.RequirementID] = true
+		if len(d.RequirementIDs) > 0 {
+			for _, id := range d.RequirementIDs {
+				deficitIDs[id] = true
+			}
+			continue
+		}
+		if d.RequirementID != "" {
+			deficitIDs[d.RequirementID] = true
+		}
+		for _, req := range input.Requirements {
+			switch {
+			case d.CompetencyID != nil && req.CompetencyID != "" && *d.CompetencyID == req.CompetencyID:
+				deficitIDs[req.RequirementID] = true
+			case d.CompetencyID == nil && d.RoleID != "" && d.RoleID == req.RoleID:
+				deficitIDs[req.RequirementID] = true
+			}
+		}
 	}
 
 	// Aggregate covered person-days per requirement, accounting for competence fit.

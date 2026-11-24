@@ -4,7 +4,7 @@ COMPOSE_ENV_FILE := .env
 COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi) -f $(COMPOSE_FILE) -p $(COMPOSE_PROJECT_NAME) --env-file $(COMPOSE_ENV_FILE)
 E2E_COMPOSE ?= $(shell if command -v docker-compose >/dev/null 2>&1; then echo docker-compose; else echo "docker compose"; fi) -f $(COMPOSE_FILE) -f deploy/docker-compose.e2e.yml -p $(COMPOSE_PROJECT_NAME)-e2e --env-file $(COMPOSE_ENV_FILE)
 
-.PHONY: up down build logs test test-e2e test-e2e-down lint-contracts lint-backend lint-ml seed status help
+.PHONY: up down build logs fixtures test test-e2e test-e2e-down lint-contracts lint-backend lint-ml seed status help
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -50,19 +50,13 @@ status: ## docker compose ps + health probes
 
 # ----------------------------------------------------------- lint
 
-lint-contracts: ## spectral + ajv per contracts/README.md
+lint-contracts: ## spectral + JSON Schema validation per contracts/README.md
 	@echo "=== Spectral lint ==="
 	npx --yes @stoplight/spectral-cli lint contracts/openapi.yaml contracts/ml-openapi.yaml \
-		--ruleset contracts/spectral.yaml || true
+		--ruleset contracts/spectral.yaml
 	@echo ""
-	@echo "=== AJV compile ==="
-	npx --yes ajv-cli@5 compile \
-		-s contracts/json-schema/common.schema.json \
-		-s contracts/json-schema/requirement.schema.json \
-		-s contracts/json-schema/team-variant.schema.json \
-		-s contracts/json-schema/optimize-request.schema.json \
-		-s contracts/json-schema/optimize-response.schema.json \
-		-s contracts/json-schema/taxonomy.schema.json || true
+	@echo "=== JSON Schema validation ==="
+	python3 contracts/validate_schemas.py
 
 lint-backend: ## golangci-lint run in backend/
 	cd backend && golangci-lint run ./...
@@ -72,7 +66,13 @@ lint-ml: ## ruff + black check in ml/
 
 # ----------------------------------------------------------- test
 
-test: lint-contracts ## Run all tests: spectral, go test, pytest
+fixtures: ## regenerate gold briefs and synthetic scenarios used by ML tests
+	@echo "=== Generating gold briefs ==="
+	python3 eval/scripts/generate_gold.py
+	@echo "=== Generating synthetic scenarios ==="
+	python3 eval/synth/generator.py --seed 42
+
+test: lint-contracts fixtures ## Run all tests: spectral, schemas, go test, pytest
 	@echo ""
 	@echo "=== Go tests ==="
 	cd backend && go test ./...
@@ -83,6 +83,10 @@ test: lint-contracts ## Run all tests: spectral, go test, pytest
 # ----------------------------------------------------------- e2e
 
 test-e2e: ## full-stack Playwright journey (Docker stack + deterministic LLM stub)
+	@test -x frontend/node_modules/.bin/playwright || { \
+		echo "Playwright is not installed. Run: cd frontend && npm ci && npm run test:e2e:install"; \
+		exit 1; \
+	}
 	@$(E2E_COMPOSE) up --build -d postgres
 	@sleep 5
 	@echo "Building backend with the current contracts before seeding..."
