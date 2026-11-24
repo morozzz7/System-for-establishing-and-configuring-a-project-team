@@ -138,7 +138,8 @@ func fixtureData(withExperience bool) runinput.Data {
 			MaxTeamSize: 3, MinTeamSize: 1, MaxUtilizationRatio: 0.95,
 		},
 		Portfolio: []runinput.PortfolioProject{
-			{ProjectID: "prj_p1", RemainingHours: 80, WeeklyCapacity: 40, Critical: true},
+			{ProjectID: "prj_p1", RemainingHours: 80, WeeklyCapacity: 40, Critical: true,
+				EmployeeIDs: []string{"emp_aa01", "emp_bb02", "emp_cc03", "emp_dd04"}},
 		},
 		CreatedAt: time.Date(2026, 11, 17, 9, 0, 0, 0, time.UTC),
 	}

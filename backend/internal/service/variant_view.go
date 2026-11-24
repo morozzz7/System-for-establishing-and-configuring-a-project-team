@@ -5,6 +5,7 @@ package service
 // serve the exact, authoritative numbers without recomputation drift (ADR-003 §6).
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -19,7 +20,7 @@ import (
 // buildVariantViews constructs the full contract Variant payload and the explainer detail
 // for every validator-accepted variant of a run. It is deterministic: member fit, share
 // and reason codes are derived from the snapshot, never copied from the solver.
-func buildVariantViews(snap *runinput.Snapshot, accepted []metrics.Proposal, computed metrics.RunResult, resp optimizeResponse, runID string) (map[string]map[string]any, map[string]explain.VariantDetail) {
+func buildVariantViews(snap *runinput.Snapshot, accepted []metrics.Proposal, computed metrics.RunResult, resp optimizeResponse, runID string, cfg metrics.ScheduleConfig) (map[string]map[string]any, map[string]explain.VariantDetail) {
 	payloads := make(map[string]map[string]any, len(accepted))
 	details := make(map[string]explain.VariantDetail, len(accepted))
 	memberCodesByVariant := memberReasonCodesByVariant(resp)
@@ -29,7 +30,7 @@ func buildVariantViews(snap *runinput.Snapshot, accepted []metrics.Proposal, com
 			continue
 		}
 		detail := variantDetail(snap, proposal, memberCodesByVariant[proposal.VariantID])
-		payloads[proposal.VariantID] = fullVariantPayload(snap, runID, proposal, result, detail)
+		payloads[proposal.VariantID] = fullVariantPayload(snap, runID, proposal, result, detail, cfg)
 		details[proposal.VariantID] = detail
 	}
 	return payloads, details
@@ -174,7 +175,7 @@ func memberReasonCodesByVariant(resp optimizeResponse) map[string]map[string][]s
 }
 
 // fullVariantPayload shapes the authoritative contract Variant for one served variant.
-func fullVariantPayload(snap *runinput.Snapshot, runID string, proposal metrics.Proposal, result metrics.VariantResult, detail explain.VariantDetail) map[string]any {
+func fullVariantPayload(snap *runinput.Snapshot, runID string, proposal metrics.Proposal, result metrics.VariantResult, detail explain.VariantDetail, cfg metrics.ScheduleConfig) map[string]any {
 	members := make([]any, 0, len(detail.Members))
 	for _, m := range detail.Members {
 		members = append(members, map[string]any{
@@ -211,7 +212,7 @@ func fullVariantPayload(snap *runinput.Snapshot, runID string, proposal metrics.
 		"metric_details":      result.Details,
 		"members":             members,
 		"weekly_assignments":  weekly,
-		"deficits":            contractDeficits(result.Deficits),
+		"deficits":            contractDeficits(snap, proposal, result, cfg),
 		"active_constraints":  activeConstraints(snap),
 		"excluded_candidates": excludedCandidates(snap, detail),
 		"diversity_jaccard":   map[string]any{},
@@ -219,38 +220,55 @@ func fullVariantPayload(snap *runinput.Snapshot, runID string, proposal metrics.
 	}
 }
 
-// contractDeficits maps Go-computed deficits to the contract Deficit shape. Names fall
-// back to the role because this vertical slice has no taxonomy repository.
-func contractDeficits(deficits []metrics.Deficit) []any {
-	out := make([]any, 0, len(deficits))
-	for _, d := range deficits {
+// contractDeficits maps Go-computed deficits to the contract Deficit shape. The duration
+// shift is a counterfactual rerun, never person-days relabelled as weeks.
+func contractDeficits(snap *runinput.Snapshot, proposal metrics.Proposal, result metrics.VariantResult, cfg metrics.ScheduleConfig) []any {
+	out := make([]any, 0, len(result.Deficits))
+	for _, d := range result.Deficits {
 		name := d.RoleID
 		competencyID := ""
 		if d.CompetencyID != nil {
 			competencyID = *d.CompetencyID
 			name = competencyID
 		}
-		actions := []any{}
-		if d.ExternalCooperationFlag {
-			actions = append(actions, map[string]any{"action": "contractor", "reason_codes": []string{"DEFICIT_EXTERNAL_CONTRACTOR"}})
-		} else {
-			actions = append(actions, map[string]any{"action": "upskill", "reason_codes": []string{"DEFICIT_UPSKILL_INTERNAL"}})
-		}
-		out = append(out, map[string]any{
+		reasonCodes := []string{}
+		payload := map[string]any{
 			"competency_id":             competencyID,
 			"competency_name_ru":        name,
 			"requirement_ids":           []string{d.RequirementID},
 			"person_days":               d.PersonDays,
-			"weeks":                     round6(d.PersonDays / float64(len(requirementListFor(d)))), // weeks soft is a heuristic; keep 1 + fraction
 			"external_cooperation_flag": d.ExternalCooperationFlag,
-			"recommended_actions":       actions,
-		})
+			"recommended_actions":       contractActions(BuildDeficitActions(d, snap, result)),
+		}
+		base, shifted, err := metrics.EstimateDeficitShift(snap, proposal,
+			map[string]float64{d.RequirementID: d.PersonDays * metrics.HoursPerDay}, cfg)
+		if err == nil {
+			payload["weeks"] = round6(math.Max(0, base.P50Weeks-shifted.P50Weeks))
+		} else {
+			reasonCodes = append(reasonCodes, "DEFICIT_SHIFT_UNAVAILABLE")
+		}
+		payload["reason_codes"] = reasonCodes
+		out = append(out, payload)
 	}
 	return out
 }
 
-func requirementListFor(d metrics.Deficit) []any {
-	return []any{d.RequirementID}
+func contractActions(actions []RecommendedAction) []any {
+	out := make([]any, 0, len(actions))
+	for _, a := range actions {
+		payload := map[string]any{"action": a.Action, "reason_codes": a.ReasonCodes}
+		if a.EstimatedCostUnits != nil {
+			payload["estimated_cost_units"] = round6(*a.EstimatedCostUnits)
+		}
+		if a.TimeToStartWeeks != nil {
+			payload["time_to_start_weeks"] = round6(*a.TimeToStartWeeks)
+		}
+		if a.FromProjectID != "" {
+			payload["from_project_id"] = a.FromProjectID
+		}
+		out = append(out, payload)
+	}
+	return out
 }
 
 // activeConstraints surfaces every set G4 constraint of the snapshot (contract
@@ -368,12 +386,53 @@ func containsStr(xs []string, x string) bool {
 
 // ---------- accessors ----------
 
+func competencyIDs(c runinput.Candidate) []string {
+	ids := make([]string, 0, len(c.CompetencyLevels))
+	for id := range c.CompetencyLevels {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func capacityDigest(c runinput.Candidate) string {
+	encoded, _ := json.Marshal(c.Capacity)
+	sum := sha256.Sum256(encoded)
+	return hex.EncodeToString(sum[:])
+}
+
+// storedSnapshot serves the immutable run input from memory when present and from the
+// persisted data_jsonb after a restart, so audit endpoints survive process restarts.
+func (s *WorkflowService) storedSnapshot(runID string) (*runinput.Snapshot, bool) {
+	s.mu.RLock()
+	snapshot, ok := s.snapshots[runID]
+	repo := s.stores
+	s.mu.RUnlock()
+	if ok {
+		return snapshot, true
+	}
+	if repo == nil || repo.Snapshots == nil {
+		return nil, false
+	}
+	raw, err := repo.Snapshots.GetData(context.Background(), runID)
+	if err != nil {
+		return nil, false
+	}
+	var data runinput.Data
+	if err := json.Unmarshal(raw, &data); err != nil {
+		return nil, false
+	}
+	snapshot, err = runinput.Build(data)
+	if err != nil {
+		return nil, false
+	}
+	return snapshot, true
+}
+
 // GetRunInputs returns the immutable RunInputs of a run (contract shape) from its stored
 // snapshot: everything the solver saw plus the capacity digests for audit (ADR-003 §6).
 func (s *WorkflowService) GetRunInputs(runID string) (map[string]any, bool) {
-	s.mu.RLock()
-	snapshot, ok := s.snapshots[runID]
-	s.mu.RUnlock()
+	snapshot, ok := s.storedSnapshot(runID)
 	if !ok {
 		return nil, false
 	}
@@ -383,14 +442,8 @@ func (s *WorkflowService) GetRunInputs(runID string) (map[string]any, bool) {
 	capacityRows := 0
 	for _, c := range snapshot.Candidates() {
 		capacityRows += len(c.Capacity)
-		compIDs := make([]string, 0, len(c.CompetencyLevels))
-		for id := range c.CompetencyLevels {
-			compIDs = append(compIDs, id)
-		}
-		sort.Strings(compIDs)
-		encoded, _ := json.Marshal(c.Capacity)
-		sum := sha256.Sum256(encoded)
-		digest := hex.EncodeToString(sum[:])
+		compIDs := competencyIDs(c)
+		digest := capacityDigest(c)
 		candidates = append(candidates, map[string]any{
 			"employee_id":      c.EmployeeID,
 			"grade":            c.Grade,
@@ -420,6 +473,17 @@ func (s *WorkflowService) GetRunInputs(runID string) (map[string]any, bool) {
 // or the variant does not exist.
 func (s *WorkflowService) GetVariant(runID, variantID string) (map[string]any, bool) {
 	s.mu.RLock()
+	repo := s.stores
+	s.mu.RUnlock()
+	if repo != nil && repo.Variants != nil {
+		variant, err := repo.Variants.Get(context.Background(), runID, storedVariantID(runID, variantID))
+		if err == nil {
+			if out, ok := decodeJSONMap(variant.Payload); ok {
+				return out, true
+			}
+		}
+	}
+	s.mu.RLock()
 	defer s.mu.RUnlock()
 	if variants, runOK := s.variants[runID]; runOK {
 		if variant, ok := variants[variantID]; ok {
@@ -445,6 +509,30 @@ func (s *WorkflowService) GetDetail(runID, variantID string) (explain.VariantDet
 // VariantRosters returns the employee roster of every stored variant of a run (for the
 // recalculation diff baseline and diversity facts).
 func (s *WorkflowService) VariantRosters(runID string) map[string][]string {
+	s.mu.RLock()
+	repo := s.stores
+	s.mu.RUnlock()
+	if repo != nil && repo.Variants != nil {
+		variants, err := repo.Variants.ListByRun(context.Background(), runID)
+		if err == nil {
+			out := make(map[string][]string, len(variants))
+			for _, variant := range variants {
+				payload, ok := decodeJSONMap(variant.Payload)
+				if !ok {
+					continue
+				}
+				id := wfString(payload["variant_id"])
+				if id == "" {
+					continue
+				}
+				for _, member := range variant.Members {
+					out[id] = append(out[id], member.EmployeeID)
+				}
+				sort.Strings(out[id])
+			}
+			return out
+		}
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out := make(map[string][]string)

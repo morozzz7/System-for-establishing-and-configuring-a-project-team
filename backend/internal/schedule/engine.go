@@ -8,6 +8,7 @@ import (
 	"math"
 	"math/rand"
 	"sort"
+	"strings"
 
 	"github.com/teamopt/backend/internal/domain"
 )
@@ -52,6 +53,7 @@ type PortfolioProject struct {
 	RemainingHours float64
 	WeeklyCapacity float64
 	Critical       bool
+	EmployeeIDs    []string
 }
 
 // Input is a complete schedule snapshot. Weeks must be in chronological order.
@@ -228,13 +230,22 @@ func calculatePortfolio(in Input) PortfolioImpact {
 			pulledBySlot[a.EmployeeID+"|"+a.Week] += a.Hours
 		}
 	}
-	pulled := 0.0
-	for slot, hours := range pulledBySlot {
-		pulled += math.Min(hours, freeBySlot[slot])
-	}
+	// Pulled hours are attributed per project: charging the whole team to every
+	// portfolio project would count the same person three times and bias M8 down.
 	for _, p := range in.Portfolio {
-		if p.RemainingHours <= 0 || p.WeeklyCapacity <= 0 {
+		if p.RemainingHours <= 0 || p.WeeklyCapacity <= 0 || len(p.EmployeeIDs) == 0 {
 			continue
+		}
+		members := make(map[string]bool, len(p.EmployeeIDs))
+		for _, id := range p.EmployeeIDs {
+			members[id] = true
+		}
+		pulled := 0.0
+		for slot, hours := range pulledBySlot {
+			employeeID, _, _ := strings.Cut(slot, "|")
+			if members[employeeID] {
+				pulled += math.Min(hours, freeBySlot[slot])
+			}
 		}
 		if pulled <= 0 {
 			continue

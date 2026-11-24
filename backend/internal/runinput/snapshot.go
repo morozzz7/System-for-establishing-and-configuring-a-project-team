@@ -144,10 +144,11 @@ type Constraints struct {
 // PortfolioProject is one existing project that can slip when people are pulled into the
 // proposed team (M8 input).
 type PortfolioProject struct {
-	ProjectID      string  `json:"project_id"`
-	RemainingHours float64 `json:"remaining_hours"`
-	WeeklyCapacity float64 `json:"weekly_capacity"`
-	Critical       bool    `json:"critical"`
+	ProjectID      string   `json:"project_id"`
+	RemainingHours float64  `json:"remaining_hours"`
+	WeeklyCapacity float64  `json:"weekly_capacity"`
+	Critical       bool     `json:"critical"`
+	EmployeeIDs    []string `json:"employee_ids"`
 }
 
 // Data is the caller-provided input of Build. Build deep-copies it and never keeps a

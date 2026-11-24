@@ -17,6 +17,8 @@ import (
 	"github.com/teamopt/backend/internal/explain"
 	"github.com/teamopt/backend/internal/metrics"
 	"github.com/teamopt/backend/internal/mlclient"
+	"github.com/teamopt/backend/internal/platform/actor"
+	"github.com/teamopt/backend/internal/repository"
 	"github.com/teamopt/backend/internal/runinput"
 	"github.com/teamopt/backend/internal/validator"
 )
@@ -45,7 +47,10 @@ type WorkflowService struct {
 	details    map[string]map[string]explain.VariantDetail
 	varresults map[string]map[string]metrics.VariantResult // runID -> variantID -> authoritative result
 	decisions  map[string]map[string]any                   // runID -> decision record
+	audits     map[string][]domain.AuditEntry              // entityID -> audit entries (fallback)
 	candidates CandidateSource
+	stores     *WorkflowStores
+	decisionMu sync.Mutex
 	next       int
 }
 
@@ -59,6 +64,7 @@ func NewWorkflowService(ml *mlclient.Client) *WorkflowService {
 		details:    map[string]map[string]explain.VariantDetail{},
 		varresults: map[string]map[string]metrics.VariantResult{},
 		decisions:  map[string]map[string]any{},
+		audits:     map[string][]domain.AuditEntry{},
 	}
 }
 
@@ -71,9 +77,10 @@ func (s *WorkflowService) SetCandidateSource(source CandidateSource) {
 func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*BriefRecord, error) {
 	s.mu.Lock()
 	s.next++
-	id := fmt.Sprintf("brf_%04d", s.next)
+	seq := s.next
 	s.mu.Unlock()
-	req := map[string]any{"request_id": fmt.Sprintf("req_brief%04d", s.next), "brief_id": id, "locale": input.Language,
+	id := s.newBriefID(seq)
+	req := map[string]any{"request_id": fmt.Sprintf("req_brief%04d", seq), "brief_id": id, "locale": input.Language,
 		"brief":    map[string]any{"language": input.Language, "text": input.Text, "source_type": input.SourceType},
 		"taxonomy": map[string]any{}, "options": map[string]any{"max_requirements": 60, "min_confidence": 0.55, "return_candidates": true, "timeout_ms": 20000}}
 	var response struct {
@@ -82,9 +89,17 @@ func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*B
 		Diagnostics  map[string]any   `json:"diagnostics"`
 		Warnings     []string         `json:"warnings"`
 	}
-	if err := s.ml.Extract(ctx, req, &response); err != nil {
+	outcome, err := s.ml.ExtractWithOutcome(ctx, req, &response)
+	if err != nil {
+		slog.WarnContext(ctx, "brief extraction failed", "kind", outcome.Kind,
+			"attempts", outcome.Calls, "latency_ms", outcome.Latency.Milliseconds())
 		return nil, err
 	}
+	if response.Diagnostics == nil {
+		response.Diagnostics = map[string]any{}
+	}
+	response.Diagnostics["ml_status"] = outcome.Status
+	response.Diagnostics["ml_attempts"] = outcome.Calls
 	status := "extracted"
 	if len(response.Review) > 0 {
 		status = "needs_review"
@@ -101,6 +116,9 @@ func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*B
 	s.mu.Lock()
 	s.briefs[id] = record
 	s.mu.Unlock()
+	if err := s.persistBrief(ctx, record); err != nil {
+		return nil, fmt.Errorf("persist brief: %w", err)
+	}
 	return record, nil
 }
 
@@ -121,12 +139,15 @@ func (s *WorkflowService) GetBrief(id string) (*BriefRecord, bool) {
 }
 func (s *WorkflowService) ConfirmBrief(id string) (*BriefRecord, bool) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
 	b, ok := s.briefs[id]
 	if ok {
 		b.Status = "confirmed"
 		b.Requirements = append(b.Requirements, b.Review...)
 		b.Review = nil
+	}
+	s.mu.Unlock()
+	if ok {
+		s.confirmBriefStored(id)
 	}
 	return b, ok
 }
@@ -167,12 +188,15 @@ func (s *WorkflowService) CreateRun(ctx context.Context, briefID string, input m
 	if b.Status != "confirmed" && len(b.Review) > 0 {
 		return nil, fmt.Errorf("%w: brief %s requires review", ErrInvalidRunInput, briefID)
 	}
+	if err := s.persistBrief(ctx, b); err != nil {
+		return nil, fmt.Errorf("persist brief: %w", err)
+	}
 
 	s.mu.Lock()
 	s.next++
 	seq := s.next
 	s.mu.Unlock()
-	runID := fmt.Sprintf("run_%04d", seq)
+	runID := s.newRunID(seq)
 	createdAt := time.Now().UTC()
 
 	data, err := s.runData(ctx, b, runID, input, createdAt)
@@ -192,6 +216,11 @@ func (s *WorkflowService) CreateRun(ctx context.Context, briefID string, input m
 // explainer details. Both create and recalculation reuse it (ADR-007 §3). When parentRunID
 // is non-empty the payload is marked as a recalculation run (contracts TeamRun.parent_run_id).
 func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, parentRunID string, data runinput.Data, createdAt time.Time) (map[string]any, error) {
+	if _, err := s.auditEvent(ctx, "run_started", "run", runID,
+		fmt.Sprintf("Started run %s from brief %s", runID, briefID),
+		map[string]any{"parent_run_id": parentRunID}); err != nil {
+		return nil, err
+	}
 	snapshot, err := runinput.Build(data)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %s", ErrInvalidRunInput, err.Error())
@@ -202,7 +231,11 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 		return nil, err
 	}
 	var optResponse optimizeResponse
-	if err := s.ml.Optimize(ctx, optRequest, &optResponse); err != nil {
+	optOutcome, err := s.ml.OptimizeWithOutcome(ctx, optRequest, &optResponse,
+		mlclient.WithOptimizeTimeLimitMS(data.TimeLimitMS))
+	if err != nil {
+		slog.WarnContext(ctx, "optimization failed", "kind", optOutcome.Kind,
+			"attempts", optOutcome.Calls, "latency_ms", optOutcome.Latency.Milliseconds())
 		return nil, err
 	}
 
@@ -239,8 +272,8 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 	}
 	validatorRejected += rejectedByGate
 
-	payloads, details := buildVariantViews(snapshot, accepted, computed, optResponse, runID)
-	payload := runPayload(runID, briefID, data, computed.Variants, computed.Set, optResponse, validatorRejected, createdAt)
+	payloads, details := buildVariantViews(snapshot, accepted, computed, optResponse, runID, scheduleConfig(snapshot))
+	payload := runPayload(runID, briefID, data, computed.Variants, computed.Set, optResponse, validatorRejected, createdAt, optOutcome)
 	if parentRunID != "" {
 		payload["parent_run_id"] = parentRunID
 	}
@@ -257,7 +290,24 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 	s.details[runID] = details
 	s.varresults[runID] = varResults
 	s.mu.Unlock()
+
+	if err := s.persistComputed(ctx, briefID, runID, parentRunID, payload, data, snapshot, payloads, details, varResults, createdAt); err != nil {
+		return nil, err
+	}
+	if _, err := s.auditEvent(ctx, "run_finished", "run", runID,
+		fmt.Sprintf("Finished run %s with status %v", runID, payload["status"]),
+		map[string]any{"status": payload["status"], "variant_count": len(varResults)}); err != nil {
+		return nil, err
+	}
 	return payload, nil
+}
+
+func scheduleConfig(snapshot *runinput.Snapshot) metrics.ScheduleConfig {
+	return metrics.ScheduleConfig{
+		MonteCarloRuns:          metrics.DefaultMonteCarloRuns,
+		Seed:                    snapshot.Seed(),
+		PortfolioTauWorkingDays: metrics.DefaultPortfolioTauWorkingDays,
+	}
 }
 
 // computeServed computes the authoritative metrics of the validator-accepted variants and
@@ -274,11 +324,7 @@ func computeServed(snapshot *runinput.Snapshot, accepted []metrics.Proposal) (me
 		computed, err := metrics.ComputeRun(metrics.RunInput{
 			Snapshot:  snapshot,
 			Proposals: proposals,
-			Schedule: metrics.ScheduleConfig{
-				MonteCarloRuns:          metrics.DefaultMonteCarloRuns,
-				Seed:                    snapshot.Seed(),
-				PortfolioTauWorkingDays: metrics.DefaultPortfolioTauWorkingDays,
-			},
+			Schedule:  scheduleConfig(snapshot),
 		})
 		if err != nil {
 			return metrics.RunResult{}, rejected, fmt.Errorf("compute metrics: %w", err)
@@ -314,6 +360,14 @@ func (s *WorkflowService) GetSnapshot(runID string) (*runinput.Snapshot, bool) {
 
 func (s *WorkflowService) GetRun(id string) (map[string]any, bool) {
 	s.mu.RLock()
+	repo := s.stores
+	s.mu.RUnlock()
+	if repo != nil && repo.Runs != nil {
+		if run, err := repo.Runs.Get(context.Background(), id); err == nil {
+			return storedRun(run), true
+		}
+	}
+	s.mu.RLock()
 	defer s.mu.RUnlock()
 	r, ok := s.runs[id]
 	return r, ok
@@ -344,6 +398,13 @@ func (s *WorkflowService) runData(ctx context.Context, b *BriefRecord, runID str
 	if err != nil {
 		return runinput.Data{}, err
 	}
+	portfolio := []runinput.PortfolioProject{}
+	if len(weeks) > 0 {
+		portfolio, err = s.portfolioForRun(ctx, weeks[0], weeks[len(weeks)-1])
+		if err != nil {
+			return runinput.Data{}, fmt.Errorf("load portfolio: %w", err)
+		}
+	}
 
 	candidates := demoCandidates(requirements, weeks)
 	if s.candidates != nil {
@@ -361,14 +422,14 @@ func (s *WorkflowService) runData(ctx context.Context, b *BriefRecord, runID str
 		BriefID:      b.BriefID,
 		Preset:       preset,
 		K:            runK(input),
-		Seed:         int64Option(input, "seed", 42),
+		Seed:         clampSeed(int64Option(input, "seed", 42)),
 		TimeLimitMS:  runTimeLimit(input),
 		Horizon:      weeks,
 		Weights:      weights,
 		Requirements: requirements,
 		Candidates:   candidates,
 		Constraints:  constraints,
-		Portfolio:    []runinput.PortfolioProject{},
+		Portfolio:    portfolio,
 		CreatedAt:    createdAt,
 	}, nil
 }
@@ -765,6 +826,16 @@ func floatOption(raw map[string]any, key string, fallback float64) float64 {
 	return fallback
 }
 
+func clampSeed(seed int64) int64 {
+	if seed > 2147483647 {
+		return 2147483647
+	}
+	if seed < 0 {
+		return 0
+	}
+	return seed
+}
+
 func int64Option(raw map[string]any, key string, fallback int64) int64 {
 	switch value := raw[key].(type) {
 	case float64:
@@ -779,6 +850,13 @@ func int64Option(raw map[string]any, key string, fallback int64) int64 {
 
 // runPayload shapes the authoritative result as contracts TeamRun. Every number comes from
 // internal/metrics; the solver's advisory metrics are not part of the payload.
+func solveTimeMS(resp optimizeResponse, outcome mlclient.Outcome) int {
+	if resp.Solver.WallTimeMS > 0 {
+		return resp.Solver.WallTimeMS
+	}
+	return int(outcome.Latency.Milliseconds())
+}
+
 func runPayload(
 	runID, briefID string,
 	data runinput.Data,
@@ -787,6 +865,7 @@ func runPayload(
 	resp optimizeResponse,
 	validatorRejected int,
 	createdAt time.Time,
+	outcome mlclient.Outcome,
 ) map[string]any {
 	horizon := data.Horizon
 	variantPayload := make([]any, 0, len(variants))
@@ -833,9 +912,9 @@ func runPayload(
 		"finished_at": time.Now().UTC(),
 		"diagnostics": map[string]any{
 			"solver_status":      resp.solverStatus(),
-			"solve_time_ms":      resp.Solver.WallTimeMS,
-			"ml_status":          "ok",
-			"ml_attempts":        1,
+			"solve_time_ms":      solveTimeMS(resp, outcome),
+			"ml_status":          outcome.Status,
+			"ml_attempts":        outcome.Calls,
 			"validator_rejected": validatorRejected,
 			"fallback_used":      false,
 			"metrics_version":    metrics.Version,
@@ -863,30 +942,26 @@ type DecisionResponse struct {
 	AuditEventID string    `json:"audit_event_id"`
 }
 
-func (s *WorkflowService) RecordDecision(runID string, input DecisionInput) (*DecisionResponse, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (s *WorkflowService) RecordDecision(ctx context.Context, runID string, input DecisionInput) (*DecisionResponse, error) {
+	s.decisionMu.Lock()
+	defer s.decisionMu.Unlock()
 
-	run, ok := s.runs[runID]
+	run, ok := s.GetRun(runID)
 	if !ok {
 		return nil, ErrRunNotFound
-	}
-	if _, exists := s.decisions[runID]; exists {
-		return nil, ErrDecisionExists
 	}
 	if input.VariantID == "" {
 		return nil, fmt.Errorf("%w: variant_id is required", ErrInvalidRunInput)
 	}
-	variants, _ := run["variants"].([]map[string]any)
 	found := false
-	for _, v := range variants {
-		if v["variant_id"] == input.VariantID {
+	for _, raw := range wfSlice(run["variants"]) {
+		if wfString(wfMap(raw)["variant_id"]) == input.VariantID {
 			found = true
 			break
 		}
 	}
-	if !found && s.variants[runID] != nil {
-		if _, ok := s.variants[runID][input.VariantID]; ok {
+	if !found {
+		if variant, ok := s.GetVariant(runID, input.VariantID); ok && variant != nil {
 			found = true
 		}
 	}
@@ -894,35 +969,64 @@ func (s *WorkflowService) RecordDecision(runID string, input DecisionInput) (*De
 		return nil, ErrVariantNotFound
 	}
 
-	decidedBy := input.DecidedBy
-	if decidedBy == "" {
-		decidedBy = "system"
-	}
-	s.next++
-	auditID := fmt.Sprintf("aud_%04d", s.next)
+	decidedBy := actor.FromContext(ctx)
+	auditID := s.newAuditID()
 	now := time.Now().UTC()
 
+	s.mu.RLock()
+	repo := s.stores
+	_, inMemoryExists := s.decisions[runID]
+	s.mu.RUnlock()
+	summary := truncateRunes(fmt.Sprintf("Variant %s chosen by %s with %d manual edits.",
+		input.VariantID, decidedBy, len(input.EditsApplied)), 500)
+	var auditEntry domain.AuditEntry
+	if repo != nil && repo.Decisions != nil {
+		decision := domain.Decision{
+			RunID: runID, VariantID: input.VariantID, DecidedAt: now,
+			DecidedBy: decidedBy, Comment: input.Comment,
+			EditsApplied: wfJSON(input.EditsApplied), AuditEventID: auditID,
+		}
+		auditEntry = domain.AuditEntry{
+			EventID: auditID, At: now, Actor: decidedBy, Action: "decision_recorded",
+			EntityType: "run", EntityID: runID, RequestID: domain.GenerateID("req_", 8),
+			Summary: summary, Details: wfJSON(map[string]any{
+				"variant_id": input.VariantID, "edits_count": len(input.EditsApplied),
+			}),
+		}
+		if err := repo.Decisions.CreateWithAudit(ctx, decision, auditEntry); err != nil {
+			if errors.Is(err, repository.ErrDecisionExists) {
+				return nil, ErrDecisionExists
+			}
+			return nil, fmt.Errorf("persist decision: %w", err)
+		}
+	} else if inMemoryExists {
+		return nil, ErrDecisionExists
+	} else if _, err := s.auditEventWithID(ctx, auditID, "decision_recorded", "run", runID, summary,
+		map[string]any{"variant_id": input.VariantID, "edits_count": len(input.EditsApplied)}); err != nil {
+		return nil, err
+	}
+
 	resp := &DecisionResponse{
-		RunID:        runID,
-		VariantID:    input.VariantID,
-		DecidedAt:    now,
-		DecidedBy:    decidedBy,
-		EditsCount:   len(input.EditsApplied),
-		AuditEventID: auditID,
+		RunID: runID, VariantID: input.VariantID, DecidedAt: now,
+		DecidedBy: decidedBy, EditsCount: len(input.EditsApplied), AuditEventID: auditID,
+	}
+	s.mu.Lock()
+	if repo != nil && repo.Decisions != nil {
+		s.audits[runID] = append(s.audits[runID], auditEntry)
 	}
 	s.decisions[runID] = map[string]any{
-		"run_id":         runID,
-		"variant_id":     input.VariantID,
-		"decided_at":     now,
-		"decided_by":     decidedBy,
-		"edits_count":    len(input.EditsApplied),
-		"audit_event_id": auditID,
-		"comment":        input.Comment,
+		"run_id": runID, "variant_id": input.VariantID, "decided_at": now,
+		"decided_by": decidedBy, "edits_count": len(input.EditsApplied),
+		"audit_event_id": auditID, "comment": input.Comment,
 	}
+	s.mu.Unlock()
 	return resp, nil
 }
 
 func (s *WorkflowService) GetDecision(runID string) (map[string]any, bool) {
+	if d, ok := s.storedDecision(context.Background(), runID); ok {
+		return d, true
+	}
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	d, ok := s.decisions[runID]

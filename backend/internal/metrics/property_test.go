@@ -265,6 +265,7 @@ func generatedRun(t *testing.T, seed int64) RunInput {
 			RemainingHours: 40 + float64(rng.Intn(120)),
 			WeeklyCapacity: 20 + float64(rng.Intn(40)),
 			Critical:       rng.Intn(2) == 0,
+			EmployeeIDs:    []string{candidates[rng.Intn(len(candidates))].EmployeeID},
 		})
 	}
 

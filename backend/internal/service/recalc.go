@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/teamopt/backend/internal/domain"
-	"github.com/teamopt/backend/internal/explain"
 	"github.com/teamopt/backend/internal/metrics"
 	"github.com/teamopt/backend/internal/runinput"
 )
@@ -79,9 +78,26 @@ func (s *WorkflowService) Recalculate(ctx context.Context, runID string, req Rec
 		return nil, fmt.Errorf("%w: at most 30 overrides per recalculation", ErrInvalidRunInput)
 	}
 	s.mu.RLock()
-	parent, ok := s.snapshots[runID]
+	repo := s.stores
+	inMemoryParent, inMemoryOK := s.snapshots[runID]
 	s.mu.RUnlock()
-	if !ok {
+	var parent *runinput.Snapshot
+	if repo != nil && repo.Snapshots != nil {
+		raw, err := repo.Snapshots.GetData(ctx, runID)
+		if err != nil {
+			return nil, fmt.Errorf("%w: parent run %s: %v", ErrRunNotFound, runID, err)
+		}
+		var data runinput.Data
+		if err := json.Unmarshal(raw, &data); err != nil {
+			return nil, fmt.Errorf("%w: parent snapshot %s: %v", ErrInvalidRunInput, runID, err)
+		}
+		parent, err = runinput.Build(data)
+		if err != nil {
+			return nil, fmt.Errorf("%w: parent snapshot %s: %v", ErrInvalidRunInput, runID, err)
+		}
+	} else if inMemoryOK {
+		parent = inMemoryParent
+	} else {
 		return nil, fmt.Errorf("%w: parent run %s", ErrRunNotFound, runID)
 	}
 
@@ -95,7 +111,7 @@ func (s *WorkflowService) Recalculate(ctx context.Context, runID string, req Rec
 	s.next++
 	seq := s.next
 	s.mu.Unlock()
-	newRunID := fmt.Sprintf("run_%04d", seq)
+	newRunID := s.newRunID(seq)
 	data.RunID = newRunID
 	data.Constraints = constraints
 	data.CreatedAt = time.Now().UTC()
@@ -117,6 +133,16 @@ func (s *WorkflowService) Recalculate(ctx context.Context, runID string, req Rec
 
 	newPayload, err := s.computeAndStore(ctx, parent.BriefID(), newRunID, runID, data, data.CreatedAt)
 	if err != nil {
+		return nil, err
+	}
+	if repo != nil && repo.Overrides != nil {
+		if err := repo.Overrides.CreateBatch(ctx, newRunID, domainOverridesFrom(newRunID, req.Overrides)); err != nil {
+			return nil, fmt.Errorf("persist constraint overrides: %w", err)
+		}
+	}
+	if _, err := s.auditEvent(ctx, "recalculation_started", "run", newRunID,
+		fmt.Sprintf("Recalculation of %s: %d applied, %d rejected overrides", runID, applied, len(rejected)),
+		map[string]any{"parent_run_id": runID, "applied": applied, "rejected": len(rejected)}); err != nil {
 		return nil, err
 	}
 
@@ -383,10 +409,8 @@ func candidateUnavailable(snap *runinput.Snapshot, employeeID string) bool {
 // roster and its P50 duration. Ties resolve to the lexicographically-first variant id for
 // determinism.
 func (s *WorkflowService) primaryVariant(runID string) (string, []string, float64) {
-	s.mu.RLock()
-	payload := s.runs[runID]
-	s.mu.RUnlock()
-	if payload == nil {
+	payload, ok := s.GetRun(runID)
+	if !ok {
 		return "", nil, 0
 	}
 	variants, _ := payload["variants"].([]any)
@@ -437,6 +461,17 @@ func solverStatus(payload map[string]any) string {
 // T_best/C_min references are preserved (it never recomputes run-relative metrics).
 func (s *WorkflowService) GetExplanation(runID, variantID, locale string) (map[string]any, bool) {
 	s.mu.RLock()
+	repo := s.stores
+	s.mu.RUnlock()
+	if repo != nil && repo.Explanations != nil {
+		stored, err := repo.Explanations.Get(context.Background(), runID, storedVariantID(runID, variantID), locale)
+		if err == nil {
+			if out, ok := decodeJSONMap(stored.Payload); ok {
+				return out, true
+			}
+		}
+	}
+	s.mu.RLock()
 	snapshot := s.snapshots[runID]
 	result := s.varresults[runID][variantID]
 	detail := s.details[runID][variantID]
@@ -444,30 +479,11 @@ func (s *WorkflowService) GetExplanation(runID, variantID, locale string) (map[s
 	if snapshot == nil || result.VariantID == "" || detail.VariantID == "" {
 		return nil, false
 	}
-	exp, err := explain.Generate(explain.Input{
-		RunID:    runID,
-		Locale:   locale,
-		Snapshot: snapshot,
-		Variant:  result,
-		Detail:   detail,
-		Schedule: metrics.ScheduleConfig{
-			MonteCarloRuns:          metrics.DefaultMonteCarloRuns,
-			Seed:                    snapshot.Seed(),
-			PortfolioTauWorkingDays: metrics.DefaultPortfolioTauWorkingDays,
-		},
-	})
+	exp, err := generateExplanation(runID, variantID, locale, snapshot, result, detail)
 	if err != nil {
 		return nil, false
 	}
-	encoded, err := json.Marshal(exp)
-	if err != nil {
-		return nil, false
-	}
-	out := map[string]any{}
-	if err := json.Unmarshal(encoded, &out); err != nil {
-		return nil, false
-	}
-	return out, true
+	return exp, true
 }
 
 // ---------- small helpers ----------

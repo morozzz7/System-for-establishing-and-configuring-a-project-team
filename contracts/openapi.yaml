@@ -2465,6 +2465,8 @@ components:
         - DEFICIT_UPSKILL_INTERNAL
         - DEFICIT_DEADLINE_SHIFT
         - DEFICIT_DESCOPE
+        - DEFICIT_SHIFT_UNAVAILABLE
+        - AUDIT_WRITE_FAILED
         - CONSTRAINT_ACTIVE_TEAM_SIZE
         - CONSTRAINT_ACTIVE_BUDGET
         - CONSTRAINT_ACTIVE_DEADLINE
@@ -4339,6 +4341,11 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecommendedAction'
+        reason_codes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReasonCode'
+          description: Why a duration-shift estimate is absent, if it is.
     ConstraintType:
       type: string
       enum: [force_include, force_exclude, max_team_size, min_team_size, budget_cap, deadline, forbid_external, freeze_members, min_bus_factor, max_utilization]

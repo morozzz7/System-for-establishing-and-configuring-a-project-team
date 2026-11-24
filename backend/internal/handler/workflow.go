@@ -27,6 +27,8 @@ func (h *WorkflowHandler) Register(r chi.Router) {
 	r.Post("/runs", h.CreateRun)
 	r.Get("/runs/{runId}", h.GetRun)
 	r.Get("/runs/{runId}/inputs", h.GetRunInputs)
+	r.Get("/runs/{runId}/variants", h.ListVariants)
+	r.Get("/runs/{runId}/audit", h.ListAudit)
 	r.Get("/runs/{runId}/variants/{variantId}", h.GetVariant)
 	r.Get("/runs/{runId}/variants/{variantId}/explanation", h.GetExplanation)
 	r.Post("/runs/{runId}/recalculate", h.Recalculate)
@@ -198,6 +200,24 @@ func (h *WorkflowHandler) GetRunInputs(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, 200, result)
 }
+func (h *WorkflowHandler) ListVariants(w http.ResponseWriter, r *http.Request) {
+	result, ok := h.Svc.ListVariants(r.Context(), chi.URLParam(r, "runId"),
+		parseIntQuery(r, "limit", 20), parseIntQuery(r, "offset", 0))
+	if !ok {
+		writeProblem(w, problem404(r))
+		return
+	}
+	writeJSON(w, 200, result)
+}
+func (h *WorkflowHandler) ListAudit(w http.ResponseWriter, r *http.Request) {
+	result, ok := h.Svc.ListAudit(r.Context(), chi.URLParam(r, "runId"),
+		parseIntQuery(r, "limit", 50), parseIntQuery(r, "offset", 0))
+	if !ok {
+		writeProblem(w, problem404(r))
+		return
+	}
+	writeJSON(w, 200, result)
+}
 func (h *WorkflowHandler) GetVariant(w http.ResponseWriter, r *http.Request) {
 	result, ok := h.Svc.GetVariant(chi.URLParam(r, "runId"), chi.URLParam(r, "variantId"))
 	if !ok {
@@ -250,7 +270,7 @@ func (h *WorkflowHandler) RecordDecision(w http.ResponseWriter, r *http.Request)
 		writeProblem(w, problem400(r, err))
 		return
 	}
-	resp, err := h.Svc.RecordDecision(runID, in)
+	resp, err := h.Svc.RecordDecision(r.Context(), runID, in)
 	if err != nil {
 		switch {
 		case errors.Is(err, service.ErrRunNotFound):
@@ -260,7 +280,7 @@ func (h *WorkflowHandler) RecordDecision(w http.ResponseWriter, r *http.Request)
 		case errors.Is(err, service.ErrDecisionExists):
 			writeProblem(w, domain.NewProblem(409, "CONFLICT_DECISION_EXISTS", "Use a recalculation run to change the decision.", requestID(r), []string{"DECISION_IMMUTABLE"}))
 		default:
-			writeProblem(w, problem400(r, err))
+			writeProblem(w, domain.NewProblem(500, "DECISION_PERSISTENCE_FAILED", "Decision could not be recorded.", requestID(r), []string{"AUDIT_WRITE_FAILED"}))
 		}
 		return
 	}

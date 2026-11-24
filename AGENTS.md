@@ -88,6 +88,15 @@ docs/             PLAN.md (task status), ADR/, METRICS.md
   `variant_weekly_assignment`, `variant_deficit`, `variant_recommended_action`,
   `variant_active_constraint`, `variant_excluded_candidate`.
 - Audit and decisions: `audit_log`, `constraint_override`, `decision`, `explanation`.
+- Migration `00010` stores the full run-input snapshot payload (`run_snapshot.data_jsonb`) and
+  authoritative response payloads, so runs, variants, recalculation lineage, explanations,
+  decisions and audit events survive a restart (including `GET /runs/{id}/inputs`); a decision and its
+  audit event commit in one transaction. M8 attributes pulled hours only to portfolio projects that
+  share staff with the proposed team (`employee_ids`). The in-memory maps in `WorkflowService` remain
+  the no-DB fallback for unit tests. M8 portfolio inputs are derived from active projects and
+  their capacity matrix; `deficit_weeks` is a counterfactual P50 rerun, omitted with a reason
+  code when no capacity exists for the simulation. Go's ML client implements ADR-004
+  per-endpoint timeouts, bounded retries and per-endpoint circuit breakers.
 
 ## Verification commands
 ```bash

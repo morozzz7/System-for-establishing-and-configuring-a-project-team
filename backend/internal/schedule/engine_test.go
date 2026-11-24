@@ -69,7 +69,7 @@ func TestCalculateDeadlineAndPortfolioImpact(t *testing.T) {
 		Requirements:  []Requirement{{ID: "req_api", Effort: Effort{Min: 8, Likely: 8, Max: 8}}},
 		Assignments:   []Assignment{{EmployeeID: "emp_a", RequirementID: "req_api", Week: "2026-W01", Hours: 40}},
 		Capacity:      []Capacity{{EmployeeID: "emp_a", Week: "2026-W01", FreeHours: 40}},
-		Portfolio:     []PortfolioProject{{ProjectID: "prj_old", RemainingHours: 80, WeeklyCapacity: 40, Critical: true}},
+		Portfolio:     []PortfolioProject{{ProjectID: "prj_old", RemainingHours: 80, WeeklyCapacity: 40, Critical: true, EmployeeIDs: []string{"emp_a"}}},
 		DeadlineWeeks: &deadline, MonteCarloRuns: 200, Seed: 7, PortfolioTauWorkingDays: 10,
 	}
 	r, err := Calculate(in)
@@ -81,6 +81,29 @@ func TestCalculateDeadlineAndPortfolioImpact(t *testing.T) {
 	}
 	if r.PortfolioImpact.TotalSlipDays != 5 || r.PortfolioImpact.CriticalAffected != 1 {
 		t.Fatalf("unexpected portfolio impact: %#v", r.PortfolioImpact)
+	}
+}
+
+func TestPortfolioSlipIsAttributedOnlyToProjectsSharingStaff(t *testing.T) {
+	in := Input{
+		Requirements:  []Requirement{{ID: "req_api", Effort: Effort{Min: 8, Likely: 8, Max: 8}}},
+		Assignments:   []Assignment{{EmployeeID: "emp_a", RequirementID: "req_api", Week: "2026-W01", Hours: 40}},
+		Capacity:      []Capacity{{EmployeeID: "emp_a", Week: "2026-W01", FreeHours: 40}},
+		Portfolio: []PortfolioProject{
+			{ProjectID: "prj_shared", RemainingHours: 80, WeeklyCapacity: 40, EmployeeIDs: []string{"emp_a"}},
+			{ProjectID: "prj_unrelated", RemainingHours: 80, WeeklyCapacity: 40, EmployeeIDs: []string{"emp_b"}},
+		},
+		MonteCarloRuns: 100, Seed: 7, PortfolioTauWorkingDays: 10,
+	}
+	r, err := Calculate(in)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.PortfolioImpact.TotalSlipDays != 5 || r.PortfolioImpact.ProjectsAffected != 1 {
+		t.Fatalf("unrelated project was charged: %#v", r.PortfolioImpact)
+	}
+	if _, ok := r.PortfolioImpact.ProjectSlipDays["prj_unrelated"]; ok {
+		t.Fatalf("unrelated project must have no slip: %#v", r.PortfolioImpact.ProjectSlipDays)
 	}
 }
 

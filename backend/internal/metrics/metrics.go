@@ -277,6 +277,7 @@ func (c *variantComputation) scheduleFor(assignments []ProposalAssignment) (sche
 		in.Portfolio = append(in.Portfolio, schedule.PortfolioProject{
 			ProjectID: p.ProjectID, RemainingHours: p.RemainingHours,
 			WeeklyCapacity: p.WeeklyCapacity, Critical: p.Critical,
+			EmployeeIDs: p.EmployeeIDs,
 		})
 	}
 	in.DeadlineWeeks = c.deadlineWeeks()

@@ -63,6 +63,8 @@ func main() {
 		logger.Warn("DATABASE_URL is empty; postgres dependency will be reported as unknown")
 	}
 
+	ml := mlclient.New(cfg.MLServiceURL)
+
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
@@ -70,8 +72,8 @@ func main() {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Get("/healthz", handleHealthz)
-		r.Get("/readyz", handleReadyz(pool, cfg.MLServiceURL))
-		workflow := service.NewWorkflowService(mlclient.New(cfg.MLServiceURL))
+		r.Get("/readyz", handleReadyz(pool, cfg.MLServiceURL, ml))
+		workflow := service.NewWorkflowService(ml)
 		(&handler.WorkflowHandler{Svc: workflow}).Register(r)
 		if pool != nil {
 			handler.NewTaxonomyHandler(service.NewTaxonomyService(repository.NewPgTaxonomyRepo(pool))).Register(r)
@@ -92,6 +94,19 @@ func main() {
 
 			capSvc := service.NewCapacityService(empRepo, asgRepo, absRepo, capRepo)
 			workflow.SetCandidateSource(service.NewPgCandidateSource(empRepo, compRepo, capRepo, asgRepo))
+			workflow.SetPortfolioSource(&service.PgPortfolioSource{
+				Projects: prjRepo, Assignments: asgRepo, Absences: absRepo, Capacity: capRepo,
+			})
+			workflow.SetStores(service.WorkflowStores{
+				Briefs:       repository.NewPgBriefRepo(pool),
+				Runs:         repository.NewPgRunRepo(pool),
+				Snapshots:    repository.NewPgSnapshotRepo(pool),
+				Variants:     repository.NewPgVariantRepo(pool),
+				Decisions:    repository.NewPgDecisionRepo(pool),
+				Explanations: repository.NewPgExplanationRepo(pool),
+				Overrides:    repository.NewPgConstraintOverrideRepo(pool),
+				Audit:        audRepo,
+			})
 
 			empSvc := &service.EmployeeService{
 				EmployeeRepo: empRepo,
@@ -153,8 +168,9 @@ const (
 	dependencyML       = "ml_service"
 	dependencyTaxonomy = "taxonomy"
 
-	stateUp   = "up"
-	stateDown = "down"
+	stateUp       = "up"
+	stateDegraded = "degraded"
+	stateDown     = "down"
 
 	readinessTimeout = 2 * time.Second
 )
@@ -197,8 +213,21 @@ func handleHealthz(w http.ResponseWriter, _ *http.Request) {
 	})
 }
 
-func handleReadyz(pool *pgxpool.Pool, mlURL string) http.HandlerFunc {
-	return newReadinessHandler(postgresProbe(pool), mlProbe(mlURL))
+func handleReadyz(pool *pgxpool.Pool, mlURL string, ml *mlclient.Client) http.HandlerFunc {
+	probe := mlProbe(mlURL)
+	return newReadinessHandler(postgresProbe(pool), func(ctx context.Context) dependencyState {
+		state := probe(ctx)
+		if ml != nil && state.State == stateUp {
+			for _, path := range []string{mlclient.PathExtract, mlclient.PathEmbed, mlclient.PathOptimize} {
+				if open, _ := ml.State(path); open {
+					state.State = stateDegraded
+					state.ReasonCodes = []string{"ML_UNAVAILABLE"}
+					break
+				}
+			}
+		}
+		return state
+	})
 }
 
 // newReadinessHandler runs both remote probes under one deadline so readiness never
