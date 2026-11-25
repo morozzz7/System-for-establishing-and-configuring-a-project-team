@@ -38,9 +38,14 @@ describe('PresetCard', () => {
     expect(screen.getByText('Умеренный приоритет скорости, качества покрытия и стоимости')).toBeInTheDocument();
   });
 
-  it('shows selected badge when selected', () => {
+  it('keeps the selected badge inside the card header', () => {
     render(<PresetCard preset={mockPreset} selected={true} onSelect={vi.fn()} />);
-    expect(screen.getByText('Выбран')).toBeInTheDocument();
+    const badge = screen.getByText('Выбран');
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveStyle({ margin: '0px', flexShrink: '0', whiteSpace: 'nowrap', fontSize: '9px' });
+    const titleRow = badge.closest('.ant-card-head-title')?.firstElementChild as HTMLElement | null;
+    expect(titleRow).toHaveStyle({ gap: '6px' });
+    expect(titleRow?.getAttribute('style')).toContain('min-width: 0');
   });
 
   it('calls onSelect when clicked', () => {

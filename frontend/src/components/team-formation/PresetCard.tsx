@@ -46,9 +46,13 @@ export default function PresetCard({ preset, selected, onSelect, metrics }: Pres
         height: '100%',
       }}
       title={
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <Text strong style={{ fontSize: 14 }}>{preset.label_ru}</Text>
-          {selected && <Tag color="blue" style={{ margin: 0 }}>Выбран</Tag>}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6, minWidth: 0, width: '100%' }}>
+          <Text strong ellipsis style={{ fontSize: 13, minWidth: 0 }}>{preset.label_ru}</Text>
+          {selected && (
+            <Tag color="blue" style={{ margin: 0, padding: '0 4px', fontSize: 9, lineHeight: '16px', flexShrink: 0, whiteSpace: 'nowrap' }}>
+              Выбран
+            </Tag>
+          )}
         </div>
       }
     >
