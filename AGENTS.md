@@ -81,7 +81,8 @@ contracts/        openapi.yaml (UI<->Go), ml-openapi.yaml (Go<->ML), taxonomy.ya
 .github/workflows/ ci.yml: contracts, backend, ML, frontend and full-stack E2E; deploy.yml: GHCR build, SSH deploy, smoke test, rollback
 eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports
 deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), prod/docker-compose.yml, Dockerfile.{backend,ml,frontend}, nginx gateway
-docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screenshots/ (tracked UI captures), assets/badges/ (README tiles)
+README.md / README_RU.md  bilingual README pair (shields.io `for-the-badge` badges, two rows, language switch)
+docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screenshots/ (tracked UI captures), assets/badges/ (legacy SVG tiles, unused by README)
 .opencode/skills/ local agent skills (git-ignored, see "Agent skills")
 ```
 
@@ -125,7 +126,7 @@ configured via `AUTH_JWT_SECRET`, `AUTH_TOKEN_TTL_MINUTES` and `AUTH_USERS` (see
 the frontend uses `VITE_AUTH_LOGIN`/`VITE_AUTH_PASSWORD` to obtain a token in HTTP mode.
 
 Runtime ports, gateway URLs and the mock/API switch (`VITE_API_BASE_URL`) are documented in `README.md`
-and `frontend/README.md`; do not duplicate them here.
+(`README_RU.md` in Russian) and `frontend/README.md`; do not duplicate them here.
 
 ## Agent skills (`.opencode/skills`, local, git-ignored)
 | Skill | Use when |

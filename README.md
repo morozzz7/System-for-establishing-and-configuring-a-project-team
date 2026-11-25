@@ -1,7 +1,18 @@
 # Optimal Project Team Formation System
 
-[![CI](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/ci.yml/badge.svg)](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/ci.yml)
-[![CD](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/deploy.yml/badge.svg)](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/deploy.yml)
+![Go 1.26](https://img.shields.io/badge/Go-1.26-00ADD8?style=for-the-badge&logo=go&logoColor=white)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)
+![React 18](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=white)
+![TypeScript 5.6](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
+![Vite 6](https://img.shields.io/badge/Vite-6-646CFF?style=for-the-badge&logo=vite&logoColor=white)
+
+![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)
+![OR-Tools CP-SAT](https://img.shields.io/badge/OR--Tools-CP--SAT-5BE0B5?style=for-the-badge)
+![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)
+![CI passing](https://img.shields.io/badge/CI-passing-2EA043?style=for-the-badge&logo=githubactions&logoColor=white)
+![Docker Compose](https://img.shields.io/badge/Docker-Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+**English** · [Русский](README_RU.md)
 
 Decision-support system for resource managers. It turns a technical brief into structured
 requirements, finds feasible project-team variants against employee competencies and availability,
@@ -9,16 +20,6 @@ and explains the trade-offs. **The system proposes; a human makes the final deci
 
 The repository is privacy-safe by design: fixtures and examples use synthetic data and pseudonymous
 IDs (`emp_*`, `prj_*`, `brf_*`). Cost is represented by grade coefficients, never personal salaries.
-
-## Stack at a glance
-
-Click any tile to jump to the relevant workflow, source area or runtime component.
-
-| [![CI](docs/assets/badges/ci.svg)](.github/workflows/ci.yml) | [![CD](docs/assets/badges/cd.svg)](.github/workflows/deploy.yml) | [![Go](docs/assets/badges/go.svg)](backend) | [![Python](docs/assets/badges/python.svg)](ml) |
-|:---:|:---:|:---:|:---:|
-| **CI checks** | **Deployment** | **Go backend** | **ML service** |
-| [![React](docs/assets/badges/react.svg)](frontend) | [![PostgreSQL](docs/assets/badges/postgres.svg)](db/migrations) | [![Docker](docs/assets/badges/docker.svg)](deploy) | [![E2E](docs/assets/badges/e2e.svg)](frontend/e2e) |
-| **React UI** | **PostgreSQL** | **Docker runtime** | **E2E journey** |
 
 ## Architecture
 
@@ -218,6 +219,7 @@ The same gates run in GitHub Actions. Contract documents are the single source o
 ## Repository map
 
 ```text
+README_RU.md   Russian version of this document
 backend/       Go API, domain, repositories, validator, schedule engine, explainer, metrics
 ml/            FastAPI extraction, embeddings and optimizer
 frontend/      React/TypeScript UI and Playwright journey
