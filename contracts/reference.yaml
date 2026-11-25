@@ -71,7 +71,9 @@ time_model:
   reserve_ratio: 0.2
   reserve_purpose: meetings, support, code review, unplanned work
   calendar: RU-production-calendar
-  calendar_source: производственный календарь РФ (holidays and transferred days per year)
+  calendar_source: contracts/calendar-ru-YYYY.yaml (versioned federal holidays, transfers and shortened days)
+  calendar_2026_source: Постановление Правительства РФ от 24.09.2025 № 1466; ст. 112 и 95 ТК РФ
+  calendar_missing_policy: G5 hard failure (never an implicit five-day week)
   rounding:
     hours: integer (no float drift in the capacity matrix)
     person_days: 8 hours per person-day

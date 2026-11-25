@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/teamopt/backend/internal/domain"
+	"github.com/teamopt/backend/internal/platform/actor"
 	"github.com/teamopt/backend/internal/repository"
 )
 
@@ -373,7 +374,14 @@ func (s *EmployeeService) checkImportAssignmentWeek(ctx context.Context, employe
 		}
 	}
 
-	requestedMinutes += repository.ComputeAbsentMinutesInWeek(approved, year, weekNumber)
+	absentMinutes, err := repository.ComputeAbsentMinutesInWeek(approved, year, weekNumber)
+	if err != nil {
+		return &domain.EmployeeImportValidationError{
+			EmployeeID: employeeID, Field: "assignments", Code: "G5_CALENDAR_MISSING",
+			Detail: err.Error(),
+		}
+	}
+	requestedMinutes += absentMinutes
 	if err := s.CapacitySvc.CheckAvailability(ctx, employeeID, week, requestedMinutes); err != nil {
 		var problem domain.Problem
 		if errors.As(err, &problem) {
@@ -1240,7 +1248,7 @@ func (s *EmployeeService) writeAudit(ctx context.Context, action, entityType, en
 	entry := domain.AuditEntry{
 		EventID:    domain.GenerateID("aud_", 6),
 		At:         time.Now().UTC(),
-		Actor:      "system",
+		Actor:      actor.FromContext(ctx),
 		Action:     action,
 		EntityType: entityType,
 		EntityID:   entityID,
@@ -1256,7 +1264,7 @@ func (s *EmployeeService) writeAuditDetailed(ctx context.Context, action, entity
 	entry := domain.AuditEntry{
 		EventID:    domain.GenerateID("aud_", 6),
 		At:         time.Now().UTC(),
-		Actor:      "system",
+		Actor:      actor.FromContext(ctx),
 		Action:     action,
 		EntityType: entityType,
 		EntityID:   entityID,
@@ -1273,7 +1281,7 @@ func (s *ProjectService) writeAudit(ctx context.Context, action, entityType, ent
 	entry := domain.AuditEntry{
 		EventID:    domain.GenerateID("aud_", 6),
 		At:         time.Now().UTC(),
-		Actor:      "system",
+		Actor:      actor.FromContext(ctx),
 		Action:     action,
 		EntityType: entityType,
 		EntityID:   entityID,
@@ -1289,7 +1297,7 @@ func (s *AssignmentService) writeAudit(ctx context.Context, action, entityType, 
 	entry := domain.AuditEntry{
 		EventID:    domain.GenerateID("aud_", 6),
 		At:         time.Now().UTC(),
-		Actor:      "system",
+		Actor:      actor.FromContext(ctx),
 		Action:     action,
 		EntityType: entityType,
 		EntityID:   entityID,
@@ -1305,7 +1313,7 @@ func (s *AbsenceService) writeAudit(ctx context.Context, action, entityType, ent
 	entry := domain.AuditEntry{
 		EventID:    domain.GenerateID("aud_", 6),
 		At:         time.Now().UTC(),
-		Actor:      "system",
+		Actor:      actor.FromContext(ctx),
 		Action:     action,
 		EntityType: entityType,
 		EntityID:   entityID,

@@ -48,10 +48,14 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await expect(page.getByRole('heading', { name: 'Настройка расчёта вариантов' })).toBeVisible();
   // A 14-week horizon gives each fully available candidate enough person-days to clear
   // the Go validator's likely-effort gate (G3) for this brief.
+  const startWeekInput = page.getByTestId('horizon-start-week').locator('input');
+  await startWeekInput.fill('2026-W10');
+  await startWeekInput.press('Enter');
+  await expect(page.getByTestId('horizon-start-week').locator('.ant-select-selection-item')).toHaveText('2026-W10');
   const endWeekInput = page.getByTestId('horizon-end-week').locator('input');
   await endWeekInput.fill('2026-W20');
   await endWeekInput.press('Enter');
-  await expect(page.getByTestId('horizon-end-week')).toContainText('2026-W20');
+  await expect(page.getByTestId('horizon-end-week').locator('.ant-select-selection-item')).toHaveText('2026-W20');
   await page.getByRole('button', { name: 'Рассчитать варианты' }).click();
   await expect(page).toHaveURL(/\/runs\/new\/brf_[^?]+\?run=run_/, { timeout: 90_000 });
 

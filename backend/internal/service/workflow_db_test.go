@@ -77,12 +77,54 @@ func setupDBWorkflowService(t *testing.T) *WorkflowService {
 		Explanations: repository.NewPgExplanationRepo(pool),
 		Overrides:    repository.NewPgConstraintOverrideRepo(pool),
 		Audit:        repository.NewPgAuditRepo(pool),
+		ComputedRuns: repository.NewPgComputedRunRepo(pool),
 	})
 	return svc
 }
 
 // TestWorkflowPersistenceRoundTrip proves that all read paths are served from
 // PostgreSQL after the in-memory maps are discarded (a restart simulation).
+// TestBriefRequirementsSurviveRestart closes the gap where only the brief identity row was
+// persisted: after a process restart a brand-new run must still be creatable from the brief.
+func TestBriefRequirementsSurviveRestart(t *testing.T) {
+	svc := setupDBWorkflowService(t)
+	ctx := context.Background()
+
+	brief, err := svc.CreateBrief(ctx, BriefInput{
+		Title: "Restart", SourceType: "text", Language: "ru", Text: "Go инженер",
+	})
+	require.NoError(t, err)
+	require.NotEmpty(t, brief.Requirements)
+	_, ok := svc.ConfirmBrief(brief.BriefID)
+	require.True(t, ok)
+
+	svc.mu.Lock()
+	svc.briefs = map[string]*BriefRecord{}
+	svc.mu.Unlock()
+
+	restored, ok := svc.GetBrief(brief.BriefID)
+	require.True(t, ok, "brief must be rehydrated from the database")
+	assert.Equal(t, "confirmed", restored.Status)
+	assert.Equal(t, brief.Text, restored.Text)
+	require.Len(t, restored.Requirements, len(brief.Requirements))
+	assert.Equal(t, brief.Requirements[0]["requirement_id"], restored.Requirements[0]["requirement_id"])
+
+	listed := svc.ListBriefs()
+	found := false
+	for _, item := range listed {
+		if item.BriefID == brief.BriefID {
+			found = true
+		}
+	}
+	assert.True(t, found, "rehydrated brief must appear in the list")
+
+	run, err := svc.CreateRun(ctx, brief.BriefID, map[string]any{
+		"horizon": map[string]any{"weeks": []any{"2026-W10", "2026-W11"}},
+	})
+	require.NoError(t, err, "a new run must be possible from a persisted brief after restart")
+	assert.Equal(t, brief.BriefID, run["brief_id"])
+}
+
 func TestWorkflowPersistenceRoundTrip(t *testing.T) {
 	svc := setupDBWorkflowService(t)
 	ctx := actor.WithContext(context.Background(), "emp_ab01")

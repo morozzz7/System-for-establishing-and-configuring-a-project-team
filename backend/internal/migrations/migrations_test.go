@@ -402,7 +402,7 @@ func TestPgvectorExtension(t *testing.T) {
 }
 
 // ----------------------------------------------------------
-// Test: migration files are named 00001..00010.
+// Test: migration files are named 00001..00011.
 // ----------------------------------------------------------
 
 func TestMigrationOrder(t *testing.T) {
@@ -429,6 +429,7 @@ func TestMigrationOrder(t *testing.T) {
 		"00008_extend_audit.sql",
 		"00009_role_family_check.sql",
 		"00010_run_snapshot_data.sql",
+		"00011_brief_data.sql",
 	}
 	assert.Equal(t, expected, names)
 }

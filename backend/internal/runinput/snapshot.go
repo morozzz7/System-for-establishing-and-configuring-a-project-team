@@ -68,6 +68,10 @@ type Requirement struct {
 	Headcount      int     `json:"headcount"`
 	Effort         Effort  `json:"effort"`
 	AllowsExternal bool    `json:"allows_external"`
+	// Display names travel with the immutable snapshot so deficits can cite a taxonomy
+	// name after a restart without a live taxonomy lookup. Never sent to the solver.
+	RoleNameRU        string `json:"role_name_ru,omitempty"`
+	CompetencyNameRU  string `json:"competency_name_ru,omitempty"`
 }
 
 // CriticalityWeight returns w_r from docs/METRICS.md (0 for an unknown criticality).

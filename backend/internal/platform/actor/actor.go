@@ -1,9 +1,10 @@
 // Package actor carries the server-derived acting principal through request contexts.
 //
-// This MVP has no auth provider: the default actor is the server-side `system`
-// principal. A client-supplied `decided_by` (or any other asserted identity)
-// must be ignored by callers. This package never reads a client header; it only
-// accepts values injected by trusted server-side code.
+// The local auth provider verifies a bearer token in trusted middleware and injects
+// the token's `sub` claim here. With no principal in the context the actor falls back
+// to the server-side `system` principal (unit tests and internal jobs). A client-supplied
+// `decided_by` (or any other asserted identity) is always ignored by callers; this
+// package never reads a client header.
 package actor
 
 import (

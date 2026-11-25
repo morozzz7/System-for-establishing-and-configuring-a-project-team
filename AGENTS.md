@@ -19,8 +19,8 @@ UI language: Russian (i18n-ready; strings are currently hardcoded `ru-RU`). Code
 | DB | PostgreSQL 16 + pgvector image (`pgvector/pgvector:pg16`); pgvector ranking is not used yet |
 | **ML service** | **Python 3.12 + FastAPI, ML/optimization ONLY**: pydantic, httpx, ruamel.yaml, OR-Tools CP-SAT, pytest |
 | Frontend | React 18 + TypeScript, Vite, Ant Design, React Router; Vitest + Testing Library; deterministic mocks by default |
-| Tests | `go test` (incl. testcontainers), pytest, Vitest, Playwright (E2E, full Docker stack); frontend checks are run separately from `make test` |
-| Infra | Docker Compose, nginx gateway, Makefile |
+| Tests | `go test` (incl. testcontainers), pytest, Vitest, Playwright (E2E, full Docker stack, CI-verified); frontend checks are run separately from `make test` |
+| Infra | Docker Compose, nginx gateway, Makefile, GitHub Actions CI (`.github/workflows/ci.yml`) |
 
 ## Target, not implemented yet
 
@@ -29,9 +29,7 @@ Keep these as the intended architecture; do not describe them as current in code
 - sqlc / oapi-codegen code generation (repositories and DTOs are hand-written pgx/Go today).
 - spaCy/Transformers pipelines (embeddings are a deterministic hashing char-ngram baseline, 1024d).
 - pgvector ranking for competency normalization (exact-synonym baseline today).
-- Russian production calendar (capacity uses a fixed 5-day working week).
 - Apache ECharts on the frontend (Ant Design only today).
-- CI (GitHub Actions / GitLab CI); contract linting exists as Makefile targets only.
 
 ## Key architectural decision
 
@@ -43,13 +41,19 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 - Fallback (needs its own ADR, never switch silently): custom Go solver (ILP/branch-and-bound).
 
 ## Pipeline
+0. `POST /api/v1/auth/login`: local HS256 JWT provider; the bearer token is verified in trusted
+   middleware and the `sub` claim becomes the acting principal in the request context. Clients cannot
+   assert identity: `decided_by`, `edited_by` and `actor` are server-derived echoes. `/healthz`,
+   `/readyz` and `/auth/login` are public.
 1. `POST /api/v1/briefs`: brief text/file input (Go).
 2. Go -> ML `POST /v1/extract` -> `Requirement[]` (role, competency, level, criticality must/should/nice,
    effort min/likely/max in person-days, assumptions, confidence, **evidence** span from the brief).
 3. Normalize competencies to taxonomy (ML `/v1/embed` + `/api/v1/taxonomy/normalize`; exact-synonym
    ranking with `needs_review` on low confidence. **Target:** pgvector ranking in Go).
-4. Go builds availability: capacity(employee, week) = norm - current assignments - absences
-   (fixed 5-day week; **target:** Russian production calendar). The candidate pool comes from
+4. Go builds availability: capacity(employee, week) = norm - current assignments - absences.
+   The norm, working days and absence minutes come from the versioned Russian production calendar
+   (`contracts/calendar-ru-YYYY.yaml`, embedded in `internal/domain/data/`); a year without calendar
+   data is a G5 hard failure, never an implicit five-day week. The candidate pool comes from
    active employees, their competency levels and current assignments (`internal/service/candidates.go`),
    filtered by `CandidateFilter`; the in-memory stand-ins remain only for tests. Bulk import
    (`PUT /api/v1/employees`) applies the same G1/G2 checks before writing assignments and absences.
@@ -67,12 +71,14 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 ## Repository layout
 ```
 backend/          Go: cmd/{api,seed}, internal/{domain,handler,service,repository,validator,schedule,
-                  explain,metrics,mlclient,runinput,migrations,platform}
+                  explain,metrics,mlclient,runinput,migrations,platform}; platform/auth holds the JWT provider,
+                  domain/data/ embeds the versioned calendar mirrors
 ml/               FastAPI: app/{extract,optimize,llm}, app/embed.py, app/main.py, tests/
 frontend/         React + TS (Vite, Ant Design): src/{app,pages,components,api,mocks,types,hooks,utils}, e2e/ (Playwright)
 db/migrations/    goose migrations; seed data is loaded by backend/cmd/seed (`make seed`)
 contracts/        openapi.yaml (UI<->Go), ml-openapi.yaml (Go<->ML), taxonomy.yaml, reference.yaml,
-                  spectral.yaml, json-schema/: single source of truth
+                  calendar-ru-YYYY.yaml, spectral.yaml, json-schema/: single source of truth
+.github/workflows/ ci.yml: contracts, backend, ML, frontend and full-stack E2E jobs
 eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports
 deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), Dockerfile.{backend,ml,frontend}, nginx gateway
 docs/             PLAN.md (task status), ADR/, METRICS.md
@@ -91,7 +97,13 @@ docs/             PLAN.md (task status), ADR/, METRICS.md
 - Migration `00010` stores the full run-input snapshot payload (`run_snapshot.data_jsonb`) and
   authoritative response payloads, so runs, variants, recalculation lineage, explanations,
   decisions and audit events survive a restart (including `GET /runs/{id}/inputs`); a decision and its
-  audit event commit in one transaction. M8 attributes pulled hours only to portfolio projects that
+  audit event commit in one transaction. Migration `00011` adds `brief.data_jsonb` with the full
+  extracted brief (requirements, review split, diagnostics), so a new run can be created after a
+  restart without re-uploading the brief. `PgComputedRunRepo.CreateComputed` writes the run, snapshot,
+  variants and both explanation locales in a single transaction, so a mid-write failure cannot leave
+  an orphan run. The HS256 token provider in `platform/auth` derives the acting principal; every
+  decision/audit actor is server-side and client identity assertions are ignored.
+  M8 attributes pulled hours only to portfolio projects that
   share staff with the proposed team (`employee_ids`). The in-memory maps in `WorkflowService` remain
   the no-DB fallback for unit tests. M8 portfolio inputs are derived from active projects and
   their capacity matrix; `deficit_weeks` is a counterfactual P50 rerun, omitted with a reason
@@ -108,6 +120,10 @@ make lint-ml       # ruff + black --check
 make test-e2e      # full Docker stack + Playwright journey; needs frontend npm ci first
 cd frontend && npm test -- --run && npm run lint && npm run build
 ```
+The same gates run in GitHub Actions (`contracts`, `backend`, `ml`, `frontend`, `e2e` jobs). Auth is
+configured via `AUTH_JWT_SECRET`, `AUTH_TOKEN_TTL_MINUTES` and `AUTH_USERS` (see `.env.example`);
+the frontend uses `VITE_AUTH_LOGIN`/`VITE_AUTH_PASSWORD` to obtain a token in HTTP mode.
+
 Runtime ports, gateway URLs and the mock/API switch (`VITE_API_BASE_URL`) are documented in `README.md`
 and `frontend/README.md`; do not duplicate them here.
 

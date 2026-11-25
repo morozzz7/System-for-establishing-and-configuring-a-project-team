@@ -8,6 +8,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"sort"
@@ -32,6 +33,7 @@ type WorkflowStores struct {
 	Explanations repository.ExplanationRepo
 	Overrides    repository.ConstraintOverrideRepo
 	Audit        repository.WorkflowAuditRepo
+	ComputedRuns repository.ComputedRunRepo
 }
 
 // SetStores wires durable persistence into the workflow. It is called once during
@@ -166,8 +168,8 @@ func wfJSONMap(v any) map[string]any {
 
 // ---------- writes ----------
 
-// persistBrief stores the brief row the run references. The ML-only fields live in the
-// in-memory record; the database keeps the authoritative identity, status and text hash.
+// persistBrief stores the full brief record, including extracted requirements and the
+// review split, in data_jsonb. A restart rehydrates it so a new run needs no re-upload.
 func (s *WorkflowService) persistBrief(ctx context.Context, b *BriefRecord) error {
 	s.mu.RLock()
 	repo := s.stores
@@ -175,9 +177,16 @@ func (s *WorkflowService) persistBrief(ctx context.Context, b *BriefRecord) erro
 	if repo == nil || repo.Briefs == nil {
 		return nil
 	}
+	row := domainBriefFromRecord(b)
 	if _, err := repo.Briefs.Get(ctx, b.BriefID); err == nil {
-		return nil
+		return repo.Briefs.Update(ctx, row)
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		return fmt.Errorf("check brief %s: %w", b.BriefID, err)
 	}
+	return repo.Briefs.Create(ctx, row)
+}
+
+func domainBriefFromRecord(b *BriefRecord) domain.Brief {
 	source := b.SourceType
 	switch source {
 	case "text", "docx", "pdf", "txt":
@@ -200,23 +209,55 @@ func (s *WorkflowService) persistBrief(ctx context.Context, b *BriefRecord) erro
 		text = truncateRunes(text, 200000)
 	}
 	sum := sha256.Sum256([]byte(text))
-	return repo.Briefs.Create(ctx, domain.Brief{
+	return domain.Brief{
 		BriefID: b.BriefID, Title: title, SourceType: source, Language: language,
 		Status: b.Status, Text: text, TextSHA256: hex.EncodeToString(sum[:]),
 		RequestedStartWeek: b.RequestedStartWeek, DeadlineWeek: b.DeadlineWeek,
 		CreatedAt: b.CreatedAt,
-	})
+		Data: wfJSON(map[string]any{
+			"requirements": b.Requirements,
+			"review":       b.Review,
+			"diagnostics":  b.Diagnostics,
+		}),
+	}
 }
 
-func (s *WorkflowService) confirmBriefStored(id string) {
+// briefFromStored rebuilds the in-memory shape from the authoritative JSON payload. The
+// split between Requirements and Review is what ConfirmBrief needs after a restart.
+func briefFromStored(row domain.Brief) *BriefRecord {
+	b := &BriefRecord{
+		BriefID: row.BriefID, Title: row.Title, SourceType: row.SourceType,
+		Language: row.Language, Status: row.Status,
+		RequestedStartWeek: row.RequestedStartWeek, DeadlineWeek: row.DeadlineWeek,
+		CreatedAt: row.CreatedAt, Text: row.Text,
+		Requirements: []map[string]any{}, Review: []map[string]any{},
+		Diagnostics: map[string]any{},
+	}
+	var stored struct {
+		Requirements []map[string]any `json:"requirements"`
+		Review       []map[string]any `json:"review"`
+		Diagnostics  map[string]any   `json:"diagnostics"`
+	}
+	if err := json.Unmarshal(row.Data, &stored); err == nil {
+		b.Requirements = stored.Requirements
+		b.Review = stored.Review
+		if stored.Diagnostics != nil {
+			b.Diagnostics = stored.Diagnostics
+		}
+	}
+	return b
+}
+
+func (s *WorkflowService) confirmBriefStored(ctx context.Context, id string) {
 	s.mu.RLock()
+	b, ok := s.briefs[id]
 	repo := s.stores
 	s.mu.RUnlock()
-	if repo == nil || repo.Briefs == nil {
+	if !ok || repo == nil || repo.Briefs == nil {
 		return
 	}
-	if err := repo.Briefs.SetStatus(context.Background(), id, "confirmed"); err != nil {
-		slog.WarnContext(context.Background(), "confirm brief in store", "error", err)
+	if err := s.persistBrief(ctx, b); err != nil {
+		slog.WarnContext(ctx, "confirm brief in store", "error", err)
 	}
 }
 
@@ -260,8 +301,9 @@ func (s *WorkflowService) auditEventWithID(ctx context.Context, id, action, enti
 	return id, nil
 }
 
-// persistComputed writes the complete, Go-verified run: the run row, its snapshot with
-// the immutable input data, every variant with all children and both explanation locales.
+// persistComputed writes the complete, Go-verified run in one transaction: the run row,
+// its snapshot, every variant with all children and both explanation locales. A failure at
+// any stage rolls everything back, so a restart never exposes an orphan run (ADR-009).
 func (s *WorkflowService) persistComputed(
 	ctx context.Context,
 	briefID, runID, parentRunID string,
@@ -279,20 +321,21 @@ func (s *WorkflowService) persistComputed(
 	if repo == nil || repo.Runs == nil {
 		return nil
 	}
+	if repo.ComputedRuns == nil {
+		return fmt.Errorf("computed run store is not configured")
+	}
 
-	if err := repo.Runs.Create(ctx, domainRunFromPayload(runID, briefID, parentRunID, payload, data, createdAt)); err != nil {
-		return fmt.Errorf("persist run: %w", err)
-	}
+	run := domainRunFromPayload(runID, briefID, parentRunID, payload, data, createdAt)
+	var snap *domain.Snapshot
 	if repo.Snapshots != nil {
-		if err := repo.Snapshots.Create(ctx, domainSnapshotFrom(snapshot, data)); err != nil {
-			return fmt.Errorf("persist snapshot: %w", err)
-		}
+		stored := domainSnapshotFrom(snapshot, data)
+		snap = &stored
 	}
+	variants := []domain.Variant{}
 	if repo.Variants != nil {
-		if err := repo.Variants.CreateBatch(ctx, domainVariantsFrom(runID, payloads)); err != nil {
-			return fmt.Errorf("persist variants: %w", err)
-		}
+		variants = domainVariantsFrom(runID, payloads)
 	}
+	explanations := []domain.Explanation{}
 	if repo.Explanations != nil {
 		for variantID, result := range varResults {
 			detail, ok := details[variantID]
@@ -304,12 +347,15 @@ func (s *WorkflowService) persistComputed(
 				if err != nil {
 					continue
 				}
-				explanation := domainExplanationFrom(runID, storedVariantID(runID, variantID), locale, exp)
-				if err := repo.Explanations.Upsert(ctx, explanation); err != nil {
-					return fmt.Errorf("persist explanation %s/%s: %w", variantID, locale, err)
-				}
+				explanations = append(explanations,
+					domainExplanationFrom(runID, storedVariantID(runID, variantID), locale, exp))
 			}
 		}
+	}
+	if err := repo.ComputedRuns.CreateComputed(ctx, repository.ComputedRun{
+		Run: run, Snapshot: snap, Variants: variants, Explanations: explanations,
+	}); err != nil {
+		return fmt.Errorf("persist computed run: %w", err)
 	}
 	return nil
 }

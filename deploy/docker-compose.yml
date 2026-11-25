@@ -34,6 +34,9 @@ services:
       # Internal port is always 8080. BACKEND_PORT only controls host mapping.
       DATABASE_URL: "postgres://${POSTGRES_USER:-teamopt}:${POSTGRES_PASSWORD:-teamopt}@postgres:5432/${POSTGRES_DB:-teamopt}?sslmode=disable"
       ML_SERVICE_URL: "${ML_SERVICE_URL:-http://ml:8000}"
+      AUTH_JWT_SECRET: "${AUTH_JWT_SECRET:-dev-only-secret-change-me-123456789}"
+      AUTH_TOKEN_TTL_MINUTES: "${AUTH_TOKEN_TTL_MINUTES:-60}"
+      AUTH_USERS: "${AUTH_USERS:-}"
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:

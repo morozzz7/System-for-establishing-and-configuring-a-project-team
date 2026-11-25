@@ -176,7 +176,11 @@ func (s *CapacityService) GetCapacityWeeks(ctx context.Context, employeeID strin
 		}
 		year, weekNumber, err := domain.ParseWeek(week)
 		if err != nil {
-			continue
+			return nil, fmt.Errorf("parse week %s: %w", week, err)
+		}
+		workingDays, err := domain.WorkingDaysInWeekChecked(year, weekNumber)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", domain.ErrCalendarMissing, err.Error())
 		}
 		limitMinutes := effectiveLimitMinutes(row.NormMinutes, emp.CapacityProfile.ReserveRatio, emp.CapacityProfile.MaxUtilizationRatio)
 		reservedMinutes := row.NormMinutes - limitMinutes
@@ -189,7 +193,6 @@ func (s *CapacityService) GetCapacityWeeks(ctx context.Context, employeeID strin
 		loadRatio := assignedHours / math.Max(normHours, 1)
 		loadRatio = math.Max(0, math.Min(1.5, loadRatio))
 
-		workingDays := domain.WorkingDaysInWeek(year, weekNumber)
 		out = append(out, domain.CapacityWeek{
 			EmployeeID:    employeeID,
 			Week:          week,

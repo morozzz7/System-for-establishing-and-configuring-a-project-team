@@ -1239,7 +1239,7 @@ components:
       properties:
         week:
           $ref: '#/components/schemas/WeekKey'
-        working_days: {type: integer, minimum: 0, maximum: 5}
+        working_days: {type: integer, minimum: 0, maximum: 7}
         free_hours: {type: number, minimum: 0, maximum: 60}
         unavailable: {type: boolean}
     OptimizeCandidate:

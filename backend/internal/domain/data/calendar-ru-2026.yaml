@@ -1,0 +1,49 @@
+# Russian federal production calendar for 2026 (five-day week).
+# Single source of truth for capacity math; mirrored into the Go package for go:embed.
+year: 2026
+source: "Постановление Правительства РФ от 24.09.2025 № 1466; ст. 112 и 95 ТК РФ"
+source_url: "http://publication.pravo.gov.ru/document/0001202509240023"
+note: >-
+  Federal holidays only; regional non-working days are not modeled. Working time is computed as
+  working_days * daily_hours minus one daily_hour for each shortened pre-holiday day.
+
+# Non-working calendar days, including weekends that fall on holidays and transferred days.
+non_working_dates:
+  - 2026-01-01
+  - 2026-01-02
+  - 2026-01-03
+  - 2026-01-04
+  - 2026-01-05
+  - 2026-01-06
+  - 2026-01-07
+  - 2026-01-08
+  - 2026-01-09
+  - 2026-01-10
+  - 2026-01-11
+  - 2026-02-21
+  - 2026-02-22
+  - 2026-02-23
+  - 2026-03-07
+  - 2026-03-08
+  - 2026-03-09
+  - 2026-05-01
+  - 2026-05-02
+  - 2026-05-03
+  - 2026-05-09
+  - 2026-05-10
+  - 2026-05-11
+  - 2026-06-12
+  - 2026-06-13
+  - 2026-06-14
+  - 2026-11-04
+
+# Weekends declared working by the transfer decree. Empty in 2026: both transfers move
+# holiday-period weekends (2026-01-03 -> 2026-01-09, 2026-01-04 -> 2025-12-31).
+working_weekend_dates: []
+
+# Days preceding a holiday, shortened by one hour (article 95 of the Labour Code).
+shortened_dates:
+  - 2026-04-30
+  - 2026-05-08
+  - 2026-06-11
+  - 2026-11-03

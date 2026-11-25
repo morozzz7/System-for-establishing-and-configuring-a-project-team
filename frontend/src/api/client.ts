@@ -37,6 +37,7 @@ import type {
 } from '../types';
 import type { MetricDefinition, MetricDefinitionsResponse, WeightPresetListResponse } from '../types/reference';
 import { ApiError } from './errors';
+import { clearToken, ensureToken, login } from './auth';
 import {
   mockRoles,
   mockCompetencies,
@@ -110,20 +111,33 @@ async function problemFromResponse(response: Response): Promise<ApiError> {
   });
 }
 
+async function requestHeaders(init?: FetchInit): Promise<Headers> {
+  const headers = new Headers(init?.headers);
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json');
+  if (init?.body instanceof FormData) {
+    headers.delete('Content-Type');
+  } else if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (!headers.has('X-Request-Id')) headers.set('X-Request-Id', nextRequestId());
+  const token = await ensureToken();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  return headers;
+}
+
 /** Perform a request; non-2xx responses become `ApiError` (no raw bodies or stacks leak to the UI). */
-async function rawRequest(path: string, init?: FetchInit): Promise<Response> {
+async function rawRequest(path: string, init?: FetchInit, allowRetry = true): Promise<Response> {
+  const headers = await requestHeaders(init);
   let response: Response;
   try {
-    response = await fetch(`${API_BASE}${path}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-        'X-Request-Id': nextRequestId(),
-      },
-      ...init,
-    });
+    response = await fetch(`${API_BASE}${path}`, { ...init, headers });
   } catch (cause) {
     throw ApiError.network(cause instanceof Error ? cause.message : 'Сеть недоступна');
+  }
+  if (response.status === 401 && allowRetry && path !== '/auth/login') {
+    clearToken();
+    await login();
+    return rawRequest(path, init, false);
   }
   if (!response.ok) throw await problemFromResponse(response);
   return response;
@@ -162,9 +176,11 @@ export async function createBriefFromFile(file: File, title?: string, language?:
     formData.append('file', file);
     formData.append('title', briefTitle);
     formData.append('language', language ?? 'ru');
+    const headers = await requestHeaders({ method: 'POST', body: formData });
     const response = await fetch(`${API_BASE}/briefs`, {
       method: 'POST',
       body: formData,
+      headers,
     });
     if (!response.ok) {
       const err = await response.json().catch(() => ({ detail: 'Ошибка загрузки файла' }));

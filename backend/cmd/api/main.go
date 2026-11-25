@@ -19,6 +19,7 @@ import (
 
 	"github.com/teamopt/backend/internal/handler"
 	"github.com/teamopt/backend/internal/mlclient"
+	"github.com/teamopt/backend/internal/platform/auth"
 	"github.com/teamopt/backend/internal/platform/config"
 	"github.com/teamopt/backend/internal/repository"
 	"github.com/teamopt/backend/internal/service"
@@ -65,12 +66,28 @@ func main() {
 
 	ml := mlclient.New(cfg.MLServiceURL)
 
+	if cfg.AuthJWTSecret == config.DevAuthSecret {
+		logger.Warn("AUTH_JWT_SECRET is unset; using the development signing key")
+	}
+	users, err := auth.ParseUsers(cfg.AuthUsersJSON)
+	if err != nil {
+		logger.Error("invalid auth configuration", "error", err)
+		os.Exit(1)
+	}
+	provider, err := auth.NewProvider(users, cfg.AuthJWTSecret, cfg.AuthTokenTTLMinutes, nil)
+	if err != nil {
+		logger.Error("invalid auth configuration", "error", err)
+		os.Exit(1)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(provider.Middleware)
+		(&handler.AuthHandler{Provider: provider}).Register(r)
 		r.Get("/healthz", handleHealthz)
 		r.Get("/readyz", handleReadyz(pool, cfg.MLServiceURL, ml))
 		workflow := service.NewWorkflowService(ml)
@@ -106,6 +123,7 @@ func main() {
 				Explanations: repository.NewPgExplanationRepo(pool),
 				Overrides:    repository.NewPgConstraintOverrideRepo(pool),
 				Audit:        audRepo,
+				ComputedRuns: repository.NewPgComputedRunRepo(pool),
 			})
 
 			empSvc := &service.EmployeeService{

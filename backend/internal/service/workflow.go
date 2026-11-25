@@ -124,31 +124,76 @@ func (s *WorkflowService) CreateBrief(ctx context.Context, input BriefInput) (*B
 
 func (s *WorkflowService) ListBriefs() []*BriefRecord {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
-	out := make([]*BriefRecord, 0, len(s.briefs))
-	for _, b := range s.briefs {
+	byID := make(map[string]*BriefRecord, len(s.briefs))
+	for id, b := range s.briefs {
+		byID[id] = b
+	}
+	repo := s.stores
+	s.mu.RUnlock()
+
+	if repo != nil && repo.Briefs != nil {
+		rows, err := repo.Briefs.List(context.Background())
+		if err != nil {
+			slog.Warn("list briefs from store", "error", err)
+		}
+		for _, row := range rows {
+			if _, exists := byID[row.BriefID]; exists {
+				continue
+			}
+			b := briefFromStored(row)
+			s.mu.Lock()
+			s.briefs[row.BriefID] = b
+			s.mu.Unlock()
+			byID[row.BriefID] = b
+		}
+	}
+
+	out := make([]*BriefRecord, 0, len(byID))
+	for _, b := range byID {
 		out = append(out, b)
 	}
+	sort.Slice(out, func(i, j int) bool {
+		if !out[i].CreatedAt.Equal(out[j].CreatedAt) {
+			return out[i].CreatedAt.After(out[j].CreatedAt)
+		}
+		return out[i].BriefID < out[j].BriefID
+	})
 	return out
 }
+
 func (s *WorkflowService) GetBrief(id string) (*BriefRecord, bool) {
 	s.mu.RLock()
-	defer s.mu.RUnlock()
 	b, ok := s.briefs[id]
-	return b, ok
-}
-func (s *WorkflowService) ConfirmBrief(id string) (*BriefRecord, bool) {
+	repo := s.stores
+	s.mu.RUnlock()
+	if ok {
+		return b, true
+	}
+	if repo == nil || repo.Briefs == nil {
+		return nil, false
+	}
+	row, err := repo.Briefs.Get(context.Background(), id)
+	if err != nil {
+		return nil, false
+	}
+	b = briefFromStored(row)
 	s.mu.Lock()
-	b, ok := s.briefs[id]
-	if ok {
-		b.Status = "confirmed"
-		b.Requirements = append(b.Requirements, b.Review...)
-		b.Review = nil
-	}
+	s.briefs[id] = b
 	s.mu.Unlock()
-	if ok {
-		s.confirmBriefStored(id)
+	return b, true
+}
+
+func (s *WorkflowService) ConfirmBrief(id string) (*BriefRecord, bool) {
+	b, ok := s.GetBrief(id)
+	if !ok {
+		return nil, false
 	}
+	s.mu.Lock()
+	b.Status = "confirmed"
+	b.Requirements = append(b.Requirements, b.Review...)
+	b.Review = nil
+	s.mu.Unlock()
+	s.confirmBriefStored(context.Background(), id)
 	return b, ok
 }
 
@@ -283,6 +328,11 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 		varResults[vr.VariantID] = vr
 	}
 
+	// Publish to memory only after the durable write commits; otherwise a failed
+	// transaction could leave this process serving a run that was rolled back.
+	if err := s.persistComputed(ctx, briefID, runID, parentRunID, payload, data, snapshot, payloads, details, varResults, createdAt); err != nil {
+		return nil, err
+	}
 	s.mu.Lock()
 	s.runs[runID] = payload
 	s.snapshots[runID] = snapshot
@@ -290,10 +340,6 @@ func (s *WorkflowService) computeAndStore(ctx context.Context, briefID, runID, p
 	s.details[runID] = details
 	s.varresults[runID] = varResults
 	s.mu.Unlock()
-
-	if err := s.persistComputed(ctx, briefID, runID, parentRunID, payload, data, snapshot, payloads, details, varResults, createdAt); err != nil {
-		return nil, err
-	}
 	if _, err := s.auditEvent(ctx, "run_finished", "run", runID,
 		fmt.Sprintf("Finished run %s with status %v", runID, payload["status"]),
 		map[string]any{"status": payload["status"], "variant_count": len(varResults)}); err != nil {
@@ -381,6 +427,10 @@ func (s *WorkflowService) runData(ctx context.Context, b *BriefRecord, runID str
 	weeks, err := horizonWeeks(input, b)
 	if err != nil {
 		return runinput.Data{}, err
+	}
+	// A missing calendar is a G5 data-integrity failure, never an implicit five-day week.
+	if err := domain.ValidateCalendarYears(weeks); err != nil {
+		return runinput.Data{}, fmt.Errorf("%w: %s", ErrInvalidRunInput, err.Error())
 	}
 	preset, err := runPreset(input)
 	if err != nil {
@@ -496,12 +546,15 @@ func requirementsFromBrief(items []map[string]any) ([]runinput.Requirement, erro
 			return nil, fmt.Errorf("%w: requirement %s has no role_id", ErrInvalidRunInput, reqID)
 		}
 		var competency *string
+		competencyName := ""
 		if comp, ok := item["competency"].(map[string]any); ok {
+			competencyName, _ = comp["name_ru"].(string)
 			if id, _ := comp["competency_id"].(string); id != "" {
 				value := id
 				competency = &value
 			}
 		}
+		roleName, _ := role["name_ru"].(string)
 		level := intOption(item, "level", 0)
 		if level < 1 || level > 5 {
 			return nil, fmt.Errorf("%w: requirement %s has level %d outside 1..5", ErrInvalidRunInput, reqID, level)
@@ -523,14 +576,16 @@ func requirementsFromBrief(items []map[string]any) ([]runinput.Requirement, erro
 			allowsExternal = value
 		}
 		out = append(out, runinput.Requirement{
-			RequirementID:  reqID,
-			RoleID:         roleID,
-			CompetencyID:   competency,
-			Level:          level,
-			Criticality:    criticality,
-			Headcount:      headcount,
-			Effort:         effort,
-			AllowsExternal: allowsExternal,
+			RequirementID:    reqID,
+			RoleID:           roleID,
+			CompetencyID:     competency,
+			Level:            level,
+			Criticality:      criticality,
+			Headcount:        headcount,
+			Effort:           effort,
+			AllowsExternal:   allowsExternal,
+			RoleNameRU:       roleName,
+			CompetencyNameRU: competencyName,
 		})
 	}
 	return out, nil

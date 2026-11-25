@@ -27,6 +27,8 @@ func GenerateID(prefix string, n int) string {
 func NewProblem(status int, code, detail, requestID string, reasonCodes []string) Problem {
 	typeURL := "https://teamopt.internal/problems/bad-request"
 	switch {
+	case status == 401:
+		typeURL = "https://teamopt.internal/problems/unauthorized"
 	case status == 404:
 		typeURL = "https://teamopt.internal/problems/not-found"
 	case status == 409:
@@ -38,6 +40,8 @@ func NewProblem(status int, code, detail, requestID string, reasonCodes []string
 	}
 	title := "Error"
 	switch status {
+	case 401:
+		title = "Authentication required"
 	case 400:
 		title = "Malformed request"
 	case 404:

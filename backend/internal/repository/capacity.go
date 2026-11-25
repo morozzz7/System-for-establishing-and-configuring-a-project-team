@@ -86,7 +86,7 @@ func (r *PgCapacityRepo) GetWeeklyCapacity(ctx context.Context, employeeID, star
 		return nil, err
 	}
 
-	return buildWeeklyCapacities(p, weeks, assignedMap[employeeID], absences[employeeID]), nil
+	return buildWeeklyCapacities(p, weeks, assignedMap[employeeID], absences[employeeID])
 }
 
 // ---------- batch ----------
@@ -133,7 +133,11 @@ func (r *PgCapacityRepo) GetCapacityMatrix(ctx context.Context, employeeIDs []st
 	// 4. Compute per-employee.
 	result := make(map[string][]domain.WeeklyCapacity, len(profiles))
 	for _, p := range profiles {
-		result[p.EmployeeID] = buildWeeklyCapacities(p, weeks, assignedMap[p.EmployeeID], absencesMap[p.EmployeeID])
+		rows, err := buildWeeklyCapacities(p, weeks, assignedMap[p.EmployeeID], absencesMap[p.EmployeeID])
+		if err != nil {
+			return nil, fmt.Errorf("capacity for %s: %w", p.EmployeeID, err)
+		}
+		result[p.EmployeeID] = rows
 	}
 	return result, nil
 }
@@ -251,18 +255,27 @@ func (r *PgCapacityRepo) getAbsences(ctx context.Context, employeeIDs []string, 
 
 // ---------- capacity computation ----------
 
-// buildWeeklyCapacities computes WeeklyCapacity for each week given profile, assignment data, and absences.
-func buildWeeklyCapacities(p empProfile, weeks []string, assigned map[string]int, absences []domain.Absence) []domain.WeeklyCapacity {
-	normMin := p.WeeklyHoursNorm * 60
-	// Effective limit = min(norm × (1 − reserve), norm × max_util).
+// buildWeeklyCapacities computes WeeklyCapacity for each week using the versioned
+// production calendar for the norm and the working days inside absence intervals.
+func buildWeeklyCapacities(p empProfile, weeks []string, assigned map[string]int, absences []domain.Absence) ([]domain.WeeklyCapacity, error) {
 	effectiveFraction := math.Min(1.0-p.ReserveRatio, p.MaxUtilization)
-	effectiveLimit := int(math.Round(float64(normMin) * effectiveFraction))
 
 	result := make([]domain.WeeklyCapacity, len(weeks))
 	for i, w := range weeks {
-		y, wn, _ := domain.ParseWeek(w)
+		y, wn, err := domain.ParseWeek(w)
+		if err != nil {
+			return nil, fmt.Errorf("parse week %s: %w", w, err)
+		}
+		normMin, err := domain.NormMinutesInWeek(y, wn, float64(p.WeeklyHoursNorm))
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", domain.ErrCalendarMissing, err.Error())
+		}
+		effectiveLimit := int(math.Round(float64(normMin) * effectiveFraction))
 		assignedMin := assigned[w] // 0 if missing
-		absentMin := computeAbsentMinutes(absences, y, wn)
+		absentMin, err := computeAbsentMinutes(absences, y, wn)
+		if err != nil {
+			return nil, fmt.Errorf("%w: %s", domain.ErrCalendarMissing, err.Error())
+		}
 
 		available := effectiveLimit - assignedMin - absentMin
 		if available < 0 {
@@ -284,13 +297,12 @@ func buildWeeklyCapacities(p empProfile, weeks []string, assigned map[string]int
 			UtilizationRatio: utilRatio,
 		}
 	}
-	return result
+	return result, nil
 }
 
-// computeAbsentMinutes sums absent minutes for a given ISO week from a list of absences.
-// For each absence overlapping the week, counts Mon–Fri working days in the overlap
-// and multiplies by hours_per_day.
-func computeAbsentMinutes(absences []domain.Absence, year, week int) int {
+// computeAbsentMinutes sums absent minutes for a given ISO week. Only calendar working
+// days inside the overlap count, so holidays do not consume capacity twice.
+func computeAbsentMinutes(absences []domain.Absence, year, week int) (int, error) {
 	monday := domain.WeekMonday(year, week)
 	sunday := monday.AddDate(0, 0, 6)
 
@@ -307,14 +319,17 @@ func computeAbsentMinutes(absences []domain.Absence, year, week int) int {
 		if overlapStart.After(overlapEnd) {
 			continue
 		}
-		workDays := domain.WorkingDaysInOverlap(overlapStart, overlapEnd)
+		workDays, err := domain.WorkingDaysInOverlapChecked(overlapStart, overlapEnd)
+		if err != nil {
+			return 0, err
+		}
 		total += int(math.Round(abs.HoursPerDay * float64(workDays) * 60))
 	}
-	return total
+	return total, nil
 }
 
 // ComputeAbsentMinutesInWeek is the exported version for use by other packages.
-func ComputeAbsentMinutesInWeek(absences []domain.Absence, year, week int) int {
+func ComputeAbsentMinutesInWeek(absences []domain.Absence, year, week int) (int, error) {
 	return computeAbsentMinutes(absences, year, week)
 }
 

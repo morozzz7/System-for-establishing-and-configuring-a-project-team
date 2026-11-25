@@ -22,6 +22,8 @@ type Brief struct {
 	DeadlineWeek       string
 	CreatedAt          time.Time
 	UpdatedAt          time.Time
+	// Data is the full BriefRecord (requirements, review, diagnostics) encoded as JSON.
+	Data json.RawMessage
 }
 
 // Run mirrors one row of team_run.

@@ -52,8 +52,49 @@ tags:
     description: Grades, cost coefficients, planning parameters and weight presets.
   - name: Health
     description: Liveness and readiness.
+  - name: Auth
+    description: Local token issuance for the acting principal.
 
 paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: Issue a bearer token for a configured synthetic principal.
+      description: |
+        The local auth provider validates a configured pseudonymous account and returns a signed
+        HS256 token. The `sub` claim is the only accepted source of the acting identity; no request
+        body field can override it downstream. Accounts are configured server-side and contain no
+        personal data.
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              login: manager
+              password: demo
+      responses:
+        '200':
+          description: Token issued.
+          headers:
+            X-Request-Id:
+              $ref: '#/components/headers/XRequestId'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              example:
+                access_token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlbXBfbWdyMDEifQ.signature
+                token_type: Bearer
+                expires_in: 3600
+                actor: emp_mgr01
+        '401':
+          $ref: '#/components/responses/Problem401'
   /healthz:
     get:
       tags: [Health]
@@ -1576,14 +1617,14 @@ paths:
               example:
                 - employee_id: emp_7fa2
                   week: '2026-W02'
-                  working_days: 5
+                  working_days: 0
                   norm_hours: 40
                   reserved_hours: 8
                   assigned_hours: 12
                   absence_hours: 0
                   free_hours: 20
                   load_ratio: 0.3
-                  unavailable: false
+                  unavailable: true
                 - employee_id: emp_7fa2
                   week: '2026-W05'
                   working_days: 5
@@ -2247,10 +2288,12 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: |
-        The API never accepts a caller-asserted identity. The acting user (pseudonym `emp_*`) is
-        derived server-side from this token; fields such as `decided_by`, `edited_by` and `actor` are
-        read-only echoes of that principal (and are constrained to `emp_*`/`system`), so the audit
-        trail cannot be forged by a client.
+        The API never accepts a caller-asserted identity. Obtain a token from `POST /auth/login`
+        (HS256, signing key configured server-side). The acting user (pseudonym `emp_*`) is derived
+        server-side from this token; fields such as `decided_by`, `edited_by` and `actor` are read-only
+        echoes of that principal (and are constrained to `emp_*`/`system`), so the audit trail cannot
+        be forged by a client. `/auth/login`, `/healthz` and `/readyz` are public; every other
+        operation requires this token.
   parameters:
     RequestIdHeader:
       name: X-Request-Id
@@ -2352,6 +2395,20 @@ components:
         pattern: '^req_[A-Za-z0-9-]{6,32}$'
 
   responses:
+    Problem401:
+      description: Missing, expired or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+          example:
+            type: https://teamopt.internal/problems/unauthorized
+            title: Authentication required
+            status: 401
+            code: UNAUTHORIZED
+            detail: A valid bearer token is required.
+            request_id: req_01HXf4
+            reason_codes: [INVALID_TOKEN]
     Problem400:
       description: Malformed request.
       content:
@@ -2425,6 +2482,53 @@ components:
             reason_codes: [ML_TIMEOUT]
 
   schemas:
+    # ------------------------------------------------------------------ authentication
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          minLength: 3
+          maxLength: 64
+          pattern: '^[a-z0-9_-]+$'
+          description: Account name of a configured synthetic principal.
+        password:
+          type: string
+          minLength: 1
+          maxLength: 128
+          description: Shared secret of the configured account.
+      example:
+        login: manager
+        password: demo
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required: [access_token, token_type, expires_in, actor]
+      properties:
+        access_token:
+          type: string
+          minLength: 20
+          description: 'Signed HS256 JWT to send as `Authorization: Bearer <token>`.'
+        token_type:
+          type: string
+          enum: [Bearer]
+        expires_in:
+          type: integer
+          minimum: 1
+          maximum: 86400
+          description: Token lifetime in seconds.
+        actor:
+          type: string
+          pattern: '^(emp_[a-z0-9]{4,12}|system)$'
+          description: Server-derived principal; identical to the token `sub` claim.
+      example:
+        access_token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJlbXBfbWdyMDEifQ.signature
+        token_type: Bearer
+        expires_in: 3600
+        actor: emp_mgr01
+
     # ------------------------------------------------------------------ primitives
     WeekKey:
       type: string
@@ -2466,6 +2570,9 @@ components:
         - DEFICIT_DEADLINE_SHIFT
         - DEFICIT_DESCOPE
         - DEFICIT_SHIFT_UNAVAILABLE
+        - DEFICIT_NAME_UNAVAILABLE
+        - INVALID_TOKEN
+        - INVALID_CREDENTIALS
         - AUDIT_WRITE_FAILED
         - CONSTRAINT_ACTIVE_TEAM_SIZE
         - CONSTRAINT_ACTIVE_BUDGET
@@ -2932,11 +3039,12 @@ components:
           required: [week_start, working_days_per_week, hours_per_day, weekly_hours_norm, reserve_ratio, calendar]
           properties:
             week_start: {type: string, enum: [monday]}
-            working_days_per_week: {type: integer, enum: [5]}
+            working_days_per_week: {type: integer, minimum: 0, maximum: 7}
             hours_per_day: {type: number, enum: [8]}
             weekly_hours_norm: {type: number, enum: [40]}
             reserve_ratio: {type: number, minimum: 0, maximum: 0.5}
             calendar: {type: string, examples: [RU-production-calendar]}
+            calendar_year: {type: integer, minimum: 2020, maximum: 2100}
         schedule:
           type: object
           additionalProperties: false

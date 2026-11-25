@@ -83,7 +83,7 @@ func capacityTestService() *service.CapacityService {
 	return service.NewCapacityService(empRepo, nil, nil, capRepo)
 }
 
-// The two rows are the contract's example values verbatim.
+// The rows mirror the contract example: 2026-W02 is a New Year holiday week (zero working days).
 func TestEmployeeCapacityReturnsContractArray(t *testing.T) {
 	rec := httptest.NewRecorder()
 	capacityTestRouter(capacityTestService()).ServeHTTP(rec,
@@ -102,9 +102,9 @@ func TestEmployeeCapacityReturnsContractArray(t *testing.T) {
 		t.Fatalf("len = %d, want 4 weeks: %+v", len(weeks), weeks)
 	}
 	wantFirst := domain.CapacityWeek{
-		EmployeeID: "emp_7fa2", Week: "2026-W02", WorkingDays: 5,
+		EmployeeID: "emp_7fa2", Week: "2026-W02", WorkingDays: 0,
 		NormHours: 40, ReservedHours: 8, AssignedHours: 12, AbsenceHours: 0,
-		FreeHours: 20, LoadRatio: 0.3, Unavailable: false,
+		FreeHours: 20, LoadRatio: 0.3, Unavailable: true,
 	}
 	if !reflect.DeepEqual(weeks[0], wantFirst) {
 		t.Fatalf("first week = %+v, want %+v", weeks[0], wantFirst)

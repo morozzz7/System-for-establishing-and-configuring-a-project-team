@@ -1,7 +1,7 @@
 // Package domain – core domain types and pure helpers.
 // Week utilities work with ISO 8601 week keys (YYYY-WNN).
-// Weeks start on Monday (Russian standard).
-// Russian production calendar is a future enhancement; for now 5 working days/week.
+// Weeks start on Monday (Russian standard). Working-day counts come from the versioned
+// production calendar in calendar.go.
 package domain
 
 import (
@@ -94,12 +94,6 @@ func WeekDateRange(startWeek, endWeek string) (start, end time.Time, err error) 
 	return start, end, nil
 }
 
-// WorkingDaysInWeek returns the number of working days (Mon–Fri) in a given ISO week.
-// Simplified: always 5. Russian production calendar with holidays is a future enhancement.
-func WorkingDaysInWeek(_, _ int) int {
-	return 5
-}
-
 // WeekContainsDate checks whether the given date falls within the ISO week (Mon–Sun).
 func WeekContainsDate(year, week int, date time.Time) bool {
 	monday := WeekMonday(year, week)
@@ -109,14 +103,3 @@ func WeekContainsDate(year, week int, date time.Time) bool {
 	return !d.Before(monday) && !d.After(sunday)
 }
 
-// WorkingDaysInOverlap counts Mon–Fri days in [start, end] (inclusive, UTC dates).
-func WorkingDaysInOverlap(start, end time.Time) int {
-	count := 0
-	for d := start; !d.After(end); d = d.AddDate(0, 0, 1) {
-		wd := d.Weekday()
-		if wd != time.Saturday && wd != time.Sunday {
-			count++
-		}
-	}
-	return count
-}

@@ -3,7 +3,7 @@
  * Allows selecting weight preset / custom weights, and other run parameters.
  * Submits POST /api/v1/runs with the selected weights.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Alert,
@@ -22,6 +22,7 @@ import type { Brief, TeamRun, Horizon, PresetName, Weights } from '../types';
 import { DEFAULT_WEIGHTS } from '../types/reference';
 import { createRun, getBrief, listBriefs } from '../api/client';
 import { ApiError, toApiError } from '../api/errors';
+import { ensureToken } from '../api/auth';
 import WeightSelector from '../components/team-formation/WeightSelector';
 import { useWeightPresetsWithMetrics, useMetricDefinitions } from '../hooks';
 
@@ -116,8 +117,11 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
     };
   }, [selectedBriefId]);
 
+  const initializedBriefRef = useRef<string | null>(null);
   useEffect(() => {
-    if (brief?.requested_start_week && brief?.deadline_week) {
+    if (!brief || initializedBriefRef.current === brief.brief_id) return;
+    initializedBriefRef.current = brief.brief_id;
+    if (brief.requested_start_week && brief.deadline_week) {
       setRunParams((params) => ({
         ...params,
         horizon: {
@@ -174,12 +178,14 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
     try {
       const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
       if (API_BASE) {
+        const token = await ensureToken();
         const response = await fetch(`${API_BASE}/runs`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
             'X-Request-Id': `req_ui${Date.now()}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             brief_id: selectedBriefId,
@@ -305,6 +311,8 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
           <Form.Item label="Горизонт планирования" name="horizon">
             <Space wrap>
               <Select
+                data-testid="horizon-start-week"
+                showSearch
                 style={{ width: 140 }}
                 value={runParams.horizon?.start_week}
                 onChange={(v) =>

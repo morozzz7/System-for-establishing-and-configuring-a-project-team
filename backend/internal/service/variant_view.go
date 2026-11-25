@@ -225,13 +225,25 @@ func fullVariantPayload(snap *runinput.Snapshot, runID string, proposal metrics.
 func contractDeficits(snap *runinput.Snapshot, proposal metrics.Proposal, result metrics.VariantResult, cfg metrics.ScheduleConfig) []any {
 	out := make([]any, 0, len(result.Deficits))
 	for _, d := range result.Deficits {
-		name := d.RoleID
 		competencyID := ""
 		if d.CompetencyID != nil {
 			competencyID = *d.CompetencyID
+		}
+		requirement, _ := snap.RequirementByID(d.RequirementID)
+		name := d.RoleID
+		if requirement.RoleNameRU != "" {
+			name = requirement.RoleNameRU
+		}
+		if competencyID != "" {
 			name = competencyID
+			if requirement.CompetencyNameRU != "" {
+				name = requirement.CompetencyNameRU
+			}
 		}
 		reasonCodes := []string{}
+		if name == d.RoleID || name == competencyID {
+			reasonCodes = append(reasonCodes, "DEFICIT_NAME_UNAVAILABLE")
+		}
 		payload := map[string]any{
 			"competency_id":             competencyID,
 			"competency_name_ru":        name,

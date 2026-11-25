@@ -147,10 +147,17 @@ func (s *PgCandidateSource) Candidates(ctx context.Context, requirements []runin
 			if availableMinutes < 0 {
 				availableMinutes = 0
 			}
-			year, number, _ := domain.ParseWeek(week.Week)
+			year, number, err := domain.ParseWeek(week.Week)
+			if err != nil {
+				return nil, fmt.Errorf("%w: invalid week %s", ErrInvalidRunInput, week.Week)
+			}
+			workingDays, err := domain.WorkingDaysInWeekChecked(year, number)
+			if err != nil {
+				return nil, fmt.Errorf("%w: %s", ErrInvalidRunInput, err.Error())
+			}
 			rows = append(rows, runinput.CapacityRow{
 				Week:          week.Week,
-				WorkingDays:   domain.WorkingDaysInWeek(year, number),
+				WorkingDays:   workingDays,
 				NormHours:     minutesToHours(week.NormMinutes),
 				AssignedHours: minutesToHours(week.AssignedMinutes),
 				AbsentHours:   minutesToHours(week.AbsentMinutes),
