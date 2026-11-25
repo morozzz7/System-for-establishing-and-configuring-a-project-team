@@ -1,66 +1,142 @@
 # Optimal Project Team Formation System
 
-Decision-support system for resource managers. It turns a technical brief into
-structured requirements, finds feasible project-team variants against employee
-competencies and availability, and explains the trade-offs. The system proposes;
-a human makes the final decision.
+[![CI](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/ci.yml/badge.svg)](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/ci.yml)
+[![CD](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/deploy.yml/badge.svg)](https://github.com/morozzz7/System-for-establishing-and-configuring-a-project-team/actions/workflows/deploy.yml)
 
-The repository is privacy-safe by design: fixtures and examples use synthetic
-data and pseudonymous IDs (`emp_*`, `prj_*`, `brf_*`). Cost is represented only
-by grade coefficients, never by personal salary data.
+Decision-support system for resource managers. It turns a technical brief into structured
+requirements, finds feasible project-team variants against employee competencies and availability,
+and explains the trade-offs. **The system proposes; a human makes the final decision.**
 
-## Concept
+The repository is privacy-safe by design: fixtures and examples use synthetic data and pseudonymous
+IDs (`emp_*`, `prj_*`, `brf_*`). Cost is represented by grade coefficients, never personal salaries.
 
-The end-to-end flow is:
+## Stack at a glance
 
-```text
-brief text/file
-    -> ML extraction with evidence and effort ranges
-    -> competency normalization and human review
-    -> availability snapshot (capacity, assignments, absences)
-    -> CP-SAT optimizer proposes 2-3 variants
-    -> Go validator re-checks G1-G5 independently
-    -> schedule engine calculates P50/P80 and portfolio impact
-    -> metrics, deficits, explanations and human decision
+Click any tile to jump to the relevant workflow, source area or runtime component.
+
+| [![CI](docs/assets/badges/ci.svg)](.github/workflows/ci.yml) | [![CD](docs/assets/badges/cd.svg)](.github/workflows/deploy.yml) | [![Go](docs/assets/badges/go.svg)](backend) | [![Python](docs/assets/badges/python.svg)](ml) |
+|:---:|:---:|:---:|:---:|
+| **CI checks** | **Deployment** | **Go backend** | **ML service** |
+| [![React](docs/assets/badges/react.svg)](frontend) | [![PostgreSQL](docs/assets/badges/postgres.svg)](db/migrations) | [![Docker](docs/assets/badges/docker.svg)](deploy) | [![E2E](docs/assets/badges/e2e.svg)](frontend/e2e) |
+| **React UI** | **PostgreSQL** | **Docker runtime** | **E2E journey** |
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["React SPA<br/>Russian UI"] --> GW["nginx gateway<br/>single entry point"]
+    GW --> API["Go API<br/>chi + pgx"]
+    GW --> MLS["FastAPI ML service<br/>extract + optimize"]
+    API --> MLS
+    API --> DB[("PostgreSQL 16<br/>pgvector image")]
+    API --> VAL["Validator<br/>G1-G5 hard gates"]
+    VAL --> SCH["Schedule engine<br/>P50 / P80"]
+    SCH --> DB
+    MLS --> LLM["OpenAI-compatible LLM<br/>optional, brief text only"]
 ```
 
-The ML service structures language and proposes variants; it does not become
-the authority for assignments. Go owns hard-constraint verification and
-deterministic calculations. The schedule engine in
-[`backend/internal/schedule`](backend/internal/schedule) uses fixed-seed
-Monte Carlo over min/likely/max effort and calculates portfolio slip using the
-M8 formula from [`docs/METRICS.md`](docs/METRICS.md).
+The gateway routes `/` to the SPA, `/api/` to Go and `/ml/` to the ML service. The LLM structures
+brief text; it never decides assignments. Go independently re-checks every hard constraint and
+recomputes duration, deficits and metrics (**"solver proposes, Go verifies"**).
 
-## Stack
+<details>
+<summary>Walk the architecture</summary>
 
-| Area | Technologies |
-| --- | --- |
-| Backend/core | Go, chi, pgx, Goose, slog |
-| Database | PostgreSQL 16 + pgvector |
-| ML service | Python 3.12, FastAPI, Pydantic, deterministic hashing embeddings, OR-Tools CP-SAT |
-| LLM integration | OpenAI-compatible endpoint; OpenRouter is the MVP provider, optional |
-| Frontend | React 18, TypeScript, Vite, Ant Design, React Router |
-| Tests | Go test/testify/testcontainers, pytest, Vitest |
-| Runtime | Docker Compose, nginx |
-| Contracts | OpenAPI, ML OpenAPI, JSON Schema, YAML taxonomy/reference data |
+1. [`frontend/`](frontend) — React 18 + TypeScript + Ant Design; deterministic mocks by default.
+2. [`deploy/nginx/nginx.conf`](deploy/nginx/nginx.conf) — reverse proxy and single public port.
+3. [`backend/`](backend) — API, domain, repositories, validator, schedule engine, explainer, metrics.
+4. [`ml/`](ml) — FastAPI extraction, deterministic embeddings and OR-Tools CP-SAT optimizer.
+5. [`db/migrations/`](db/migrations) — 30 tables, applied by the `seed` binary via Goose.
 
-## Requirements
+</details>
 
-For the full Compose setup:
+## Processing pipeline
 
-- Docker Engine with Compose v2;
-- GNU Make;
-- curl (used by `make status`).
+```mermaid
+flowchart TD
+    A[Brief text or file] --> B[ML extraction<br/>roles, competencies, levels, effort ranges, evidence]
+    B --> C[Taxonomy normalization<br/>exact synonyms, needs_review on weak matches]
+    C --> D[Availability snapshot<br/>RU calendar, assignments, absences]
+    D --> E[CP-SAT optimizer<br/>2-3 candidate variants]
+    E --> F[Go validator<br/>G1-G5: zero hard violations]
+    F --> G[Schedule engine<br/>P50/P80, deficits, M8 portfolio impact]
+    G --> H[Explainer<br/>structured reason codes]
+    H --> I[Human-in-the-loop<br/>compare, edit constraints, decide]
+    I -->|recalculate| E
+```
 
-For local development without Docker:
+Effort is always a min/likely/max range with assumptions; duration comes from fixed-seed Monte Carlo
+over that range ([`docs/METRICS.md`](docs/METRICS.md)). A year without a versioned Russian
+production calendar is a G5 hard failure — never an implicit five-day week.
 
-- Go matching [`backend/go.mod`](backend/go.mod);
-- Python 3.12 and pip;
-- Node.js 20+ and npm.
+<details>
+<summary>Where each step lives</summary>
 
-An LLM key is not required for the deterministic tests, optimizer tests, or
-embedding tests. It is needed only when the extraction pipeline is configured
-to call an external OpenAI-compatible model.
+- Extraction contract: [`contracts/ml-openapi.yaml`](contracts/ml-openapi.yaml); implementation: [`ml/app/extract`](ml/app/extract).
+- UI-to-Go contract: [`contracts/openapi.yaml`](contracts/openapi.yaml).
+- Capacity and candidate pool: [`backend/internal/service/candidates.go`](backend/internal/service/candidates.go).
+- Validator and schedule: [`backend/internal/validator`](backend/internal/validator), [`backend/internal/schedule`](backend/internal/schedule).
+- Explanations and reason codes: [`backend/internal/explain`](backend/internal/explain).
+- Decision audit trail: [`backend/internal/repository`](backend/internal/repository).
+
+</details>
+
+## CI/CD
+
+```mermaid
+flowchart LR
+    P[Push to main] --> CI[CI workflow]
+    CI --> L1[Contracts<br/>Spectral + JSON Schema]
+    CI --> L2[Go tests<br/>testcontainers]
+    CI --> L3[ML tests<br/>pytest + fixtures]
+    CI --> L4[Frontend<br/>Vitest + lint + build]
+    L1 --> E2E[Playwright full stack]
+    L2 --> E2E
+    L3 --> E2E
+    L4 --> E2E
+    E2E --> BUILD[Build 3 images]
+    BUILD --> GHCR[(GitHub Container Registry)]
+    GHCR --> SSH[SSH to server]
+    SSH --> MIG[Migrate + seed]
+    MIG --> PROBE[Health probes]
+    PROBE --> LIVE[Live deployment]
+    PROBE -.->|failure| ROLL[Rollback to previous tag]
+```
+
+Deployment is gated on a green CI (`workflow_run`). Images are built once and pulled by the server;
+secrets are written to `.env` on the server and never baked into images. Server preparation,
+repository variables/secrets, manual deploy and rollback are documented in
+[`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).
+
+<details>
+<summary>Workflows and deployment assets</summary>
+
+- [`ci.yml`](.github/workflows/ci.yml) — contracts, backend, ML, frontend, Playwright E2E.
+- [`deploy.yml`](.github/workflows/deploy.yml) — GHCR build/push, SSH deploy, smoke test, rollback.
+- [`deploy/prod/docker-compose.yml`](deploy/prod/docker-compose.yml) — published images, gateway-only host port.
+- [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) — server checklist and operational commands.
+
+</details>
+
+> GitHub disables Mermaid `click` handlers in rendered Markdown for security. Expand the sections
+> above and use the links to explore the corresponding code and documents.
+
+## Screenshots
+
+Captured from the running stack (`http://localhost:9080`) with synthetic demo data only; all labels
+are in Russian because that is the product UI language.
+
+| [![Dashboard](docs/screenshots/01-dashboard.png)](docs/screenshots/01-dashboard.png) | [![Brief intake](docs/screenshots/02-briefs.png)](docs/screenshots/02-briefs.png) |
+|:---:|:---:|
+| **Resource dashboard** — availability, utilisation, portfolio and the guided pipeline | **Brief intake** — text or file upload with extraction instructions |
+
+| [![Run setup](docs/screenshots/03-run-config.png)](docs/screenshots/03-run-config.png) | [![Variants](docs/screenshots/04-variants.png)](docs/screenshots/04-variants.png) |
+|:---:|:---:|
+| **Run configuration** — horizon, weight presets and constraints | **Variant comparison** — P50/P80, M1-M12 score, roster and reason codes |
+
+| [![Employees](docs/screenshots/05-employees.png)](docs/screenshots/05-employees.png) | [![Competencies](docs/screenshots/06-reference.png)](docs/screenshots/06-reference.png) |
+|:---:|:---:|
+| **Employee pool** — profiles, competencies and assignment load | **Competency reference** — 390 taxonomy entries by family |
 
 ## Quick start with Docker
 
@@ -70,33 +146,20 @@ make up                       # build, migrate, seed and wait for health
 make status
 ```
 
-The default host endpoints (standard ports, clean host):
+Default host endpoints (standard ports, clean host):
 
-| Service     | URL                                                    |
-| ----------- | ------------------------------------------------------ |
-| Gateway/UI  | [http://localhost/](http://localhost/)                 |
+| Service | URL |
+| --- | --- |
+| Gateway / UI | [http://localhost/](http://localhost/) |
 | Backend API | [http://localhost:8080/api/v1/](http://localhost:8080/api/v1/) |
-| ML service  | [http://localhost:8000/](http://localhost:8000/)       |
-| PostgreSQL  | `localhost:5432` (user: teamopt, db: teamopt)          |
+| ML service | [http://localhost:8000/](http://localhost:8000/) |
+| PostgreSQL | `localhost:5432` (user: `teamopt`, db: `teamopt`) |
 
-**Main entry point is the Gateway at `http://localhost/`** — it routes:
-- `/` → Frontend (React SPA)
-- `/api/` → Backend (Go API, served at `/api/v1/` internally)
-- `/ml/` → ML service (FastAPI)
-
-**If standard ports are occupied**, use conflict-free ports in `.env`:
-```bash
-BACKEND_PORT=18080
-ML_PORT=18000
-FRONTEND_PORT=13000
-POSTGRES_PORT=15432
-GATEWAY_PORT=9080
-```
-Then access via Gateway: **http://localhost:9080/**
-
-Container-internal ports never change: backend=8080, ml=8000, frontend=3000, postgres=5432.
-
-Useful Compose commands:
+**The main entry point is the gateway at `http://localhost/`**: `/` → SPA, `/api/` → Go API,
+`/ml/` → ML service. If standard ports are occupied, set conflict-free ports in `.env`
+(`BACKEND_PORT=18080`, `ML_PORT=18000`, `FRONTEND_PORT=13000`, `POSTGRES_PORT=15432`,
+`GATEWAY_PORT=9080`) and open `http://localhost:9080/`. Container ports never change:
+backend 8080, ML 8000, frontend 3000, PostgreSQL 5432.
 
 ```bash
 make logs       # follow all service logs
@@ -104,26 +167,21 @@ make seed       # rerun migrations/reference seed against the running DB
 make down       # stop services and remove the local Compose database volume
 ```
 
-`make down` is intentionally destructive for local database state because it
-uses `docker compose down -v`; use it only when the local synthetic database
-can be recreated.
+`make down` uses `docker compose down -v` and is intentionally destructive for local database state.
 
 ## Local development
 
 Backend:
 
 ```bash
-cd backend
-go test ./...
-go build ./...
+cd backend && go test ./... && go build ./...
 ```
 
 ML service:
 
 ```bash
 cd ml
-python3 -m venv .venv
-. .venv/bin/activate
+python3 -m venv .venv && . .venv/bin/activate
 python -m pip install -r requirements.txt
 python -m pytest tests/ -q
 uvicorn app.main:app --reload --port 8000
@@ -139,56 +197,45 @@ npm test -- --run
 npm run build
 ```
 
-The frontend uses deterministic mocks by default. Set
-`VITE_API_BASE_URL=http://localhost:8080/api/v1` before starting Vite to use
-the backend brief/review/run flow instead:
-
-```bash
-VITE_API_BASE_URL=http://localhost:8080/api/v1 npm run dev
-```
+The frontend uses deterministic mocks by default. Set `VITE_API_BASE_URL=http://localhost:8080/api/v1`
+before starting Vite to use the backend brief/review/run flow.
 
 ## Verification
 
 From the repository root:
 
 ```bash
-make test
+make lint-contracts                    # Spectral + JSON Schema
+make test                              # fixtures + Go tests + pytest
+cd frontend && npm test -- --run && npm run lint && npm run build
+make test-e2e                          # full Docker stack + Playwright journey
+make test-e2e-down
 ```
 
-This runs contract checks, Go tests and ML tests. Frontend checks are run
-separately with `npm test -- --run`, `npm run lint` and `npm run build` from
-`frontend/`. Docker-backed Go integration tests require a running Docker
-daemon.
-
-Contract documents are the single source of truth. Update
-[`contracts/`](contracts/) before changing a cross-service API; generated code
-must not be hand-edited. The contract-specific commands are documented in
-[`contracts/README.md`](contracts/README.md).
+The same gates run in GitHub Actions. Contract documents are the single source of truth: update
+[`contracts/`](contracts/) before changing a cross-service API; generated code must not be hand-edited.
 
 ## Repository map
 
 ```text
-backend/       Go API, domain, repositories, validator, schedule engine
+backend/       Go API, domain, repositories, validator, schedule engine, explainer, metrics
 ml/            FastAPI extraction, embeddings and optimizer
-frontend/      React/TypeScript UI
-contracts/     OpenAPI, JSON Schema, taxonomy and reference data
+frontend/      React/TypeScript UI and Playwright journey
+contracts/     OpenAPI, ML OpenAPI, JSON Schema, taxonomy and reference data
 db/            PostgreSQL migrations and seed support
 eval/          gold briefs, synthetic scenarios and benchmarks
-docs/          plan, metrics and architecture decisions
-deploy/        Dockerfiles, Compose and nginx gateway
+docs/          PLAN.md, METRICS.md, DEPLOYMENT.md, ADR/, screenshots/, assets/badges/
+deploy/        Dockerfiles, dev Compose, production Compose and nginx gateway
+.github/       CI and CD workflows
 ```
 
-## Current implementation status
+## Implementation status
 
-Completed foundations include the resource model and CRUD/capacity services,
-LLM-first extraction with deterministic validation and evidence, deterministic
-embeddings and taxonomy normalization baseline, CP-SAT optimizer v2, Go
-validator G1-G5, the brief/review/run vertical slice, Russian UI screens, and
-the Phase 4.1 schedule engine.
+Delivered: resource model and capacity services, brief extraction with evidence and effort ranges,
+deterministic normalization baseline, CP-SAT optimizer v2, Go validator G1-G5, the brief/review/run
+vertical slice with database persistence and audit trail, Russian UI screens, the schedule engine,
+full-stack E2E, CI and GHCR/SSH continuous delivery.
 
-The current brief/run vertical slice keeps its workflow state in memory and
-uses synthetic demo candidates; persistence and full run-result orchestration
-remain subsequent integration work. The normalization implementation is an
-exact-synonym baseline; pgvector ranking is the planned deployment
-optimization. See [`docs/PLAN.md`](docs/PLAN.md) for the authoritative status
+Planned, not claimed as implemented: sqlc/oapi-codegen generation, spaCy/Transformers pipelines,
+pgvector ranking and Apache ECharts. See [`docs/PLAN.md`](docs/PLAN.md) for authoritative task status
 and [`docs/METRICS.md`](docs/METRICS.md) for metric definitions.

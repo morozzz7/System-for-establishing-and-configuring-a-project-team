@@ -5,10 +5,18 @@ on:
   pull_request:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   contracts:
     name: Contracts (Spectral + JSON Schema)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -17,11 +25,13 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - run: python -m pip install jsonschema
       - run: make lint-contracts
 
   backend:
     name: Backend (Go + testcontainers)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -38,6 +48,7 @@ jobs:
   ml:
     name: ML (pytest)
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,7 +56,9 @@ jobs:
           python-version: '3.12'
           cache: pip
           cache-dependency-path: ml/requirements.txt
-      - run: python -m pip install -r ml/requirements.txt
+      - run: python -m pip install -r ml/requirements.txt ruff==0.17.6
+      - name: Lint (syntax and undefined names)
+        run: python -m ruff check --select E9,F63,F7,F82 ml/
       - run: make fixtures
       - name: Test
         working-directory: ml
@@ -54,6 +67,7 @@ jobs:
   frontend:
     name: Frontend (Vitest + lint + build)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,6 +88,7 @@ jobs:
     name: E2E (full Docker stack + Playwright)
     needs: [contracts, backend, ml, frontend]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -87,5 +102,15 @@ jobs:
       - run: npx playwright install --with-deps chromium
         working-directory: frontend
       - run: make test-e2e
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
       - if: always()
         run: make test-e2e-down

@@ -3,7 +3,6 @@ opencode.json
 eval/gold
 eval/synth/scenarios/
 eval/reports/
-docs/screenshots
 
 # Environment
 .env

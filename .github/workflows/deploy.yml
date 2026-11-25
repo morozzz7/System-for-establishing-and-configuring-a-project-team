@@ -1,0 +1,195 @@
+name: CD
+
+# Deployment runs only after a green CI on main. Manual dispatch can redeploy an
+# existing GHCR tag without rebuilding (set existing_tag) or build from a ref.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref to build when existing_tag is empty
+        required: false
+        default: main
+        type: string
+      existing_tag:
+        description: Redeploy an already published GHCR tag (skips build)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository_owner }}
+
+jobs:
+  build:
+    name: Build and push images
+    if: >-
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'workflow_dispatch' && inputs.existing_tag == '')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    outputs:
+      image_tag: ${{ steps.tag.outputs.value }}
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - service: backend
+            dockerfile: deploy/Dockerfile.backend
+          - service: ml
+            dockerfile: deploy/Dockerfile.ml
+          - service: frontend
+            dockerfile: deploy/Dockerfile.frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.event.workflow_run.head_sha || github.sha }}
+      - name: Resolve image tag
+        id: tag
+        run: |
+          sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          echo "value=sha-${sha:0:7}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/teamopt-${{ matrix.service }}
+          tags: |
+            type=sha,format=short,prefix=sha-
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=teamopt-${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=teamopt-${{ matrix.service }}
+
+  deploy:
+    name: Deploy to server
+    needs: [build]
+    if: >-
+      always() && (needs.build.result == 'success' || needs.build.result == 'skipped') &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve image tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.existing_tag }}" ]; then
+            echo "value=${{ inputs.existing_tag }}" >> "$GITHUB_OUTPUT"
+          else
+            sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+            echo "value=sha-${sha:0:7}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Copy deployment files
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ vars.DEPLOY_SSH_PORT || 22 }}
+          source: "deploy/prod/docker-compose.yml,deploy/nginx/nginx.conf"
+          target: ${{ vars.DEPLOY_PATH || '/srv/teamopt' }}
+          strip_components: 1
+      - name: Pull, migrate, restart and verify
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DEPLOY_PATH: ${{ vars.DEPLOY_PATH || '/srv/teamopt' }}
+          GATEWAY_PORT: ${{ vars.GATEWAY_PORT || '80' }}
+          IMAGE_TAG: ${{ steps.tag.outputs.value }}
+          IMAGE_NAMESPACE: ${{ env.IMAGE_NAMESPACE }}
+          REGISTRY: ${{ env.REGISTRY }}
+          POSTGRES_USER: ${{ vars.POSTGRES_USER || 'teamopt' }}
+          POSTGRES_DB: ${{ vars.POSTGRES_DB || 'teamopt' }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          AUTH_JWT_SECRET: ${{ secrets.AUTH_JWT_SECRET }}
+          AUTH_USERS: ${{ secrets.AUTH_USERS }}
+          AUTH_TOKEN_TTL_MINUTES: ${{ vars.AUTH_TOKEN_TTL_MINUTES || '60' }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GHCR_USER: ${{ vars.GHCR_USER || github.actor }}
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ vars.DEPLOY_SSH_PORT || 22 }}
+          envs: DEPLOY_PATH,GATEWAY_PORT,IMAGE_TAG,IMAGE_NAMESPACE,REGISTRY,POSTGRES_USER,POSTGRES_DB,POSTGRES_PASSWORD,AUTH_JWT_SECRET,AUTH_USERS,AUTH_TOKEN_TTL_MINUTES,LLM_API_KEY,LLM_BASE_URL,GHCR_PAT,GHCR_USER
+          script: |
+            set -euo pipefail
+            cd "$DEPLOY_PATH"
+            compose="docker compose -f prod/docker-compose.yml --env-file .env -p teamopt-prod"
+
+            if [ -n "${GHCR_PAT:-}" ]; then
+              printf '%s' "$GHCR_PAT" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            fi
+
+            previous_tag="$(grep '^IMAGE_TAG=' .env 2>/dev/null | cut -d= -f2 || true)"
+            cat > .env <<EOF
+            IMAGE_TAG=$IMAGE_TAG
+            IMAGE_NAMESPACE=${IMAGE_NAMESPACE:-}
+            REGISTRY=${REGISTRY:-ghcr.io}
+            GATEWAY_PORT=${GATEWAY_PORT:-80}
+            POSTGRES_USER=${POSTGRES_USER:-teamopt}
+            POSTGRES_DB=${POSTGRES_DB:-teamopt}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-}
+            AUTH_JWT_SECRET=${AUTH_JWT_SECRET:-}
+            AUTH_USERS=${AUTH_USERS:-}
+            AUTH_TOKEN_TTL_MINUTES=${AUTH_TOKEN_TTL_MINUTES:-60}
+            DATABASE_URL=postgres://${POSTGRES_USER:-teamopt}:${POSTGRES_PASSWORD:-}@postgres:5432/${POSTGRES_DB:-teamopt}?sslmode=disable
+            ML_SERVICE_URL=http://ml:8000
+            LLM_API_KEY=${LLM_API_KEY:-}
+            LLM_BASE_URL=${LLM_BASE_URL:-}
+            EOF
+
+            $compose pull
+            $compose up -d --wait postgres
+            $compose run --rm --entrypoint /usr/local/bin/seed backend
+            $compose up -d --remove-orphans --wait --wait-timeout 120
+
+            probe() {
+              for attempt in $(seq 1 30); do
+                if curl -fsS --max-time 3 "$1" > /dev/null; then return 0; fi
+                sleep 2
+              done
+              echo "Smoke probe failed: $1" >&2
+              return 1
+            }
+
+            if ! probe "http://127.0.0.1:${GATEWAY_PORT}/api/v1/healthz" \
+               || ! probe "http://127.0.0.1:${GATEWAY_PORT}/ml/healthz" \
+               || ! probe "http://127.0.0.1:${GATEWAY_PORT}/"; then
+              echo "Deployment verification failed, rolling back to ${previous_tag:-<none>}" >&2
+              if [ -n "$previous_tag" ]; then
+                sed "s/^IMAGE_TAG=.*/IMAGE_TAG=${previous_tag}/" .env > .env.rollback && mv .env.rollback .env
+                $compose pull
+                $compose up -d --remove-orphans --wait --wait-timeout 120
+              fi
+              exit 1
+            fi
+            echo "Deployed ${IMAGE_TAG} to ${DEPLOY_PATH}"
