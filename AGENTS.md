@@ -20,7 +20,7 @@ UI language: Russian (i18n-ready; strings are currently hardcoded `ru-RU`). Code
 | **ML service** | **Python 3.12 + FastAPI, ML/optimization ONLY**: pydantic, httpx, ruamel.yaml, OR-Tools CP-SAT, pytest |
 | Frontend | React 18 + TypeScript, Vite, Ant Design, React Router; Vitest + Testing Library; deterministic mocks by default |
 | Tests | `go test` (incl. testcontainers), pytest, Vitest, Playwright (E2E, full Docker stack, CI-verified); frontend checks are run separately from `make test` |
-| Infra | Docker Compose, nginx gateway, Makefile, GitHub Actions CI (`.github/workflows/ci.yml`) |
+| Infra | Docker Compose (dev + `deploy/prod/`), nginx gateway, Makefile, GitHub Actions CI (`.github/workflows/ci.yml`), GHCR + SSH CD (`.github/workflows/deploy.yml`) |
 
 ## Target, not implemented yet
 
@@ -78,10 +78,10 @@ frontend/         React + TS (Vite, Ant Design): src/{app,pages,components,api,m
 db/migrations/    goose migrations; seed data is loaded by backend/cmd/seed (`make seed`)
 contracts/        openapi.yaml (UI<->Go), ml-openapi.yaml (Go<->ML), taxonomy.yaml, reference.yaml,
                   calendar-ru-YYYY.yaml, spectral.yaml, json-schema/: single source of truth
-.github/workflows/ ci.yml: contracts, backend, ML, frontend and full-stack E2E jobs
+.github/workflows/ ci.yml: contracts, backend, ML, frontend and full-stack E2E; deploy.yml: GHCR build, SSH deploy, smoke test, rollback
 eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports
-deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), Dockerfile.{backend,ml,frontend}, nginx gateway
-docs/             PLAN.md (task status), ADR/, METRICS.md
+deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), prod/docker-compose.yml, Dockerfile.{backend,ml,frontend}, nginx gateway
+docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screenshots/ (tracked UI captures), assets/badges/ (README tiles)
 .opencode/skills/ local agent skills (git-ignored, see "Agent skills")
 ```
 
