@@ -34,6 +34,7 @@ import type {
   Problem,
   FieldError,
   ReasonCode,
+  PageMeta,
 } from '../types';
 import type { MetricDefinition, MetricDefinitionsResponse, WeightPresetListResponse } from '../types/reference';
 import { ApiError } from './errors';
@@ -149,13 +150,15 @@ async function backend<T>(path: string, init?: FetchInit): Promise<T> {
   return (await response.json()) as T;
 }
 
-function unsupportedEndpoint(path: string): never {
-  throw new ApiError({
-    status: 501,
-    code: 'NOT_IMPLEMENTED',
-    detail: `Эндпоинт ${path} не реализован в ядре`,
-    reasonCodes: [],
-  });
+async function fetchAllPages<T>(path: string): Promise<T[]> {
+  const items: T[] = [];
+  const limit = 200;
+  for (let offset = 0; ; offset += limit) {
+    const page = await backend<{ items: T[]; meta?: PageMeta }>(`${path}?limit=${limit}&offset=${offset}`);
+    items.push(...page.items);
+    if (page.items.length < limit || (page.meta && items.length >= page.meta.total)) break;
+  }
+  return items;
 }
 
 // ──── briefs ────
@@ -648,13 +651,13 @@ export async function deleteAbsence(absenceId: string): Promise<void> {
 // ──── taxonomy / reference ────
 
 export async function listRoles(): Promise<Role[]> {
-  if (API_BASE) return unsupportedEndpoint('/taxonomy/roles');
+  if (API_BASE) return fetchAllPages<Role>('/taxonomy/roles');
   await delay();
   return [...mockRoles];
 }
 
 export async function listCompetencies(): Promise<Competency[]> {
-  if (API_BASE) return unsupportedEndpoint('/taxonomy/competencies');
+  if (API_BASE) return fetchAllPages<Competency>('/taxonomy/competencies');
   await delay();
   return [...mockCompetencies];
 }

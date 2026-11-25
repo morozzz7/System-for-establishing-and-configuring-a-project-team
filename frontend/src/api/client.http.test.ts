@@ -2,7 +2,7 @@
  * HTTP-mode client branches: resource mutations must reach the Go core, never the mock fixtures.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Assignment, Employee, EmployeeCompetency } from '../types';
+import type { Assignment, Competency, Employee, EmployeeCompetency } from '../types';
 
 type FetchInit = NonNullable<Parameters<typeof fetch>[1]>;
 
@@ -142,9 +142,41 @@ describe('client in HTTP mode', () => {
     expect(headers.get('Authorization')).toBe('Bearer test-token');
   });
 
-  it('fails loudly for taxonomy endpoints the core does not expose', async () => {
-    await expect(api.listRoles()).rejects.toMatchObject({ status: 501, code: 'NOT_IMPLEMENTED' });
-    await expect(api.listCompetencies()).rejects.toMatchObject({ status: 501, code: 'NOT_IMPLEMENTED' });
-    expect(calls).toHaveLength(0);
+  it('loads taxonomy reference data from the core', async () => {
+    await expect(api.listRoles()).resolves.toEqual([]);
+    expect(resourceCalls()[0].url).toBe('/api/v1/taxonomy/roles?limit=200&offset=0');
+    await expect(api.listCompetencies()).resolves.toEqual([]);
+    expect(resourceCalls()[1].url).toBe('/api/v1/taxonomy/competencies?limit=200&offset=0');
+  });
+
+  it('paginates taxonomy pages beyond the contract limit of 200', async () => {
+    const competency: Competency = {
+      competency_id: 'lang_go',
+      name_en: 'Go',
+      name_ru: 'Go',
+      category: 'language',
+      synonyms: ['golang'],
+      roles: ['backend_engineer'],
+      level_scale: 5,
+    };
+    const page = (offset: number, items: Competency[]) =>
+      jsonResponse({ items, meta: { limit: 200, offset, total: 201 } });
+    await api.listRoles();
+    const taxonomyCalls: string[] = [];
+    vi.mocked(fetch)
+      .mockImplementationOnce(async (url) => {
+        taxonomyCalls.push(String(url));
+        return page(0, Array(200).fill(competency));
+      })
+      .mockImplementationOnce(async (url) => {
+        taxonomyCalls.push(String(url));
+        return page(200, [competency]);
+      });
+
+    await expect(api.listCompetencies()).resolves.toHaveLength(201);
+    expect(taxonomyCalls).toEqual([
+      '/api/v1/taxonomy/competencies?limit=200&offset=0',
+      '/api/v1/taxonomy/competencies?limit=200&offset=200',
+    ]);
   });
 });

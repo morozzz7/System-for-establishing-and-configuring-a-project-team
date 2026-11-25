@@ -72,7 +72,7 @@ export default function AppLayout() {
         breakpoint="lg"
         collapsedWidth={80}
         theme="dark"
-        width={240}
+        width={272}
         style={{
           background: '#0b101c',
           borderRight: '1px solid rgba(255, 255, 255, 0.08)',
