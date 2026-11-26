@@ -132,6 +132,7 @@ jobs:
           AUTH_TOKEN_TTL_MINUTES: ${{ vars.AUTH_TOKEN_TTL_MINUTES || '60' }}
           LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
           LLM_BASE_URL: ${{ vars.LLM_BASE_URL }}
+          LLM_MODEL: ${{ vars.LLM_MODEL }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           GHCR_USER: ${{ vars.GHCR_USER || github.actor }}
         with:
@@ -139,7 +140,7 @@ jobs:
           username: ${{ vars.DEPLOY_USER }}
           password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           port: ${{ vars.DEPLOY_SSH_PORT || 22 }}
-          envs: DEPLOY_PATH,GATEWAY_PORT,IMAGE_TAG,IMAGE_NAMESPACE,REGISTRY,POSTGRES_USER,POSTGRES_DB,POSTGRES_PASSWORD,AUTH_JWT_SECRET,AUTH_USERS,AUTH_TOKEN_TTL_MINUTES,LLM_API_KEY,LLM_BASE_URL,GHCR_PAT,GHCR_USER
+          envs: DEPLOY_PATH,GATEWAY_PORT,IMAGE_TAG,IMAGE_NAMESPACE,REGISTRY,POSTGRES_USER,POSTGRES_DB,POSTGRES_PASSWORD,AUTH_JWT_SECRET,AUTH_USERS,AUTH_TOKEN_TTL_MINUTES,LLM_API_KEY,LLM_BASE_URL,LLM_MODEL,GHCR_PAT,GHCR_USER
           script: |
             set -euo pipefail
             cd "$DEPLOY_PATH"
@@ -165,6 +166,7 @@ jobs:
             ML_SERVICE_URL=http://ml:8000
             LLM_API_KEY=${LLM_API_KEY:-}
             LLM_BASE_URL=${LLM_BASE_URL:-}
+            LLM_MODEL=${LLM_MODEL:-}
             EOF
 
             $compose pull

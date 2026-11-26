@@ -91,6 +91,8 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 - Weight editor: allow free-form custom weights or only preset + delta sliders? (before 5.2) — RECOMMENDATION: preset cards + "Custom" mode with per-metric sliders, sum=1 enforced.
 
 ## Log
+2026-11-26 - cd-llm-model - CD now forwards the `LLM_MODEL` GitHub Variable into the server `.env`; without it extraction used the ML image default `qwen/qwen-2.5-72b-instruct`, which providers supporting only `deepseek-flash`/`deepseek-v4-pro` reject with HTTP 400 (`CAPABILITY_UNAVAILABLE`). `docs/DEPLOYMENT.md` and `AGENTS.md` document the variable.
+
 2026-11-26 - cd-password-auth - switched CD SSH authentication from a private key to a password: both `appleboy` steps in `deploy.yml` now use `DEPLOY_SSH_PASSWORD`, and `docs/DEPLOYMENT.md` documents the secret and the `PasswordAuthentication yes` server prerequisite. No application or contract changes.
 
 2026-11-26 - e2e-missing-env - removed the dependency on a sourceable `.env` at the Playwright step: `make test-e2e` now reads only `GATEWAY_PORT` from `COMPOSE_ENV_FILE` with shell > file > 80 precedence, matching Compose, so a missing or unsourceable env file no longer fails with `.env: not found`; `AGENTS.md`, `frontend/README.md` and the previous log entry reflect the derivation.

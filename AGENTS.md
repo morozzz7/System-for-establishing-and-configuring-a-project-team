@@ -127,6 +127,8 @@ browser targets the same published gateway port.
 The same gates run in GitHub Actions (`contracts`, `backend`, `ml`, `frontend`, `e2e` jobs). Auth is
 configured via `AUTH_JWT_SECRET`, `AUTH_TOKEN_TTL_MINUTES` and `AUTH_USERS` (see `.env.example`);
 the frontend uses `VITE_AUTH_LOGIN`/`VITE_AUTH_PASSWORD` to obtain a token in HTTP mode.
+The LLM extraction model is passed by CD as the `LLM_MODEL` variable (default in the ML image is
+`qwen/qwen-2.5-72b-instruct`, which must be overridden for providers serving other model names).
 
 Runtime ports, gateway URLs and the mock/API switch (`VITE_API_BASE_URL`) are documented in `README.md`
 (`README_RU.md` in Russian) and `frontend/README.md`; do not duplicate them here.
