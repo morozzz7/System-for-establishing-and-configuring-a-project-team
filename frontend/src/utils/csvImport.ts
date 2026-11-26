@@ -15,6 +15,7 @@ export interface ParsedEmployeeRow {
   employment_type: string;
   bench_flag: boolean;
   competencies_count: number;
+  absences_count: number;
   raw: Record<string, unknown>;
   has_error: boolean;
   error_message?: string;
@@ -22,6 +23,64 @@ export interface ParsedEmployeeRow {
 
 const COMP_DEFAULT_SOURCE = 'self_assessment';
 const COMP_DEFAULT_CONFIDENCE = 0.8;
+
+const ABSENCE_TYPES = new Set([
+  'vacation', 'sick_leave', 'training', 'business_trip', 'parental_leave', 'other',
+]);
+const ABSENCE_SOURCES = new Set(['manual', 'hr_import', 'calendar_import']);
+
+/** Import payloads use the contract shapes: no ids on nested rows, no extra keys (DisallowUnknownFields). */
+function normalizeAbsences(
+  employeeId: string,
+  values: unknown,
+): Array<Record<string, unknown>> {
+  if (!Array.isArray(values)) return [];
+  return values.flatMap((value) => {
+    if (typeof value !== 'object' || value === null) return [];
+    const a = value as Record<string, unknown>;
+    const type = String(a.type ?? 'other');
+    const startDate = String(a.start_date ?? '');
+    const endDate = String(a.end_date ?? '');
+    if (!ABSENCE_TYPES.has(type) || !startDate || !endDate) return [];
+    const source = String(a.source ?? 'hr_import');
+    return [{
+      employee_id: String(a.employee_id ?? employeeId),
+      type,
+      start_date: startDate,
+      end_date: endDate,
+      hours_per_day: Number(a.hours_per_day ?? 8),
+      approved: a.approved !== false,
+      source: ABSENCE_SOURCES.has(source) ? source : 'hr_import',
+    }];
+  });
+}
+
+function normalizeAssignments(employeeId: string, values: unknown): Array<Record<string, unknown>> {
+  if (!Array.isArray(values)) return [];
+  return values.flatMap((value) => {
+    if (typeof value !== 'object' || value === null) return [];
+    const a = value as Record<string, unknown>;
+    return [{
+      employee_id: String(a.employee_id ?? employeeId),
+      project_id: String(a.project_id ?? ''),
+      role_id: String(a.role_id ?? ''),
+      week: String(a.week ?? ''),
+      hours: Number(a.hours ?? 0),
+    }];
+  });
+}
+
+function normalizeCapacityProfile(obj: Record<string, unknown>): Record<string, number> | undefined {
+  const nested = obj.capacity_profile;
+  const source = (typeof nested === 'object' && nested !== null ? nested : obj) as Record<string, unknown>;
+  const norm = Number(source.weekly_hours_norm);
+  if (!Number.isFinite(norm) || norm <= 0) return undefined;
+  return {
+    weekly_hours_norm: norm,
+    reserve_ratio: Number(source.reserve_ratio ?? 0),
+    max_utilization_ratio: Number(source.max_utilization_ratio ?? 1),
+  };
+}
 
 function normalizeEmploymentType(value: string): string {
   const raw = value.trim().toLowerCase();
@@ -48,11 +107,13 @@ export const CSV_TEMPLATE_CONTENT = `# Шаблон импорта сотруд�
 # Допустимые грейды: J (Junior), M (Middle), S (Senior), L (Lead), P (Principal)
 # Тип занятости: internal, contractor, external_partner
 # Формат компетенций: comp_id:level (уровни 1-5, разделены точкой с запятой)
-employee_id,grade,role_profile_id,unit_id,employment_type,bench_flag,competencies
-emp_e2e01,S,backend_engineer,unt_e2e,internal,false,lang_go:4;db_postgresql:4;api_rest:4
-emp_e2e02,M,frontend_engineer,unt_e2e,internal,true,fw_react:3;lang_typescript:3
-emp_e2e03,L,qa_engineer,unt_e2e,internal,false,test_playwright:4;qa_test_design:4
-emp_e2e04,S,devops_engineer,unt_e2e,internal,false,cloud_yandex:4;cloud_kubernetes:4
+# Отсутствия (необязательно): type:start_date:end_date [;type:start_date:end_date]
+# Типы отсутствий: vacation, sick_leave, training, business_trip, parental_leave, other
+employee_id,grade,role_profile_id,unit_id,employment_type,bench_flag,competencies,absences
+emp_e2e01,S,backend_engineer,unt_e2e,internal,false,lang_go:4;db_postgresql:4;api_rest:4,vacation:2026-02-09:2026-02-20
+emp_e2e02,M,frontend_engineer,unt_e2e,internal,true,fw_react:3;lang_typescript:3,
+emp_e2e03,L,qa_engineer,unt_e2e,internal,false,test_playwright:4;qa_test_design:4,sick_leave:2026-03-02:2026-03-04
+emp_e2e04,S,devops_engineer,unt_e2e,internal,false,cloud_yandex:4;cloud_kubernetes:4,
 `;
 
 export function downloadCsvTemplate(): void {
@@ -82,6 +143,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
   const colType = getCol(['employment_type', 'type', 'тип', 'занятость']);
   const colBench = getCol(['bench_flag', 'bench', 'скамейка']);
   const colComp = getCol(['competencies', 'компетенции', 'skills']);
+  const colAbs = getCol(['absences', 'отсутствия', 'absence']);
 
   const rows: ParsedEmployeeRow[] = [];
 
@@ -111,6 +173,17 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
     }
     const comps = normalizeCompetencies(parsedComps);
 
+    const absRaw = colAbs >= 0 && parts[colAbs] ? parts[colAbs] : '';
+    const parsedAbsences: Array<Record<string, unknown>> = [];
+    if (absRaw) {
+      for (const entry of absRaw.split(';')) {
+        const [type, startDate, endDate] = entry.split(':').map((part) => part?.trim());
+        if (!type || !startDate || !endDate) continue;
+        parsedAbsences.push({ type, start_date: startDate, end_date: endDate, hours_per_day: 8 });
+      }
+    }
+    const absences = normalizeAbsences(empId, parsedAbsences);
+
     let hasError = false;
     let errorMsg = '';
 
@@ -136,6 +209,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
       employment_type: empType,
       bench_flag: bench,
       competencies: comps,
+      ...(absences.length > 0 ? { absences } : {}),
     };
 
     rows.push({
@@ -147,6 +221,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
       employment_type: empType,
       bench_flag: bench,
       competencies_count: comps.length,
+      absences_count: absences.length,
       raw,
       has_error: hasError,
       error_message: errorMsg,
@@ -173,6 +248,9 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
     const comps = normalizeCompetencies(
       Array.isArray(obj.competencies) ? (obj.competencies as Array<Record<string, unknown>>) : [],
     );
+    const absences = normalizeAbsences(empId, obj.absences);
+    const assignments = normalizeAssignments(empId, obj.assignments);
+    const capacityProfile = normalizeCapacityProfile(obj);
 
     let hasError = false;
     let errorMsg = '';
@@ -195,6 +273,9 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
       employment_type: empType,
       bench_flag: Boolean(obj.bench_flag),
       competencies: comps,
+      ...(capacityProfile ? { capacity_profile: capacityProfile } : {}),
+      ...(assignments.length > 0 ? { assignments } : {}),
+      ...(absences.length > 0 ? { absences } : {}),
     };
 
     return {
@@ -206,6 +287,7 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
       employment_type: empType,
       bench_flag: Boolean(obj.bench_flag),
       competencies_count: comps.length,
+      absences_count: absences.length,
       raw,
       has_error: hasError,
       error_message: errorMsg,

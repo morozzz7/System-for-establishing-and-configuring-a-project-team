@@ -38,6 +38,7 @@ func (f *portfolioFakeProjectRepo) Get(context.Context, string) (domain.Project,
 }
 func (f *portfolioFakeProjectRepo) Create(context.Context, domain.Project) error { return nil }
 func (f *portfolioFakeProjectRepo) Update(context.Context, domain.Project) error { return nil }
+func (f *portfolioFakeProjectRepo) Delete(context.Context, string) error          { return nil }
 
 type portfolioFakeAssignmentRepo struct {
 	rows    []domain.Assignment

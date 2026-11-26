@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
@@ -65,7 +65,11 @@ const roles: Role[] = [
 ];
 
 vi.mock('../hooks', () => ({
-  useProjects: () => ({ data: [project], loading: false, error: null }),
+  useProject: (projectId: string) => ({
+    data: projectId === project.project_id ? project : null,
+    loading: false,
+    error: null,
+  }),
   useAssignments: (projectId?: string) => ({
     data: assignments.filter((item) => !projectId || item.project_id === projectId),
     loading: false,
@@ -74,6 +78,11 @@ vi.mock('../hooks', () => ({
   useAbsences: () => ({ data: absences, loading: false, error: null }),
   useRoles: () => ({ data: roles, loading: false, error: null }),
 }));
+
+const { deleteProject } = vi.hoisted(() => ({
+  deleteProject: vi.fn(async (_id: string) => undefined),
+}));
+vi.mock('../api/client', () => ({ deleteProject }));
 
 describe('ProjectDetailPage', () => {
   it('shows the project card, only its own assignments and absences of assigned staff', async () => {
@@ -94,5 +103,25 @@ describe('ProjectDetailPage', () => {
     expect(screen.getAllByText('20 ч').length).toBeGreaterThan(0);
     expect(screen.getByText('Отпуск')).toBeDefined();
     expect(screen.queryByText('emp_other1')).toBeNull();
+  });
+
+  it('deletes the project from the detail page and returns to the list', async () => {
+    deleteProject.mockClear();
+    render(
+      <ConfigProvider locale={ruRU}>
+        <MemoryRouter initialEntries={['/projects/prj_portal01']}>
+          <Routes>
+            <Route path="/projects" element={<div>Список проектов</div>} />
+            <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </ConfigProvider>,
+    );
+
+    fireEvent.click(await screen.findByTestId('delete-project'));
+    fireEvent.click(await screen.findByRole('button', { name: 'Удалить' }));
+
+    await waitFor(() => expect(deleteProject).toHaveBeenCalledWith('prj_portal01'));
+    expect(await screen.findByText('Список проектов')).toBeDefined();
   });
 });

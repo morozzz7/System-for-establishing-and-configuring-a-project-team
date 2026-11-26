@@ -150,8 +150,13 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }: Employ
         employees: validRows.map((r) => r.raw),
       };
       const res = await importEmployees(payload);
+      const absencesCount = validRows.reduce(
+        (sum, row) => sum + (Array.isArray(row.raw.absences) ? row.raw.absences.length : 0),
+        0,
+      );
       message.success(
-        `Импорт завершен: создано ${res.totals.created}, обновлено ${res.totals.updated}, ошибок ${res.totals.errors}`,
+        `Импорт завершен: создано ${res.totals.created}, обновлено ${res.totals.updated}, ` +
+          `отсутствий ${absencesCount}, ошибок ${res.totals.errors}`,
       );
       handleClose();
       onSuccess();
@@ -233,6 +238,13 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }: Employ
       key: 'competencies_count',
       width: 110,
       render: (count: number) => <Tag color="blue">{count} навыков</Tag>,
+    },
+    {
+      title: 'Отсутствия',
+      dataIndex: 'absences_count',
+      key: 'absences_count',
+      width: 110,
+      render: (count: number) => <Tag color={count > 0 ? 'gold' : 'default'}>{count}</Tag>,
     },
     {
       title: 'Статус',

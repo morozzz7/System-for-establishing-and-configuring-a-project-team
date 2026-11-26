@@ -2,11 +2,14 @@
  * Project detail — the approved team as a plan: weekly assignments, their staffing summary and
  * absences of the people assigned to this project. All values come from the API.
  */
-import { Link, useParams } from 'react-router-dom';
-import { Card, Col, Descriptions, Row, Space, Statistic, Table, Typography } from 'antd';
+import { useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Button, Card, Col, Descriptions, Popconfirm, Row, Space, Statistic, Table, Typography, message } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Absence, Assignment } from '../types';
-import { useAssignments, useAbsences, useProjects, useRoles } from '../hooks';
+import { useAssignments, useAbsences, useProject, useRoles } from '../hooks';
+import { deleteProject } from '../api/client';
 import { Empty, ErrorDisplay, Loading, StatusTag } from '../components/shared';
 
 const { Title, Text } = Typography;
@@ -35,17 +38,30 @@ const CRITICALITY_LABELS: Record<string, string> = {
 
 export default function ProjectDetailPage() {
   const { projectId = '' } = useParams();
-  const projects = useProjects();
+  const navigate = useNavigate();
+  const [deleting, setDeleting] = useState(false);
+  const project = useProject(projectId);
   const assignments = useAssignments(projectId);
   const absences = useAbsences();
   const roles = useRoles();
 
-  if (projects.loading || assignments.loading || absences.loading) return <Loading />;
-  if (projects.error || assignments.error || absences.error)
-    return <ErrorDisplay error={projects.error ?? assignments.error ?? absences.error ?? ''} />;
+  if (project.loading || assignments.loading || absences.loading) return <Loading />;
+  if (project.error || assignments.error || absences.error)
+    return <ErrorDisplay error={project.error ?? assignments.error ?? absences.error ?? ''} />;
+  if (!project.data) return <Empty message="Проект не найден" />;
+  const prj = project.data;
 
-  const project = projects.data?.find((item) => item.project_id === projectId);
-  if (!project) return <Empty message="Проект не найден" />;
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await deleteProject(projectId);
+      message.success('Проект и его назначения удалены');
+      navigate('/projects');
+    } catch (err) {
+      message.error(`Ошибка удаления проекта: ${err instanceof Error ? err.message : String(err)}`);
+      setDeleting(false);
+    }
+  };
 
   const roleNames = new Map((roles.data ?? []).map((role) => [role.role_id, role.name_ru]));
 
@@ -129,25 +145,37 @@ export default function ProjectDetailPage() {
     <Space direction="vertical" size="large" style={{ width: '100%' }} data-testid="project-detail">
       <Space direction="vertical" size={0}>
         <Link to="/projects">← Все проекты</Link>
-        <Title level={2} style={{ margin: 0 }}>
-          {project.name}
-        </Title>
+        <Space>
+          <Title level={2} style={{ margin: 0 }}>
+            {prj.name}
+          </Title>
+          <Popconfirm
+            title="Удалить проект и его назначения?"
+            okText="Удалить"
+            cancelText="Отмена"
+            onConfirm={handleDelete}
+          >
+            <Button danger icon={<DeleteOutlined />} loading={deleting} data-testid="delete-project">
+              Удалить проект
+            </Button>
+          </Popconfirm>
+        </Space>
       </Space>
 
       <Card size="small">
         <Descriptions column={{ xs: 1, sm: 2, lg: 3 }} size="small">
-          <Descriptions.Item label="Код">{project.code}</Descriptions.Item>
+          <Descriptions.Item label="Код">{prj.code}</Descriptions.Item>
           <Descriptions.Item label="Статус">
-            <StatusTag status={project.status} />
+            <StatusTag status={prj.status} />
           </Descriptions.Item>
-          <Descriptions.Item label="Приоритет">{project.priority}</Descriptions.Item>
+          <Descriptions.Item label="Приоритет">{prj.priority}</Descriptions.Item>
           <Descriptions.Item label="Критичность">
-            {CRITICALITY_LABELS[project.criticality] ?? project.criticality}
+            {CRITICALITY_LABELS[prj.criticality] ?? prj.criticality}
           </Descriptions.Item>
-          <Descriptions.Item label="Начало">{project.start_week}</Descriptions.Item>
-          <Descriptions.Item label="План. окончание">{project.end_week_planned}</Descriptions.Item>
-          {project.end_week_forecast && (
-            <Descriptions.Item label="Прогноз">{project.end_week_forecast}</Descriptions.Item>
+          <Descriptions.Item label="Начало">{prj.start_week}</Descriptions.Item>
+          <Descriptions.Item label="План. окончание">{prj.end_week_planned}</Descriptions.Item>
+          {prj.end_week_forecast && (
+            <Descriptions.Item label="Прогноз">{prj.end_week_forecast}</Descriptions.Item>
           )}
         </Descriptions>
       </Card>

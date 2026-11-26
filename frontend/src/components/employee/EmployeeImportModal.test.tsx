@@ -56,6 +56,64 @@ emp_bad1,INVALID_GRADE,backend_dev
     expect(rows[1].error_message).toContain('Отсутствует ID');
   });
 
+  it('parses absences from the CSV template into the import payload', () => {
+    const rows = parseCsvToEmployees(CSV_TEMPLATE_CONTENT);
+    expect(rows).toHaveLength(4);
+    expect(rows[0].absences_count).toBe(1);
+    expect((rows[0].raw.absences as Array<Record<string, unknown>>)[0]).toMatchObject({
+      employee_id: 'emp_e2e01',
+      type: 'vacation',
+      start_date: '2026-02-09',
+      end_date: '2026-02-20',
+      hours_per_day: 8,
+      approved: true,
+      source: 'hr_import',
+    });
+    expect(rows[1].absences_count).toBe(0);
+    expect(rows[1].raw).not.toHaveProperty('absences');
+  });
+
+  it('preserves contract-shaped absences, assignments and capacity from JSON', () => {
+    const json = {
+      employees: [{
+        employee_id: 'emp_j3',
+        grade: 'M',
+        role_profile_id: 'backend_engineer',
+        weekly_hours_norm: 40,
+        reserve_ratio: 0.2,
+        max_utilization_ratio: 0.9,
+        active: true,
+        absences: [{
+          absence_id: 'abs_input1',
+          employee_id: 'emp_j3',
+          type: 'sick_leave',
+          start_date: '2026-03-02',
+          end_date: '2026-03-04',
+          hours_per_day: 8,
+          approved: true,
+        }],
+        assignments: [{ project_id: 'prj_old01', role_id: 'backend_engineer', week: '2026-W10', hours: 20 }],
+      }],
+    };
+    const [row] = parseJsonToEmployees(json);
+    expect(row.has_error).toBe(false);
+    expect(row.absences_count).toBe(1);
+    expect(row.raw).toMatchObject({
+      capacity_profile: { weekly_hours_norm: 40, reserve_ratio: 0.2, max_utilization_ratio: 0.9 },
+    });
+    expect(row.raw).not.toHaveProperty('active');
+    const absence = (row.raw.absences as Array<Record<string, unknown>>)[0];
+    expect(absence).toMatchObject({ type: 'sick_leave', source: 'hr_import', approved: true });
+    expect(absence).not.toHaveProperty('absence_id');
+    expect(row.raw.assignments).toEqual([{
+      employee_id: 'emp_j3',
+      project_id: 'prj_old01',
+      role_id: 'backend_engineer',
+      week: '2026-W10',
+      hours: 20,
+    }]);
+  });
+
   it('parses valid JSON data', () => {
     const json = {
       employees: [

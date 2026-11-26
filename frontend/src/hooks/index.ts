@@ -57,6 +57,10 @@ export function useProjects() {
   return useAsync(() => api.listProjects(), []);
 }
 
+export function useProject(projectId: string) {
+  return useAsync(() => api.getProject(projectId), [projectId]);
+}
+
 // ──── Assignments ────
 
 export function useAssignments(projectId?: string) {

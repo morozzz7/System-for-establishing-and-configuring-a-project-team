@@ -1717,6 +1717,48 @@ paths:
         '422':
           $ref: '#/components/responses/Problem422'
 
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      tags: [Projects]
+      operationId: getProject
+      description: Get a single project by id.
+      summary: Get a single project by id.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '200':
+          description: Project card.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+              example:
+                project_id: prj_0b22
+                code: PORTAL-2026
+                name: Portal migration to Go
+                status: planned
+                priority: 1
+                criticality: critical
+                start_week: '2026-W02'
+                end_week_planned: '2026-W14'
+                replaces_other_projects: false
+        '404':
+          $ref: '#/components/responses/Problem404'
+    delete:
+      tags: [Projects]
+      operationId: deleteProject
+      description: Delete a project and its planned assignments (audited).
+      summary: Delete a project and its planned assignments.
+      parameters:
+        - $ref: '#/components/parameters/RequestIdHeader'
+      responses:
+        '204':
+          description: Project deleted.
+        '404':
+          $ref: '#/components/responses/Problem404'
+
   /projects/{projectId}/assignments:
     parameters:
       - $ref: '#/components/parameters/ProjectId'

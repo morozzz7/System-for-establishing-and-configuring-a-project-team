@@ -68,8 +68,11 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
    Approving a variant records the decision, registers the derived project (`POST /api/v1/projects`)
    and writes its `weekly_assignments` as planned assignments (`POST /projects/{id}/assignments`,
    idempotent). They become part of the capacity baseline for later runs. The Projects table links
-   to `/projects/{projectId}`, which shows the project card, staffing summary, assigned team and
-   absences of that team.
+   to `/projects/{projectId}` (`GET /projects/{projectId}`), which shows the project card, staffing
+   summary, assigned team and absences of that team. `DELETE /projects/{projectId}` removes a project
+   and cascades its planned assignments; both project pages expose the action. Absences enter the
+   system through bulk import (`absences[]` in the employee payload, also parsed from CSV) or the
+   Absences page create form; the contract's date-only `YYYY-MM-DD` form is the wire format.
 
 ## Repository layout
 ```
@@ -103,7 +106,10 @@ docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screen
   decisions and audit events survive a restart (including `GET /runs/{id}/inputs`); a decision and its
   audit event commit in one transaction. Migration `00011` adds `brief.data_jsonb` with the full
   extracted brief (requirements, review split, diagnostics), so a new run can be created after a
-  restart without re-uploading the brief. `PgComputedRunRepo.CreateComputed` writes the run, snapshot,
+  restart without re-uploading the brief. Migration `00012` extends the `audit_log` action CHECK with
+  `employee_deleted`, `project_updated` and `project_deleted` so project lifecycle writes are no longer
+  silently dropped. Absence JSON uses the contract's date-only `YYYY-MM-DD` form on the wire
+  (`internal/domain/absence_json.go` accepts legacy RFC3339 as well). `PgComputedRunRepo.CreateComputed` writes the run, snapshot,
   variants and both explanation locales in a single transaction, so a mid-write failure cannot leave
   an orphan run. The HS256 token provider in `platform/auth` derives the acting principal; every
   decision/audit actor is server-side and client identity assertions are ignored.

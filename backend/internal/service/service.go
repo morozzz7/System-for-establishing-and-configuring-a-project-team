@@ -497,7 +497,7 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 				}
 			}
 			// Validate absences don't overlap.
-			for _, abs := range item.Absences {
+			for i, abs := range item.Absences {
 				if abs.EndDate.Before(abs.StartDate) {
 					validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
 						EmployeeID: item.EmployeeID,
@@ -513,12 +513,13 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 						EmployeeID: item.EmployeeID,
 						Field:      "absences",
 						Code:       "ABSENCE_OVERLAP",
-						Detail:     fmt.Sprintf("overlaps with existing absence"),
+						Detail:     "overlaps with existing absence",
 					})
 				}
-				// Check overlap within payload.
-				for _, other := range item.Absences {
-					if &abs != &other && !(abs.EndDate.Before(other.StartDate) || other.EndDate.Before(abs.StartDate)) {
+				// Check overlap with other payload absences by index: comparing loop-value
+				// addresses would compare each absence with its own copy.
+				for j, other := range item.Absences {
+					if j > i && !abs.EndDate.Before(other.StartDate) && !other.EndDate.Before(abs.StartDate) {
 						validationErrors = append(validationErrors, domain.EmployeeImportValidationError{
 							EmployeeID: item.EmployeeID,
 							Field:      "absences",
@@ -923,7 +924,7 @@ func (s *ProjectService) Create(ctx context.Context, input domain.ProjectCreate,
 		return domain.Project{}, domain.NewProblem(500, "INTERNAL_ERROR", "failed to create project", requestID, nil)
 	}
 
-	s.writeAudit(ctx, "employee_updated", "project", prj.ProjectID, requestID,
+	s.writeAudit(ctx, "project_created", "project", prj.ProjectID, requestID,
 		fmt.Sprintf("Project %s (%s) created", prj.ProjectID, prj.Code))
 
 	return prj, nil
@@ -966,10 +967,25 @@ func (s *ProjectService) Update(ctx context.Context, id string, input domain.Pro
 		return domain.Project{}, domain.NewProblem(500, "INTERNAL_ERROR", "failed to update project", requestID, nil)
 	}
 
-	s.writeAudit(ctx, "employee_updated", "project", id, requestID,
+	s.writeAudit(ctx, "project_updated", "project", id, requestID,
 		fmt.Sprintf("Project %s updated", id))
 
 	return updated, nil
+}
+
+func (s *ProjectService) Delete(ctx context.Context, id string, requestID string) error {
+	if err := s.ProjectRepo.Delete(ctx, id); err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			return domain.NewProblem(404, "NOT_FOUND",
+				fmt.Sprintf("project %s not found", id), requestID, nil)
+		}
+		slog.ErrorContext(ctx, "delete project", "error", err, "id", id)
+		return domain.NewProblem(500, "INTERNAL_ERROR", "failed to delete project", requestID, nil)
+	}
+
+	s.writeAudit(ctx, "project_deleted", "project", id, requestID,
+		fmt.Sprintf("Project %s deleted with its assignments", id))
+	return nil
 }
 
 // ---------- Assignment Service ----------
@@ -1144,7 +1160,7 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 	}
 
 	// Audit.
-	s.writeAudit(ctx, "employee_updated", "assignment", projectID, requestID,
+	s.writeAudit(ctx, "assignment_created", "assignment", projectID, requestID,
 		fmt.Sprintf("%d assignments created on project %s", len(results), projectID))
 
 	return results, nil

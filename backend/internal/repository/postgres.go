@@ -71,6 +71,7 @@ type ProjectRepo interface {
 	Get(ctx context.Context, id string) (domain.Project, error)
 	Create(ctx context.Context, p domain.Project) error
 	Update(ctx context.Context, p domain.Project) error
+	Delete(ctx context.Context, id string) error
 }
 
 // ---------- Assignment Repository ----------
@@ -503,6 +504,17 @@ func (r *PgProjectRepo) Update(ctx context.Context, p domain.Project) error {
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("%w: project %s", ErrNotFound, p.ProjectID)
+	}
+	return nil
+}
+
+func (r *PgProjectRepo) Delete(ctx context.Context, id string) error {
+	tag, err := r.Pool.Exec(ctx, `DELETE FROM project WHERE project_id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("delete project: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("%w: project %s", ErrNotFound, id)
 	}
 	return nil
 }

@@ -69,6 +69,13 @@ import {
 const mockBriefs: Brief[] = [];
 const mockRequirements: Record<string, Requirement[]> = {};
 const mockCreatedProjects: Project[] = [];
+const mockDeletedProjectIds = new Set<string>();
+const mockAddedAbsences: Absence[] = [];
+let mockEntitySeq = 0;
+function mockId(prefix: string): string {
+  mockEntitySeq += 1;
+  return `${prefix}_mock${String(mockEntitySeq).padStart(4, '0')}`;
+}
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL as string | undefined;
 /** Mock latency is skipped in unit tests so component tests stay fast and deterministic. */
@@ -375,6 +382,25 @@ export async function importEmployees(payload: EmployeeImportPayload): Promise<E
     detail: 'Обязательное поле не заполнено',
   }));
   const validCount = total - invalid.length;
+  if (!payload.validate_only) {
+    for (const employee of payload.employees) {
+      const rawAbsences = employee.absences;
+      if (!Array.isArray(rawAbsences)) continue;
+      for (const raw of rawAbsences) {
+        const absence = raw as Record<string, unknown>;
+        mockAddedAbsences.push({
+          absence_id: mockId('abs'),
+          employee_id: String(absence.employee_id ?? employee.employee_id ?? ''),
+          type: String(absence.type ?? 'other') as Absence['type'],
+          start_date: String(absence.start_date ?? ''),
+          end_date: String(absence.end_date ?? ''),
+          hours_per_day: Number(absence.hours_per_day ?? 8),
+          approved: absence.approved !== false,
+          source: 'hr_import',
+        });
+      }
+    }
+  }
   return {
     request_id: `req_mock_${Date.now()}`,
     mode: payload.mode ?? 'upsert',
@@ -516,8 +542,21 @@ export async function listProjects(params?: {
     return (await backend<{ items: Project[] }>(`/projects?${query.toString()}`)).items;
   }
   await delay();
-  const projects = [...mockCreatedProjects, ...mockProjects];
+  const projects = [...mockCreatedProjects, ...mockProjects].filter(
+    (p) => !mockDeletedProjectIds.has(p.project_id),
+  );
   return params?.status ? projects.filter((p) => p.status === params.status) : projects;
+}
+
+export async function getProject(projectId: string): Promise<Project | null> {
+  if (API_BASE) return backend<Project>(`/projects/${encodeURIComponent(projectId)}`);
+  await delay();
+  if (mockDeletedProjectIds.has(projectId)) return null;
+  return (
+    mockCreatedProjects.find((p) => p.project_id === projectId) ??
+    mockProjects.find((p) => p.project_id === projectId) ??
+    null
+  );
 }
 
 export async function createProject(prj: Project): Promise<Project> {
@@ -541,7 +580,22 @@ export async function createProject(prj: Project): Promise<Project> {
   const existing = mockCreatedProjects.findIndex((p) => p.project_id === prj.project_id);
   if (existing >= 0) mockCreatedProjects.splice(existing, 1, prj);
   else mockCreatedProjects.unshift(prj);
+  mockDeletedProjectIds.delete(prj.project_id);
   return prj;
+}
+
+export async function deleteProject(projectId: string): Promise<void> {
+  if (API_BASE) {
+    await backend<void>(`/projects/${encodeURIComponent(projectId)}`, { method: 'DELETE' });
+    return;
+  }
+  await delay();
+  mockDeletedProjectIds.add(projectId);
+  const index = mockCreatedProjects.findIndex((p) => p.project_id === projectId);
+  if (index >= 0) mockCreatedProjects.splice(index, 1);
+  for (let i = mockAssignments.length - 1; i >= 0; i -= 1) {
+    if (mockAssignments[i].project_id === projectId) mockAssignments.splice(i, 1);
+  }
 }
 
 // ──── assignments ────
@@ -561,7 +615,9 @@ export async function listAssignments(projectId?: string): Promise<Assignment[]>
     return batches.flat();
   }
   await delay();
-  return projectId ? mockAssignments.filter((a) => a.project_id === projectId) : [...mockAssignments];
+  return mockAssignments.filter(
+    (a) => !mockDeletedProjectIds.has(a.project_id) && (!projectId || a.project_id === projectId),
+  );
 }
 
 export async function createAssignments(
@@ -598,10 +654,9 @@ export async function createAssignments(
     return batches.flat();
   }
   await delay();
-  return assignments.map((a, i) => ({
-    ...a,
-    assignment_id: `asg_new_${String(i).padStart(4, '0')}`,
-  }));
+  const created = assignments.map((a) => ({ ...a, assignment_id: mockId('asg') }));
+  mockAssignments.push(...created);
+  return created;
 }
 
 // ──── absences ────
@@ -619,7 +674,13 @@ export async function listAbsences(params?: {
     return (await backend<{ items: Absence[] }>(`/absences?${query.toString()}`)).items;
   }
   await delay();
-  return [...mockAbsences];
+  const all = [...mockAddedAbsences, ...mockAbsences];
+  return all.filter(
+    (a) =>
+      (!params?.employee_id || a.employee_id === params.employee_id) &&
+      (!params?.from || a.end_date >= params.from) &&
+      (!params?.to || a.start_date <= params.to),
+  );
 }
 
 export async function createAbsence(absence: Omit<Absence, 'absence_id'>): Promise<Absence> {
@@ -637,7 +698,9 @@ export async function createAbsence(absence: Omit<Absence, 'absence_id'>): Promi
     });
   }
   await delay();
-  return { ...absence, absence_id: 'abs_new_0001' };
+  const created = { ...absence, absence_id: mockId('abs') };
+  mockAddedAbsences.unshift(created);
+  return created;
 }
 
 export async function deleteAbsence(absenceId: string): Promise<void> {
@@ -646,6 +709,10 @@ export async function deleteAbsence(absenceId: string): Promise<void> {
     return;
   }
   await delay();
+  const addedIndex = mockAddedAbsences.findIndex((a) => a.absence_id === absenceId);
+  if (addedIndex >= 0) mockAddedAbsences.splice(addedIndex, 1);
+  const seededIndex = mockAbsences.findIndex((a) => a.absence_id === absenceId);
+  if (seededIndex >= 0) mockAbsences.splice(seededIndex, 1);
 }
 
 // ──── taxonomy / reference ────

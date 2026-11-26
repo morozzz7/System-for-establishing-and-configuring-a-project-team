@@ -233,6 +233,7 @@ func (h *ProjectHandler) Register(r chi.Router) {
 	r.Get("/", h.List)
 	r.Post("/", h.Create)
 	r.Get("/{projectId}", h.Get)
+	r.Delete("/{projectId}", h.Delete)
 }
 
 func (h *ProjectHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -301,6 +302,22 @@ func (h *ProjectHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 201, prj)
+}
+
+func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	rid := requestID(r)
+	echoRequestID(w, rid)
+
+	if err := h.Svc.Delete(r.Context(), chi.URLParam(r, "projectId"), rid); err != nil {
+		var p domain.Problem
+		if errors.As(err, &p) {
+			writeProblem(w, p)
+			return
+		}
+		writeProblem(w, domain.NewProblem(500, "INTERNAL_ERROR", err.Error(), rid, nil))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ---------- Assignment Handler (project-scoped) ----------

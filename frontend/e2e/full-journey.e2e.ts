@@ -22,6 +22,7 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await page.getByRole('button', { name: 'Проверить (Dry Run)' }).click();
   await expect(page.getByText(/Dry Run успешен/)).toBeVisible();
   await page.getByRole('button', { name: /Импортировать \(8\)/ }).click();
+  await expect(page.getByText(/отсутствий 2/)).toBeVisible();
   await expect(page.locator('.ant-modal-wrap').first()).toBeHidden();
   await expect(page.getByText('emp_e2e01').first()).toBeVisible();
 
@@ -117,6 +118,29 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await page.goto('/assignments');
   await expect(page.getByRole('heading', { name: 'Назначения' })).toBeVisible();
   await expect(page.getByText(/^emp_[a-z0-9]{4,12}$/).first()).toBeVisible({ timeout: 30_000 });
+
+  // 10. Absences imported with the pool are visible globally and on the project card,
+  // and the project can be deleted together with its planned assignments.
+  await page.goto('/absences');
+  await expect(page.getByRole('heading', { name: 'Отсутствия' })).toBeVisible();
+  await expect(page.getByText('emp_e2e01').first()).toBeVisible({ timeout: 30_000 });
+
+  await page.goto('/projects');
+  await page.getByRole('link', { name: /^PRJ-/ }).first().click();
+  await expect(page.locator('[data-testid="project-absences"]').getByText('Отпуск')).toBeVisible({
+    timeout: 30_000,
+  });
+  const deleteResponse = page.waitForResponse(
+    (res) =>
+      /\/api\/v1\/projects\/prj_[a-z0-9]+$/.test(res.url()) &&
+      res.request().method() === 'DELETE' &&
+      res.status() === 204,
+    { timeout: 30_000 },
+  );
+  await page.getByRole('button', { name: 'Удалить проект' }).click();
+  await page.getByRole('button', { name: 'Удалить', exact: true }).click();
+  await deleteResponse;
+  await expect(page).toHaveURL(/\/projects$/);
 
   expect(runtimeErrors).toEqual([]);
 });

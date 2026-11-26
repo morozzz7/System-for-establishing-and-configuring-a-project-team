@@ -156,6 +156,14 @@ func (m *mockProjectRepo) Update(ctx context.Context, p domain.Project) error {
 	return nil
 }
 
+func (m *mockProjectRepo) Delete(ctx context.Context, id string) error {
+	if _, ok := m.projects[id]; !ok {
+		return fmt.Errorf("%w: %s", repository.ErrNotFound, id)
+	}
+	delete(m.projects, id)
+	return nil
+}
+
 type mockAssignmentRepo struct {
 	assignments []domain.Assignment
 }
@@ -474,6 +482,32 @@ func TestProjectService_Create_ValidationError(t *testing.T) {
 	var p domain.Problem
 	require.ErrorAs(t, err, &p)
 	assert.Equal(t, 422, p.Status)
+}
+
+func TestProjectService_Delete(t *testing.T) {
+	prjRepo := newMockProjectRepo()
+	audRepo := newMockAuditRepo()
+	svc := &service.ProjectService{ProjectRepo: prjRepo, AuditRepo: audRepo}
+	prjRepo.projects["prj_test123"] = domain.Project{ProjectID: "prj_test123", Code: "TEST-123"}
+
+	require.NoError(t, svc.Delete(context.Background(), "prj_test123", "req_test123456"))
+	assert.NotContains(t, prjRepo.projects, "prj_test123")
+	require.Len(t, audRepo.entries, 1)
+	assert.Equal(t, "project_deleted", audRepo.entries[0].Action)
+	assert.Equal(t, "project", audRepo.entries[0].EntityType)
+}
+
+func TestProjectService_Delete_NotFound(t *testing.T) {
+	svc := &service.ProjectService{
+		ProjectRepo: newMockProjectRepo(),
+		AuditRepo:   newMockAuditRepo(),
+	}
+
+	err := svc.Delete(context.Background(), "prj_missing", "req_test123456")
+	require.Error(t, err)
+	var p domain.Problem
+	require.ErrorAs(t, err, &p)
+	assert.Equal(t, 404, p.Status)
 }
 
 // ---------- Assignment Service Tests (G1/G2 enforcement) ----------

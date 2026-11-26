@@ -112,6 +112,16 @@ describe('client in HTTP mode', () => {
     expect(resourceCalls()[3].url).toBe('/api/v1/projects/prj_x/assignments');
   });
 
+  it('reads and deletes a single project through the core', async () => {
+    await api.getProject('prj_x');
+    expect(resourceCalls()[0].url).toBe('/api/v1/projects/prj_x');
+    expect(resourceCalls()[0].init?.method).toBeUndefined();
+
+    await api.deleteProject('prj_x');
+    expect(resourceCalls()[1].url).toBe('/api/v1/projects/prj_x');
+    expect(resourceCalls()[1].init?.method).toBe('DELETE');
+  });
+
   it('sends absence writes to the core and deletes by id', async () => {
     await api.createAbsence({
       employee_id: 'emp_test1',

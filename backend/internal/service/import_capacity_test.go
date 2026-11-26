@@ -3,6 +3,7 @@ package service_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -73,6 +74,45 @@ func TestImportEmployeesRejectsAggregatedOverload(t *testing.T) {
 	require.Len(t, resp.ValidationErrors, 1)
 	assert.Equal(t, "G2_OVERLOAD", resp.ValidationErrors[0].Code)
 	assert.Empty(t, asgRepo.assignments, "no row of an overloaded employee-week may be written")
+}
+
+func TestImportEmployeesValidateOnlyAbsenceOverlap(t *testing.T) {
+	_, _, _, svc := importCapacityServices()
+	approved := true
+	item := importItem()
+	item.Absences = []domain.AbsenceCreate{{
+		EmployeeID:  importEmployeeID,
+		Type:        "vacation",
+		StartDate:   time.Date(2026, 2, 9, 0, 0, 0, 0, time.UTC),
+		EndDate:     time.Date(2026, 2, 13, 0, 0, 0, 0, time.UTC),
+		HoursPerDay: 8,
+		Approved:    &approved,
+		Source:      "hr_import",
+	}}
+	payload := importPayload(item)
+	validateOnly := true
+	payload.ValidateOnly = &validateOnly
+
+	resp, err := svc.ImportEmployees(context.Background(), payload, "req_test123")
+	require.NoError(t, err)
+	require.Empty(t, resp.ValidationErrors, "a single absence must not overlap with itself")
+
+	item.Absences = append(item.Absences, domain.AbsenceCreate{
+		EmployeeID:  importEmployeeID,
+		Type:        "sick_leave",
+		StartDate:   time.Date(2026, 2, 12, 0, 0, 0, 0, time.UTC),
+		EndDate:     time.Date(2026, 2, 14, 0, 0, 0, 0, time.UTC),
+		HoursPerDay: 8,
+		Approved:    &approved,
+		Source:      "hr_import",
+	})
+	payload = importPayload(item)
+	payload.ValidateOnly = &validateOnly
+
+	resp, err = svc.ImportEmployees(context.Background(), payload, "req_test123")
+	require.NoError(t, err)
+	require.Len(t, resp.ValidationErrors, 1)
+	assert.Equal(t, "ABSENCE_OVERLAP", resp.ValidationErrors[0].Code)
 }
 
 func TestImportEmployeesAcceptsWithinCapacityBatch(t *testing.T) {

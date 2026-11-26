@@ -4,10 +4,12 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Table, Select, Space, Typography, Tag } from 'antd';
+import { Button, Popconfirm, Table, Select, Space, Typography, Tag, message } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Project, ProjectStatus } from '../types';
 import { useProjects } from '../hooks';
+import { deleteProject } from '../api/client';
 import { Loading, Empty, ErrorDisplay, StatusTag } from '../components/shared';
 
 const { Title } = Typography;
@@ -17,6 +19,20 @@ const STATUS_OPTIONS: ProjectStatus[] = ['planned', 'active', 'paused', 'done', 
 export default function ProjectsPage() {
   const projects = useProjects();
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [deletingId, setDeletingId] = useState<string | undefined>();
+
+  const handleDelete = async (projectId: string) => {
+    setDeletingId(projectId);
+    try {
+      await deleteProject(projectId);
+      message.success('Проект удалён из портфеля');
+      projects.refetch();
+    } catch (err) {
+      message.error(`Ошибка удаления проекта: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingId(undefined);
+    }
+  };
 
   if (projects.loading) return <Loading />;
   if (projects.error) return <ErrorDisplay error={projects.error} />;
@@ -69,6 +85,29 @@ export default function ProjectsPage() {
       title: 'План. окончание',
       dataIndex: 'end_week_planned',
       key: 'end_week_planned',
+    },
+    {
+      title: '',
+      key: 'actions',
+      fixed: 'right',
+      render: (_, record) => (
+        <Popconfirm
+          title="Удалить проект и его назначения?"
+          okText="Удалить"
+          cancelText="Отмена"
+          onConfirm={() => handleDelete(record.project_id)}
+        >
+          <Button
+            danger
+            size="small"
+            icon={<DeleteOutlined />}
+            loading={deletingId === record.project_id}
+            data-testid={`delete-project-${record.project_id}`}
+          >
+            Удалить
+          </Button>
+        </Popconfirm>
+      ),
     },
   ];
 

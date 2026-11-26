@@ -13,6 +13,15 @@
         { "competency_id": "lang_go", "level": 4, "confidence": 0.95, "source": "manager_review" },
         { "competency_id": "db_postgresql", "level": 4, "confidence": 0.9, "source": "manager_review" },
         { "competency_id": "api_rest", "level": 4, "confidence": 0.9, "source": "project_history" }
+      ],
+      "absences": [
+        {
+          "type": "vacation",
+          "start_date": "2026-02-09",
+          "end_date": "2026-02-13",
+          "hours_per_day": 8,
+          "approved": true
+        }
       ]
     },
     {
@@ -41,6 +50,15 @@
         { "competency_id": "fw_react", "level": 4, "confidence": 0.95, "source": "manager_review" },
         { "competency_id": "lang_typescript", "level": 4, "confidence": 0.9, "source": "manager_review" },
         { "competency_id": "test_playwright", "level": 3, "confidence": 0.8, "source": "project_history" }
+      ],
+      "absences": [
+        {
+          "type": "vacation",
+          "start_date": "2026-02-16",
+          "end_date": "2026-02-20",
+          "hours_per_day": 8,
+          "approved": true
+        }
       ]
     },
     {
