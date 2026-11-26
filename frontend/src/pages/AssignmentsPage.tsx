@@ -1,17 +1,22 @@
 /**
  * Assignments page — table of current assignments.
  */
+import { useMemo } from 'react';
 import { Table, Space, Typography, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Assignment } from '../types';
-import { useAssignments } from '../hooks';
+import { useAssignments, useRoles } from '../hooks';
 import { Loading, Empty, ErrorDisplay } from '../components/shared';
-import { mockRoles } from '../mocks/reference';
 
 const { Title } = Typography;
 
 export default function AssignmentsPage() {
   const assignments = useAssignments();
+  const roles = useRoles();
+  const roleNames = useMemo(
+    () => new Map((roles.data ?? []).map((role) => [role.role_id, role.name_ru])),
+    [roles.data],
+  );
 
   if (assignments.loading) return <Loading />;
   if (assignments.error) return <ErrorDisplay error={assignments.error} />;
@@ -40,7 +45,7 @@ export default function AssignmentsPage() {
       title: 'Роль',
       dataIndex: 'role_id',
       key: 'role_id',
-      render: (id) => mockRoles.find((r) => r.role_id === id)?.name_ru ?? id,
+      render: (id) => roleNames.get(id) ?? id,
     },
     {
       title: 'Неделя',

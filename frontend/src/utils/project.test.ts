@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { Brief, TeamRun } from '../types';
-import { projectFromRun } from './project';
+import type { Brief, TeamRun, Variant } from '../types';
+import { chunkAssignments, plannedAssignments, projectFromRun } from './project';
 
 const run: TeamRun = {
   run_id: 'run_0001',
@@ -54,5 +54,45 @@ describe('projectFromRun', () => {
   it('keeps the project id within the contract pattern for short brief ids', () => {
     const shortRun = { ...run, brief_id: 'x' };
     expect(projectFromRun(shortRun, null).project_id).toBe('prj_000x');
+  });
+});
+
+describe('plannedAssignments', () => {
+  const variant = {
+    members: [
+      { employee_id: 'emp_dev01', role_id: 'backend_engineer' },
+      { employee_id: 'emp_qa001', role_id: 'qa_engineer' },
+    ],
+    weekly_assignments: [
+      { employee_id: 'emp_dev01', requirement_id: 'req_1', week: '2026-W10', hours: 20, share: 1 },
+      { employee_id: 'emp_dev01', requirement_id: 'req_2', week: '2026-W10', hours: 5, share: 0.25 },
+      { employee_id: 'emp_qa001', requirement_id: 'req_3', week: '2026-W10', hours: 8, share: 1 },
+      { employee_id: 'emp_ghost', requirement_id: 'req_4', week: '2026-W11', hours: 4, share: 1 },
+    ],
+  } as unknown as Variant;
+
+  it('maps weekly work to role-bearing plan assignments for the derived project', () => {
+    expect(plannedAssignments(variant, 'prj_portal01')).toEqual([
+      {
+        project_id: 'prj_portal01',
+        employee_id: 'emp_dev01',
+        role_id: 'backend_engineer',
+        week: '2026-W10',
+        hours: 25,
+        source: 'plan',
+      },
+      {
+        project_id: 'prj_portal01',
+        employee_id: 'emp_qa001',
+        role_id: 'qa_engineer',
+        week: '2026-W10',
+        hours: 8,
+        source: 'plan',
+      },
+    ]);
+  });
+
+  it('splits large batches within the 500-row endpoint limit', () => {
+    expect(chunkAssignments([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
   });
 });

@@ -39,6 +39,11 @@ const MENU_LEAF_KEYS: ReadonlySet<string> = new Set([
   '/reference/planning-params',
 ]);
 
+function selectedMenuKey(pathname: string): string {
+  if (MENU_LEAF_KEYS.has(pathname)) return pathname;
+  return [...MENU_LEAF_KEYS].find((key) => key !== '/' && pathname.startsWith(`${key}/`)) ?? pathname;
+}
+
 const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: 'Дашборд' },
   { key: '/briefs', icon: <FileTextOutlined />, label: 'Технические задания' },
@@ -109,7 +114,7 @@ export default function AppLayout() {
           <Menu
             theme="dark"
             mode="inline"
-            selectedKeys={[location.pathname]}
+            selectedKeys={[selectedMenuKey(location.pathname)]}
             openKeys={openKeys}
             onOpenChange={(keys) => setOpenKeys(keys.map((key) => String(key)))}
             items={menuItems}

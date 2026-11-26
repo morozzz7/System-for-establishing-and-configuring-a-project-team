@@ -561,7 +561,7 @@ export async function listAssignments(projectId?: string): Promise<Assignment[]>
     return batches.flat();
   }
   await delay();
-  return [...mockAssignments];
+  return projectId ? mockAssignments.filter((a) => a.project_id === projectId) : [...mockAssignments];
 }
 
 export async function createAssignments(

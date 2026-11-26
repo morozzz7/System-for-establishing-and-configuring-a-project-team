@@ -65,8 +65,11 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
    (`requested_start_week`/`deadline_week`, else ISO weeks found in its text).
 7. Explainer: reasons from structured facts (reason codes).
 8. UI: compare variants, explanations, constraint editor -> `POST /api/v1/runs/{id}/recalculate`.
-   Approving a variant records the decision and registers the derived project (`POST /api/v1/projects`)
-   so it appears in the Projects portfolio.
+   Approving a variant records the decision, registers the derived project (`POST /api/v1/projects`)
+   and writes its `weekly_assignments` as planned assignments (`POST /projects/{id}/assignments`,
+   idempotent). They become part of the capacity baseline for later runs. The Projects table links
+   to `/projects/{projectId}`, which shows the project card, staffing summary, assigned team and
+   absences of that team.
 
 ## Repository layout
 ```

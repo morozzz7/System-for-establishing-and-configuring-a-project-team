@@ -85,11 +85,38 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   ).toBeVisible();
   await expect(page.getByText(/родительский запуск run_/)).toBeVisible();
 
-  // 7. Human-in-the-loop: record the final decision.
+  // 7. Human-in-the-loop: record the final decision, then wait for the derived portfolio
+  // project and its planned assignments to be persisted before leaving the page.
+  const projectCreated = page.waitForResponse(
+    (res) => res.url().endsWith('/api/v1/projects') && res.request().method() === 'POST' && res.status() === 201,
+    { timeout: 60_000 },
+  );
+  const assignmentsCreated = page.waitForResponse(
+    (res) =>
+      /\/api\/v1\/projects\/prj_[a-z0-9]+\/assignments$/.test(res.url()) &&
+      res.request().method() === 'POST' &&
+      res.status() === 201,
+    { timeout: 60_000 },
+  );
   await page.getByRole('button', { name: 'Утвердить состав' }).click();
   await page.getByRole('button', { name: 'Подтвердить решение' }).click();
+  await projectCreated;
+  await assignmentsCreated;
   await expect(page.locator('[data-testid="decision-success"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Состав команды утверждён \(аудит /)).toBeVisible();
+
+  // 8. The approved plan becomes a portfolio project with real assignments.
+  await page.goto('/projects');
+  await expect(page.getByRole('heading', { name: 'Проекты' })).toBeVisible();
+  await page.getByRole('link', { name: /^PRJ-/ }).first().click();
+  await expect(page).toHaveURL(/\/projects\/prj_/);
+  await expect(page.getByTestId('project-detail')).toBeVisible();
+  await expect(page.getByText('Команда и назначения')).toBeVisible();
+  await expect(page.getByText(/^emp_[a-z0-9]{4,12}$/).first()).toBeVisible({ timeout: 30_000 });
+
+  await page.goto('/assignments');
+  await expect(page.getByRole('heading', { name: 'Назначения' })).toBeVisible();
+  await expect(page.getByText(/^emp_[a-z0-9]{4,12}$/).first()).toBeVisible({ timeout: 30_000 });
 
   expect(runtimeErrors).toEqual([]);
 });

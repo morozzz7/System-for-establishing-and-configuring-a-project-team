@@ -29,7 +29,7 @@ export default function AbsencesPage() {
   const handleDelete = async (absenceId: string) => {
     try {
       await deleteAbsence(absenceId);
-      message.success('Отсутствие удалено (мок)');
+      message.success('Отсутствие удалено');
       absences.refetch();
     } catch {
       message.error('Ошибка удаления');

@@ -3,6 +3,7 @@
  * variant on the run screen, so there is no manual create action here.
  */
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Table, Select, Space, Typography, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Project, ProjectStatus } from '../types';
@@ -31,11 +32,13 @@ export default function ProjectsPage() {
       dataIndex: 'code',
       key: 'code',
       sorter: (a, b) => a.code.localeCompare(b.code),
+      render: (code: string, record) => <Link to={`/projects/${record.project_id}`}>{code}</Link>,
     },
     {
       title: 'Название',
       dataIndex: 'name',
       key: 'name',
+      render: (name: string, record) => <Link to={`/projects/${record.project_id}`}>{name}</Link>,
     },
     {
       title: 'Статус',

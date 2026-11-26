@@ -6,6 +6,7 @@ import AppLayout from './app/Layout';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import ProjectsPage from './pages/ProjectsPage';
+import ProjectDetailPage from './pages/ProjectDetailPage';
 import AssignmentsPage from './pages/AssignmentsPage';
 import AbsencesPage from './pages/AbsencesPage';
 import {
@@ -34,6 +35,7 @@ export default function App() {
           <Route path="runs/config/:briefId" element={<RunConfigPage />} />
           <Route path="employees" element={<EmployeesPage />} />
           <Route path="projects" element={<ProjectsPage />} />
+          <Route path="projects/:projectId" element={<ProjectDetailPage />} />
           <Route path="assignments" element={<AssignmentsPage />} />
           <Route path="absences" element={<AbsencesPage />} />
           <Route path="reference/roles" element={<RolesPage />} />

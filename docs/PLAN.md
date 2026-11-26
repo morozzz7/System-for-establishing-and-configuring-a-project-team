@@ -91,6 +91,8 @@ Source requirements: customer brief + project passport (see `AGENTS.md`). Metric
 - Weight editor: allow free-form custom weights or only preset + delta sliders? (before 5.2) — RECOMMENDATION: preset cards + "Custom" mode with per-metric sliders, sum=1 enforced.
 
 ## Log
+2026-11-26 - project-detail-and-plan-assignments - approving a variant now also writes its weekly assignments to the derived portfolio project (hours aggregated per employee/week, idempotent, batched at 500, role from variant members, `source=plan`), so the Назначения tab shows the approved team and later runs see them in capacity. Added `/projects/:projectId` with the project card, staffing summary, assigned team and that team's absences; Projects code/name now link to it and the side menu keeps «Проекты» selected. Removed remaining mock UI leftovers: role names in Назначения come from the taxonomy API, the absence-delete message no longer says «мок», and mock `listAssignments(projectId)` respects the project filter. Verification: frontend unit tests, lint, build and the full-stack Playwright journey.
+
 2026-11-26 - cd-llm-model - CD now forwards the `LLM_MODEL` GitHub Variable into the server `.env`; without it extraction used the ML image default `qwen/qwen-2.5-72b-instruct`, which providers supporting only `deepseek-flash`/`deepseek-v4-pro` reject with HTTP 400 (`CAPABILITY_UNAVAILABLE`). `docs/DEPLOYMENT.md` and `AGENTS.md` document the variable.
 
 2026-11-26 - cd-password-auth - switched CD SSH authentication from a private key to a password: both `appleboy` steps in `deploy.yml` now use `DEPLOY_SSH_PASSWORD`, and `docs/DEPLOYMENT.md` documents the secret and the `PasswordAuthentication yes` server prerequisite. No application or contract changes.

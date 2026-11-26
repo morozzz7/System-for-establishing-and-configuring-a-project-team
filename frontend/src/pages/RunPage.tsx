@@ -40,6 +40,7 @@ import type {
 } from '../types';
 import { ApiError, reasonCodeLabel, toApiError } from '../api/errors';
 import {
+  createAssignments,
   createProject,
   createRun,
   getBrief,
@@ -47,6 +48,7 @@ import {
   getRunInputs,
   getVariant,
   getVariantExplanation,
+  listAssignments,
   listProjects,
   listRoles,
   recordDecision,
@@ -55,7 +57,7 @@ import ConstraintEditor from '../components/ConstraintEditor';
 import ExplanationPanel, { ExplanationLoading } from '../components/ExplanationPanel';
 import { GradeTag } from '../components/shared';
 import { formatDeficits, formatRatio, formatUnits, formatWeeks, factNumber, KEY_METRICS } from '../utils/metrics';
-import { projectFromRun } from '../utils/project';
+import { chunkAssignments, plannedAssignments, projectFromRun } from '../utils/project';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -305,6 +307,7 @@ export default function RunPage() {
   const [decisionError, setDecisionError] = useState<ApiError | null>(null);
   const [createdProject, setCreatedProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState<ApiError | null>(null);
+  const [assignmentWarning, setAssignmentWarning] = useState<string | null>(null);
 
   const runId = run?.run_id;
 
@@ -455,8 +458,8 @@ export default function RunPage() {
     setRecalcResult(null);
   };
 
-  const saveProjectToPortfolio = async () => {
-    if (!run) return;
+  const saveProjectToPortfolio = async (): Promise<Project | null> => {
+    if (!run) return null;
     setProjectError(null);
     try {
       const brief = await getBrief(run.brief_id);
@@ -467,9 +470,24 @@ export default function RunPage() {
         (await createProject(candidate));
       setCreatedProject(project);
       message.success(`Проект «${project.name}» добавлен в раздел «Проекты»`);
+      return project;
     } catch (err) {
       setProjectError(toApiError(err));
+      return null;
     }
+  };
+
+  const persistPlannedAssignments = async (project: Project, variantId: string): Promise<number> => {
+    if (!run) return 0;
+    const variant = await getVariant(run.run_id, variantId);
+    if (!variant) return 0;
+    const existing = await listAssignments(project.project_id);
+    const existingKeys = new Set(existing.map((item) => `${item.employee_id}|${item.week}`));
+    const missing = plannedAssignments(variant, project.project_id).filter(
+      (item) => !existingKeys.has(`${item.employee_id}|${item.week}`),
+    );
+    for (const batch of chunkAssignments(missing, 500)) await createAssignments(batch);
+    return missing.length;
   };
 
   const handleRecordDecision = async () => {
@@ -484,7 +502,16 @@ export default function RunPage() {
       setDecision(resp);
       setDecisionModalOpen(false);
       message.success('Решение утверждено и сохранено в аудите');
-      await saveProjectToPortfolio();
+      setAssignmentWarning(null);
+      const project = await saveProjectToPortfolio();
+      if (project) {
+        try {
+          const created = await persistPlannedAssignments(project, selectedVariantId);
+          if (created > 0) message.success(`Создано плановых назначений: ${created}`);
+        } catch (err) {
+          setAssignmentWarning(toApiError(err).detail);
+        }
+      }
     } catch (err) {
       setDecisionError(toApiError(err));
     } finally {
@@ -549,6 +576,15 @@ export default function RunPage() {
           showIcon
           message="Решение сохранено, но проект не добавлен в портфель"
           description={projectError.detail || projectError.code}
+        />
+      )}
+
+      {assignmentWarning && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Назначения утверждённого варианта не созданы"
+          description={assignmentWarning}
         />
       )}
 
