@@ -121,6 +121,8 @@ make lint-ml       # ruff + black --check
 make test-e2e      # full Docker stack + Playwright journey; needs frontend npm ci first
 cd frontend && npm test -- --run && npm run lint && npm run build
 ```
+`make test-e2e` exports `COMPOSE_ENV_FILE` (`.env` by default, created from `.env.example` if absent)
+into Playwright, so `GATEWAY_PORT` is identical for Compose and the browser.
 The same gates run in GitHub Actions (`contracts`, `backend`, `ml`, `frontend`, `e2e` jobs). Auth is
 configured via `AUTH_JWT_SECRET`, `AUTH_TOKEN_TTL_MINUTES` and `AUTH_USERS` (see `.env.example`);
 the frontend uses `VITE_AUTH_LOGIN`/`VITE_AUTH_PASSWORD` to obtain a token in HTTP mode.

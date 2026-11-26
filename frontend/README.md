@@ -113,8 +113,11 @@ make test-e2e-down    # stop the e2e stack and remove its volume
 The e2e compose overlay (`deploy/docker-compose.e2e.yml`) replaces only the external LLM with a
 recorded deterministic response (`deploy/e2e/llm_stub.py`), so extraction needs no API key and is
 reproducible. The spec uses `E2E_BASE_URL` (default `http://127.0.0.1:${GATEWAY_PORT:-9080}`) and
-runs in headless Chromium. Fixtures: `e2e/fixtures/employees.json` (pseudonymous pool) and
-`e2e/fixtures/brief.md` (gold brief matching the recorded LLM response).
+runs in headless Chromium. `make test-e2e` exports the repository-root `.env` into the Playwright
+process, so the browser targets the same `GATEWAY_PORT` that Compose published (80 with `.env.example`,
+9080 when using the conflict-free port values suggested in its comments). When invoking Playwright directly, set `GATEWAY_PORT`
+or `E2E_BASE_URL` to match the running stack. Fixtures: `e2e/fixtures/employees.json` (pseudonymous
+pool) and `e2e/fixtures/brief.md` (gold brief matching the recorded LLM response).
 
 ## Contract alignment
 

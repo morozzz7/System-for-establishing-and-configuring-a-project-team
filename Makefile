@@ -87,6 +87,7 @@ test-e2e: ## full-stack Playwright journey (Docker stack + deterministic LLM stu
 		echo "Playwright is not installed. Run: cd frontend && npm ci && npm run test:e2e:install"; \
 		exit 1; \
 	}
+	@test -f $(COMPOSE_ENV_FILE) || cp .env.example $(COMPOSE_ENV_FILE)
 	@$(E2E_COMPOSE) up --build -d postgres
 	@sleep 5
 	@echo "Building backend with the current contracts before seeding..."
@@ -96,7 +97,15 @@ test-e2e: ## full-stack Playwright journey (Docker stack + deterministic LLM stu
 	@$(E2E_COMPOSE) up --build -d --wait --wait-timeout 120
 	@echo ""
 	@echo "=== Playwright full journey ==="
-	@cd frontend && npm run test:e2e
+	@set -a; . $(COMPOSE_ENV_FILE); set +a; \
+	  export GATEWAY_PORT="$${GATEWAY_PORT:-80}"; \
+	  gateway_url="http://127.0.0.1:$$GATEWAY_PORT"; \
+	  echo "Gateway: $$gateway_url"; \
+	  curl -sf -o /dev/null --max-time 5 "$$gateway_url/" || { \
+	    echo "Gateway is unreachable at $$gateway_url" >&2; \
+	    exit 1; \
+	  }; \
+	  cd frontend && npm run test:e2e
 
 test-e2e-down: ## stop the e2e stack and remove its volumes
 	@$(E2E_COMPOSE) down -v
