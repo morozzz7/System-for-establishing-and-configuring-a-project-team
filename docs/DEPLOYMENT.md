@@ -18,7 +18,8 @@ and started on the server over SSH. Secrets never enter the images or the reposi
 ## Server prerequisites
 
 - Linux host with Docker Engine and Compose v2 (`docker compose version`);
-- SSH key-based access for the deploy user; the user must be able to run `docker`;
+- password-based SSH access for the deploy user; the user must be able to run `docker`
+  (`PasswordAuthentication yes` must be enabled in the server's `sshd_config`);
 - a writable deployment directory (default `/srv/teamopt`) with enough space for images and `pgdata`;
 - inbound access to the gateway port (default `80`) and outbound HTTPS to `ghcr.io`.
 
@@ -58,7 +59,7 @@ synthetic accounts only (privacy rule: no names, salaries or real personal data)
 
 | Secret | Purpose |
 | --- | --- |
-| `DEPLOY_SSH_KEY` | Private SSH key for `DEPLOY_USER` (no passphrase) |
+| `DEPLOY_SSH_PASSWORD` | SSH password for `DEPLOY_USER` |
 | `POSTGRES_PASSWORD` | Database password |
 | `AUTH_JWT_SECRET` | HS256 signing key; must be long and unique per environment |
 | `AUTH_USERS` | JSON array of synthetic accounts, e.g. `[{"login":"manager","password":"demo","actor":"emp_mgr01"}]` |

@@ -111,7 +111,7 @@ jobs:
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           port: ${{ vars.DEPLOY_SSH_PORT || 22 }}
           source: "deploy/prod/docker-compose.yml,deploy/nginx/nginx.conf"
           target: ${{ vars.DEPLOY_PATH || '/srv/teamopt' }}
@@ -137,7 +137,7 @@ jobs:
         with:
           host: ${{ vars.DEPLOY_HOST }}
           username: ${{ vars.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          password: ${{ secrets.DEPLOY_SSH_PASSWORD }}
           port: ${{ vars.DEPLOY_SSH_PORT || 22 }}
           envs: DEPLOY_PATH,GATEWAY_PORT,IMAGE_TAG,IMAGE_NAMESPACE,REGISTRY,POSTGRES_USER,POSTGRES_DB,POSTGRES_PASSWORD,AUTH_JWT_SECRET,AUTH_USERS,AUTH_TOKEN_TTL_MINUTES,LLM_API_KEY,LLM_BASE_URL,GHCR_PAT,GHCR_USER
           script: |
