@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -151,6 +152,21 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 		conditions = append(conditions, "bench_flag = true")
 	}
 
+	if f.ActiveOnly {
+		conditions = append(conditions, "active")
+	}
+	if f.InternalOnly {
+		conditions = append(conditions, "employment_type = 'internal'")
+	}
+	if f.ExcludeBench {
+		conditions = append(conditions, "NOT bench_flag")
+	}
+	if len(f.RoleIDs) > 0 {
+		argN++
+		conditions = append(conditions, fmt.Sprintf("role_profile_id = ANY($%d)", argN))
+		args = append(args, f.RoleIDs)
+	}
+
 	where := ""
 	if len(conditions) > 0 {
 		where = "WHERE " + strings.Join(conditions, " AND ")
@@ -182,12 +198,16 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 
 	// Numeric columns are cast to float8: pgx's binary NUMERIC->float64 scan plan faults
 	// under the toolchain used to build this service (math/big.subVV on a bogus pointer).
+	displayName := "display_name"
+	if f.ActiveOnly {
+		displayName = "''"
+	}
 	selectSQL := fmt.Sprintf(
-		`SELECT employee_id, grade, role_profile_id, unit_id, employment_type, bench_flag,
+		`SELECT employee_id, %s, grade, role_profile_id, unit_id, employment_type, bench_flag,
 		        weekly_hours_norm::double precision, reserve_ratio::double precision,
 		        max_utilization_ratio::double precision, cost_coefficient::double precision, active
 		 FROM employee %s ORDER BY employee_id LIMIT $%d OFFSET $%d`,
-		where, limitIdx, offsetIdx,
+		displayName, where, limitIdx, offsetIdx,
 	)
 
 	rows, err := r.Pool.Query(ctx, selectSQL, args...)
@@ -200,7 +220,7 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 	for rows.Next() {
 		var e domain.Employee
 		if err := rows.Scan(
-			&e.EmployeeID, &e.Grade, &e.RoleProfileID, &e.UnitID, &e.EmploymentType, &e.BenchFlag,
+			&e.EmployeeID, &e.DisplayName, &e.Grade, &e.RoleProfileID, &e.UnitID, &e.EmploymentType, &e.BenchFlag,
 			&e.CapacityProfile.WeeklyHoursNorm, &e.CapacityProfile.ReserveRatio,
 			&e.CapacityProfile.MaxUtilizationRatio, &e.CostCoefficient, &e.Active,
 		); err != nil {
@@ -219,13 +239,13 @@ func (r *PgEmployeeRepo) List(ctx context.Context, f domain.EmployeeFilter) ([]d
 
 func (r *PgEmployeeRepo) Get(ctx context.Context, id string) (domain.Employee, error) {
 	var e domain.Employee
-	err := r.Pool.QueryRow(ctx,
-		`SELECT employee_id, grade, role_profile_id, unit_id, employment_type, bench_flag,
+	err := assignmentConnection(ctx, r.Pool).QueryRow(ctx,
+		`SELECT employee_id, display_name, grade, role_profile_id, unit_id, employment_type, bench_flag,
 		        weekly_hours_norm::double precision, reserve_ratio::double precision,
 		        max_utilization_ratio::double precision, cost_coefficient::double precision, active
 		 FROM employee WHERE employee_id = $1`, id,
 	).Scan(
-		&e.EmployeeID, &e.Grade, &e.RoleProfileID, &e.UnitID, &e.EmploymentType, &e.BenchFlag,
+		&e.EmployeeID, &e.DisplayName, &e.Grade, &e.RoleProfileID, &e.UnitID, &e.EmploymentType, &e.BenchFlag,
 		&e.CapacityProfile.WeeklyHoursNorm, &e.CapacityProfile.ReserveRatio,
 		&e.CapacityProfile.MaxUtilizationRatio, &e.CostCoefficient, &e.Active,
 	)
@@ -241,11 +261,11 @@ func (r *PgEmployeeRepo) Get(ctx context.Context, id string) (domain.Employee, e
 func (r *PgEmployeeRepo) Create(ctx context.Context, e domain.Employee) error {
 	_, err := r.Pool.Exec(ctx,
 		`INSERT INTO employee (employee_id, grade, role_profile_id, unit_id, employment_type,
-		   bench_flag, weekly_hours_norm, reserve_ratio, max_utilization_ratio, cost_coefficient, active)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+		   bench_flag, weekly_hours_norm, reserve_ratio, max_utilization_ratio, cost_coefficient, active, display_name)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
 		e.EmployeeID, e.Grade, e.RoleProfileID, e.UnitID, e.EmploymentType,
 		e.BenchFlag, int(e.CapacityProfile.WeeklyHoursNorm), e.CapacityProfile.ReserveRatio,
-		e.CapacityProfile.MaxUtilizationRatio, e.CostCoefficient, e.Active,
+		e.CapacityProfile.MaxUtilizationRatio, e.CostCoefficient, e.Active, e.DisplayName,
 	)
 	if err != nil {
 		if IsDuplicate(err) {
@@ -263,11 +283,11 @@ func (r *PgEmployeeRepo) Update(ctx context.Context, e domain.Employee) error {
 	tag, err := r.Pool.Exec(ctx,
 		`UPDATE employee SET grade=$2, role_profile_id=$3, unit_id=$4, employment_type=$5,
 		   bench_flag=$6, weekly_hours_norm=$7, reserve_ratio=$8, max_utilization_ratio=$9,
-		   cost_coefficient=$10, active=$11, updated_at=now()
+		   cost_coefficient=$10, active=$11, display_name=$12, updated_at=now()
 		 WHERE employee_id=$1`,
 		e.EmployeeID, e.Grade, e.RoleProfileID, e.UnitID, e.EmploymentType,
 		e.BenchFlag, int(e.CapacityProfile.WeeklyHoursNorm), e.CapacityProfile.ReserveRatio,
-		e.CapacityProfile.MaxUtilizationRatio, e.CostCoefficient, e.Active,
+		e.CapacityProfile.MaxUtilizationRatio, e.CostCoefficient, e.Active, e.DisplayName,
 	)
 	if err != nil {
 		return fmt.Errorf("update employee: %w", err)
@@ -325,6 +345,25 @@ type PgEmployeeCompetencyRepo struct{ Pool *pgxpool.Pool }
 
 func NewPgEmployeeCompetencyRepo(pool *pgxpool.Pool) *PgEmployeeCompetencyRepo {
 	return &PgEmployeeCompetencyRepo{Pool: pool}
+}
+
+func (r *PgEmployeeCompetencyRepo) ListByEmployees(ctx context.Context, ids []string) (map[string][]domain.EmployeeCompetency, error) {
+	rows, err := r.Pool.Query(ctx, `SELECT employee_id, competency_id, level, confidence::double precision, last_used, source
+ FROM employee_competency WHERE employee_id = ANY($1) ORDER BY employee_id, competency_id`, ids)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	result := make(map[string][]domain.EmployeeCompetency, len(ids))
+	for rows.Next() {
+		var id string
+		var comp domain.EmployeeCompetency
+		if err := rows.Scan(&id, &comp.CompetencyID, &comp.Level, &comp.Confidence, &comp.LastUsed, &comp.Source); err != nil {
+			return nil, err
+		}
+		result[id] = append(result[id], comp)
+	}
+	return result, rows.Err()
 }
 
 func (r *PgEmployeeCompetencyRepo) ListByEmployee(ctx context.Context, employeeID string) ([]domain.EmployeeCompetency, error) {
@@ -391,11 +430,13 @@ func NewPgProjectRepo(pool *pgxpool.Pool) *PgProjectRepo {
 	return &PgProjectRepo{Pool: pool}
 }
 
+const effectiveProjectStatus = `CASE WHEN status = 'planned' AND start_week <= to_char(now() AT TIME ZONE 'Europe/Moscow', 'IYYY-"W"IW') THEN 'active' ELSE status END`
+
 func (r *PgProjectRepo) List(ctx context.Context, f domain.ProjectFilter) ([]domain.Project, int, error) {
 	var where string
 	var args []interface{}
 	if f.Status != "" {
-		where = "WHERE status = $1"
+		where = "WHERE " + effectiveProjectStatus + " = $1"
 		args = append(args, f.Status)
 	}
 
@@ -423,7 +464,7 @@ func (r *PgProjectRepo) List(ctx context.Context, f domain.ProjectFilter) ([]dom
 	args = append(args, offset)
 
 	selectSQL := fmt.Sprintf(
-		`SELECT project_id, code, name, status, priority, criticality, start_week,
+		`SELECT project_id, code, name, `+effectiveProjectStatus+`, priority, criticality, start_week,
 		        end_week_planned, COALESCE(end_week_forecast,''), replaces_other_projects
 		 FROM project %s ORDER BY project_id LIMIT $%d OFFSET $%d`,
 		where, limitIdx, offsetIdx,
@@ -456,8 +497,8 @@ func (r *PgProjectRepo) List(ctx context.Context, f domain.ProjectFilter) ([]dom
 
 func (r *PgProjectRepo) Get(ctx context.Context, id string) (domain.Project, error) {
 	var p domain.Project
-	err := r.Pool.QueryRow(ctx,
-		`SELECT project_id, code, name, status, priority, criticality, start_week,
+	err := assignmentConnection(ctx, r.Pool).QueryRow(ctx,
+		`SELECT project_id, code, name, `+effectiveProjectStatus+`, priority, criticality, start_week,
 		        end_week_planned, COALESCE(end_week_forecast,''), replaces_other_projects
 		 FROM project WHERE project_id = $1`, id,
 	).Scan(&p.ProjectID, &p.Code, &p.Name, &p.Status, &p.Priority,
@@ -572,6 +613,12 @@ func (r *PgAssignmentRepo) ListByFilter(ctx context.Context, f domain.Assignment
 		conditions = append(conditions, fmt.Sprintf("employee_id = $%d", argN))
 		args = append(args, f.EmployeeID)
 	}
+	if len(f.EmployeeIDs) > 0 {
+		argN++
+		conditions = append(conditions, fmt.Sprintf("employee_id = ANY($%d)", argN))
+		args = append(args, f.EmployeeIDs)
+	}
+
 	if f.FromWeek != "" {
 		argN++
 		conditions = append(conditions, fmt.Sprintf("week >= $%d", argN))
@@ -623,11 +670,8 @@ func scanAssignments(rows pgx.Rows) ([]domain.Assignment, error) {
 }
 
 func (r *PgAssignmentRepo) Create(ctx context.Context, a domain.Assignment) error {
-	hoursMin := int(a.Hours * 60)
-	if hoursMin < 1 {
-		hoursMin = 1
-	}
-	_, err := r.Pool.Exec(ctx,
+	hoursMin := assignmentMinutes(a.Hours)
+	_, err := assignmentConnection(ctx, r.Pool).Exec(ctx,
 		`INSERT INTO assignment (assignment_id, project_id, employee_id, role_id, week, hours_minutes, source)
 		 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
 		a.AssignmentID, a.ProjectID, a.EmployeeID, a.RoleID, a.Week, hoursMin, a.Source,
@@ -649,39 +693,27 @@ func (r *PgAssignmentRepo) CreateBatch(ctx context.Context, assignments []domain
 	if len(assignments) == 0 {
 		return nil
 	}
-	tx, err := r.Pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("begin tx: %w", err)
+	write := func(ctx context.Context) error {
+		for _, assignment := range assignments {
+			if err := r.Create(ctx, assignment); err != nil {
+				return err
+			}
+		}
+		return nil
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	if _, ok := ctx.Value(assignmentTransactionKey{}).(pgx.Tx); ok {
+		return write(ctx)
+	}
+	return r.WithTransaction(ctx, write)
+}
 
-	for _, a := range assignments {
-		hoursMin := int(a.Hours * 60)
-		if hoursMin < 1 {
-			hoursMin = 1
-		}
-		_, err := tx.Exec(ctx,
-			`INSERT INTO assignment (assignment_id, project_id, employee_id, role_id, week, hours_minutes, source)
-			 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-			a.AssignmentID, a.ProjectID, a.EmployeeID, a.RoleID, a.Week, hoursMin, a.Source,
-		)
-		if err != nil {
-			if IsDuplicate(err) {
-				return fmt.Errorf("%w: duplicate assignment for employee %s, project %s, week %s",
-					ErrConflict, a.EmployeeID, a.ProjectID, a.Week)
-			}
-			if IsFKViolation(err) {
-				return fmt.Errorf("foreign key violation: %w", err)
-			}
-			return fmt.Errorf("create assignment: %w", err)
-		}
-	}
-	return tx.Commit(ctx)
+func assignmentMinutes(hours float64) int {
+	return max(1, int(math.Round(hours*60)))
 }
 
 func (r *PgAssignmentRepo) TotalAssignedHours(ctx context.Context, employeeID, week string) (float64, error) {
 	var totalMin int
-	err := r.Pool.QueryRow(ctx,
+	err := assignmentConnection(ctx, r.Pool).QueryRow(ctx,
 		`SELECT COALESCE(sum(hours_minutes), 0) FROM assignment
 		 WHERE employee_id = $1 AND week = $2`, employeeID, week,
 	).Scan(&totalMin)
@@ -885,7 +917,7 @@ func (r *PgAbsenceRepo) IsAbsentInWeek(ctx context.Context, employeeID, week str
 	tuesday := monday.AddDate(0, 0, 4) // Friday of that week
 
 	var exists bool
-	err := r.Pool.QueryRow(ctx,
+	err := assignmentConnection(ctx, r.Pool).QueryRow(ctx,
 		`SELECT EXISTS(
 			SELECT 1 FROM absence
 			WHERE employee_id = $1 AND deleted_at IS NULL AND approved = true

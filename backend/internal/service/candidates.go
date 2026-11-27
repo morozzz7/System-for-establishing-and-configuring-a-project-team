@@ -74,43 +74,58 @@ func (s *PgCandidateSource) Candidates(ctx context.Context, requirements []runin
 	}
 
 	roleIDs, competencyIDs := requirementKeys(requirements)
-	employees, _, err := s.empRepo.List(ctx, domain.EmployeeFilter{Limit: 2000})
-	if err != nil {
-		return nil, fmt.Errorf("list candidate employees: %w", err)
-	}
-
-	profiles := make([]domain.Employee, 0, len(employees))
-	levels := make(map[string]map[string]int, len(employees))
-	for _, emp := range employees {
-		if !emp.Active || (!filter.IncludeBench && emp.BenchFlag) {
-			continue
-		}
-		if !filter.IncludeExternal && emp.EmploymentType != "internal" {
-			continue
-		}
-		if len(filter.RoleIDs) > 0 && !containsString(filter.RoleIDs, emp.RoleProfileID) {
-			continue
-		}
-		comps, err := s.compRepo.ListByEmployee(ctx, emp.EmployeeID)
+	profiles := make([]domain.Employee, 0)
+	levels := make(map[string]map[string]int)
+	const pageSize = 500
+	for offset := 0; ; offset += pageSize {
+		employees, total, err := s.empRepo.List(ctx, domain.EmployeeFilter{
+			Limit: pageSize, Offset: offset, ActiveOnly: true,
+			InternalOnly: !filter.IncludeExternal, ExcludeBench: !filter.IncludeBench, RoleIDs: filter.RoleIDs,
+		})
 		if err != nil {
-			return nil, fmt.Errorf("list competencies for %s: %w", emp.EmployeeID, err)
+			return nil, fmt.Errorf("list candidate employees: %w", err)
 		}
-		employeeLevels := make(map[string]int, len(comps))
-		for _, comp := range comps {
-			if comp.Level < 1 || comp.Level > 5 {
-				return nil, fmt.Errorf("%w: %s has competency %s at invalid level %d",
-					ErrInvalidRunInput, emp.EmployeeID, comp.CompetencyID, comp.Level)
+		eligible := make([]domain.Employee, 0, len(employees))
+		employeeIDs := make([]string, 0, len(employees))
+		for _, emp := range employees {
+			if !emp.Active || (!filter.IncludeBench && emp.BenchFlag) || (!filter.IncludeExternal && emp.EmploymentType != "internal") {
+				continue
 			}
-			employeeLevels[comp.CompetencyID] = comp.Level
+			if len(filter.RoleIDs) > 0 && !containsString(filter.RoleIDs, emp.RoleProfileID) {
+				continue
+			}
+			eligible = append(eligible, emp)
+			employeeIDs = append(employeeIDs, emp.EmployeeID)
 		}
-		if !matchesRequirement(emp.RoleProfileID, employeeLevels, roleIDs, competencyIDs) {
-			continue
+		competencies, err := s.candidateCompetencies(ctx, employeeIDs)
+		if err != nil {
+			return nil, fmt.Errorf("list candidate competencies: %w", err)
 		}
-		profiles = append(profiles, emp)
-		levels[emp.EmployeeID] = employeeLevels
+		for _, emp := range eligible {
+			comps := competencies[emp.EmployeeID]
+			employeeLevels := make(map[string]int, len(comps))
+			for _, comp := range comps {
+				if comp.Level < 1 || comp.Level > 5 {
+					return nil, fmt.Errorf("%w: %s has competency %s at invalid level %d",
+						ErrInvalidRunInput, emp.EmployeeID, comp.CompetencyID, comp.Level)
+				}
+				employeeLevels[comp.CompetencyID] = comp.Level
+			}
+			if !matchesRequirement(emp.RoleProfileID, employeeLevels, roleIDs, competencyIDs) {
+				continue
+			}
+			profiles = append(profiles, emp)
+			levels[emp.EmployeeID] = employeeLevels
+			if len(profiles) == filter.MaxCandidates {
+				break
+			}
+		}
+		if len(profiles) == filter.MaxCandidates || len(employees) < pageSize || offset+len(employees) >= total {
+			break
+		}
 	}
-	if len(profiles) > filter.MaxCandidates {
-		profiles = profiles[:filter.MaxCandidates]
+	if len(profiles) == 0 {
+		return []runinput.Candidate{}, nil
 	}
 
 	ids := make([]string, 0, len(profiles))
@@ -122,7 +137,7 @@ func (s *PgCandidateSource) Candidates(ctx context.Context, requirements []runin
 		return nil, fmt.Errorf("build candidate capacity matrix: %w", err)
 	}
 	projects, err := s.asgRepo.ListByFilter(ctx, domain.AssignmentFilter{
-		FromWeek: weeks[0], ToWeek: weeks[len(weeks)-1],
+		EmployeeIDs: ids, FromWeek: weeks[0], ToWeek: weeks[len(weeks)-1],
 	})
 	if err != nil {
 		return nil, fmt.Errorf("list current assignments: %w", err)
@@ -233,4 +248,24 @@ func stringList(value any) []string {
 		}
 	}
 	return out
+}
+
+func (s *PgCandidateSource) candidateCompetencies(ctx context.Context, ids []string) (map[string][]domain.EmployeeCompetency, error) {
+	result := make(map[string][]domain.EmployeeCompetency, len(ids))
+	if len(ids) == 0 {
+		return result, nil
+	}
+	if batch, ok := s.compRepo.(interface {
+		ListByEmployees(context.Context, []string) (map[string][]domain.EmployeeCompetency, error)
+	}); ok {
+		return batch.ListByEmployees(ctx, ids)
+	}
+	for _, id := range ids {
+		comps, err := s.compRepo.ListByEmployee(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		result[id] = comps
+	}
+	return result, nil
 }

@@ -1,0 +1,458 @@
+[
+  {
+    "employee_id": "emp_demo0001",
+    "display_name": "Артём Ветров",
+    "grade": "S",
+    "role_profile_id": "backend_engineer",
+    "unit_id": "unt_core",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_go",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "db_postgresql",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "api_rest",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "lang_java",
+        "level": 2,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0002",
+    "display_name": "Ирина Соколова",
+    "grade": "M",
+    "role_profile_id": "backend_engineer",
+    "unit_id": "unt_core",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_go",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "db_postgresql",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "api_rest",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0003",
+    "display_name": "Максим Озеров",
+    "grade": "J",
+    "role_profile_id": "backend_engineer",
+    "unit_id": "unt_core",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0004",
+    "display_name": "Анна Лескова",
+    "grade": "S",
+    "role_profile_id": "frontend_engineer",
+    "unit_id": "unt_web",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_typescript",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "fw_react",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "api_rest",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ],
+    "absences": [
+      {
+        "type": "vacation",
+        "start_date": "2026-12-07",
+        "end_date": "2026-12-11",
+        "hours_per_day": 8,
+        "approved": true,
+        "source": "hr_import",
+        "employee_id": "emp_demo0004"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0005",
+    "display_name": "Денис Чернов",
+    "grade": "M",
+    "role_profile_id": "frontend_engineer",
+    "unit_id": "unt_web",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0006",
+    "display_name": "Вера Лучина",
+    "grade": "S",
+    "role_profile_id": "qa_engineer",
+    "unit_id": "unt_qa",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0007",
+    "display_name": "Павел Степанов",
+    "grade": "M",
+    "role_profile_id": "qa_engineer",
+    "unit_id": "unt_qa",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0008",
+    "display_name": "Тимур Волков",
+    "grade": "S",
+    "role_profile_id": "devops_engineer",
+    "unit_id": "unt_infra",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0009",
+    "display_name": "Алиса Ярова",
+    "grade": "M",
+    "role_profile_id": "devops_engineer",
+    "unit_id": "unt_infra",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0010",
+    "display_name": "Лев Синицын",
+    "grade": "S",
+    "role_profile_id": "data_engineer",
+    "unit_id": "unt_data",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_python",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "lang_sql",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "db_postgresql",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "db_clickhouse",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0011",
+    "display_name": "Мария Зорина",
+    "grade": "M",
+    "role_profile_id": "data_engineer",
+    "unit_id": "unt_data",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0012",
+    "display_name": "Роман Полянский",
+    "grade": "S",
+    "role_profile_id": "ml_engineer",
+    "unit_id": "unt_ml",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_python",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "ml_pytorch",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "lang_sql",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0013",
+    "display_name": "Виктория Светлова",
+    "grade": "M",
+    "role_profile_id": "business_analyst",
+    "unit_id": "unt_analysis",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0014",
+    "display_name": "Егор Рощин",
+    "grade": "S",
+    "role_profile_id": "business_analyst",
+    "unit_id": "unt_analysis",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0015",
+    "display_name": "Наталья Седова",
+    "grade": "M",
+    "role_profile_id": "system_analyst",
+    "unit_id": "unt_analysis",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0016",
+    "display_name": "Глеб Серов",
+    "grade": "L",
+    "role_profile_id": "project_manager",
+    "unit_id": "unt_mgmt",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0017",
+    "display_name": "Дарья Тихонова",
+    "grade": "S",
+    "role_profile_id": "project_manager",
+    "unit_id": "unt_mgmt",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0018",
+    "display_name": "Кирилл Ланской",
+    "grade": "S",
+    "role_profile_id": "product_manager",
+    "unit_id": "unt_product",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0019",
+    "display_name": "Софья Мурина",
+    "grade": "M",
+    "role_profile_id": "ui_designer",
+    "unit_id": "unt_design",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0020",
+    "display_name": "Никита Горин",
+    "grade": "S",
+    "role_profile_id": "ui_designer",
+    "unit_id": "unt_design",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0021",
+    "display_name": "Лидия Березина",
+    "grade": "M",
+    "role_profile_id": "security_engineer",
+    "unit_id": "unt_security",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "sec_appsec",
+        "level": 4,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "sec_crypto",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0022",
+    "display_name": "Андрей Лавров",
+    "grade": "J",
+    "role_profile_id": "frontend_engineer",
+    "unit_id": "unt_web",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0023",
+    "display_name": "Полина Орлова",
+    "grade": "J",
+    "role_profile_id": "qa_engineer",
+    "unit_id": "unt_qa",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0024",
+    "display_name": "Илья Малинин",
+    "grade": "J",
+    "role_profile_id": "backend_engineer",
+    "unit_id": "unt_core",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0025",
+    "display_name": "Ольга Мельникова",
+    "grade": "L",
+    "role_profile_id": "backend_engineer",
+    "unit_id": "unt_core",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": [
+      {
+        "competency_id": "lang_go",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "db_postgresql",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "api_rest",
+        "level": 5,
+        "confidence": 0.9,
+        "source": "manager_review"
+      },
+      {
+        "competency_id": "lang_java",
+        "level": 3,
+        "confidence": 0.9,
+        "source": "manager_review"
+      }
+    ]
+  },
+  {
+    "employee_id": "emp_demo0026",
+    "display_name": "Матвей Дубов",
+    "grade": "M",
+    "role_profile_id": "ml_engineer",
+    "unit_id": "unt_ml",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0027",
+    "display_name": "Юлия Ракова",
+    "grade": "S",
+    "role_profile_id": "devops_engineer",
+    "unit_id": "unt_infra",
+    "employment_type": "contractor",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0028",
+    "display_name": "Сергей Лужин",
+    "grade": "M",
+    "role_profile_id": "frontend_engineer",
+    "unit_id": "unt_web",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0029",
+    "display_name": "Ксения Рябова",
+    "grade": "J",
+    "role_profile_id": "data_engineer",
+    "unit_id": "unt_data",
+    "employment_type": "internal",
+    "bench_flag": true,
+    "competencies": []
+  },
+  {
+    "employee_id": "emp_demo0030",
+    "display_name": "Михаил Белов",
+    "grade": "M",
+    "role_profile_id": "business_analyst",
+    "unit_id": "unt_analysis",
+    "employment_type": "internal",
+    "bench_flag": false,
+    "competencies": []
+  }
+]

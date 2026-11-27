@@ -108,6 +108,7 @@ func runCapMigrations(ctx context.Context, t *testing.T, pool *pgxpool.Pool) err
 		)`,
 		// Employee tables.
 		`CREATE TABLE IF NOT EXISTS employee (
+            display_name varchar(120) NOT NULL DEFAULT '',
 			employee_id text PRIMARY KEY CHECK (employee_id ~ '^emp_[a-z0-9]{4,12}$'),
 			grade text NOT NULL REFERENCES grade_band(grade),
 			role_profile_id text NOT NULL REFERENCES role(role_id),
@@ -197,7 +198,10 @@ func runCapMigrations(ctx context.Context, t *testing.T, pool *pgxpool.Pool) err
 
 func seedCapReferenceData(ctx context.Context, pool *pgxpool.Pool) error {
 	// Grade bands.
-	grades := []struct{ g, ru, en, cost string; min, max int }{
+	grades := []struct {
+		g, ru, en, cost string
+		min, max        int
+	}{
 		{"J", "Junior", "Junior", "1.0", 1, 2},
 		{"M", "Middle", "Middle", "1.4", 2, 3},
 		{"S", "Senior", "Senior", "1.9", 3, 4},
@@ -315,10 +319,10 @@ func TestCapInt_BasicCapacityCalculation(t *testing.T) {
 
 	c := caps[0]
 	assert.Equal(t, "2026-W03", c.Week)
-	assert.Equal(t, 2400, c.NormMinutes)     // 40h × 60
-	assert.Equal(t, 600, c.AssignedMinutes)  // 10h × 60
+	assert.Equal(t, 2400, c.NormMinutes)    // 40h × 60
+	assert.Equal(t, 600, c.AssignedMinutes) // 10h × 60
 	assert.Equal(t, 0, c.AbsentMinutes)
-	assert.Equal(t, 1320, c.AvailableMinutes) // 1920 - 600 = 1320
+	assert.Equal(t, 1320, c.AvailableMinutes)         // 1920 - 600 = 1320
 	assert.InDelta(t, 0.25, c.UtilizationRatio, 0.01) // 600/2400
 }
 

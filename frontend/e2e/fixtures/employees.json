@@ -3,6 +3,7 @@
   "employees": [
     {
       "employee_id": "emp_e2e01",
+      "display_name": "Иван Тестов",
       "grade": "S",
       "role_profile_id": "backend_engineer",
       "unit_id": "unt_e2e",
@@ -26,6 +27,7 @@
     },
     {
       "employee_id": "emp_e2e02",
+      "display_name": "Мария Лесная",
       "grade": "M",
       "role_profile_id": "backend_engineer",
       "unit_id": "unt_e2e",
@@ -40,6 +42,7 @@
     },
     {
       "employee_id": "emp_e2e03",
+      "display_name": "Антон Кедров",
       "grade": "M",
       "role_profile_id": "frontend_engineer",
       "unit_id": "unt_e2e",
@@ -63,6 +66,7 @@
     },
     {
       "employee_id": "emp_e2e04",
+      "display_name": "Лидия Морская",
       "grade": "J",
       "role_profile_id": "frontend_engineer",
       "unit_id": "unt_e2e",
@@ -76,6 +80,7 @@
     },
     {
       "employee_id": "emp_e2e05",
+      "display_name": "Глеб Речной",
       "grade": "S",
       "role_profile_id": "qa_engineer",
       "unit_id": "unt_e2e",
@@ -89,6 +94,7 @@
     },
     {
       "employee_id": "emp_e2e06",
+      "display_name": "Ольга Северова",
       "grade": "M",
       "role_profile_id": "devops_engineer",
       "unit_id": "unt_e2e",
@@ -102,6 +108,7 @@
     },
     {
       "employee_id": "emp_e2e07",
+      "display_name": "Павел Степной",
       "grade": "L",
       "role_profile_id": "backend_engineer",
       "unit_id": "unt_e2e",
@@ -116,6 +123,7 @@
     },
     {
       "employee_id": "emp_e2e08",
+      "display_name": "Анна Садовая",
       "grade": "M",
       "role_profile_id": "qa_engineer",
       "unit_id": "unt_e2e",

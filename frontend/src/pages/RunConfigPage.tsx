@@ -1,3 +1,4 @@
+import { formatWeekDate } from '../utils/date';
 /**
  * Run configuration page: shown before creating a new optimization run.
  * Allows selecting weight preset / custom weights, and other run parameters.
@@ -289,8 +290,8 @@ export default function RunConfigPage({ briefId: propBriefId }: RunConfigPagePro
                 )}
               </Text>
               <Text type="secondary">
-                Срок: <Text strong>{brief.requested_start_week ?? '—'}</Text>{' '}–{' '}
-                <Text strong>{brief.deadline_week ?? '—'}</Text>
+                Срок: <Text strong>{brief.requested_start_week ? formatWeekDate(brief.requested_start_week) : '—'}</Text>{' '}–{' '}
+                <Text strong>{brief.deadline_week ? formatWeekDate(brief.deadline_week, true) : '—'}</Text>
               </Text>
             </Space>
           )}

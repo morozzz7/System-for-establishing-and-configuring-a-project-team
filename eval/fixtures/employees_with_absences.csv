@@ -1,0 +1,16 @@
+# Демо-база сотрудников с отсутствиями для импорта через «Загрузить данные».
+# Грейды: J, M, S, L, P. Тип занятости: internal, contractor, external_partner.
+# Компетенции: comp_id:level (1-5), разделены ";".
+# Отсутствия: type:start_date:end_date, несколько через ";".
+# Типы: vacation, sick_leave, training, business_trip, parental_leave, other.
+# Часов/день = 8, одобрено = true, источник = hr_import (для других значений используйте JSON).
+employee_id,grade,role_profile_id,unit_id,employment_type,bench_flag,competencies,absences
+emp_abs01,S,backend_engineer,unt_core,internal,false,lang_go:4;db_postgresql:4;api_rest:4,vacation:2026-12-07:2026-12-18
+emp_abs02,M,backend_engineer,unt_core,internal,false,lang_go:3;db_postgresql:3;api_rest:3,sick_leave:2026-11-30:2026-12-02;vacation:2026-12-14:2026-12-18
+emp_abs03,M,frontend_engineer,unt_web,internal,false,fw_react:4;lang_typescript:4,training:2026-12-02:2026-12-04
+emp_abs04,J,frontend_engineer,unt_web,internal,true,fw_react:3;lang_typescript:3,
+emp_abs05,L,qa_engineer,unt_qa,internal,false,test_playwright:4;qa_test_design:4,parental_leave:2026-11-02:2026-12-31
+emp_abs06,S,devops_engineer,unt_infra,internal,false,cloud_yandex:4;cloud_kubernetes:4,business_trip:2026-12-21:2026-12-23
+emp_abs07,M,backend_engineer,unt_core,internal,true,lang_go:3;api_rest:3,
+emp_abs08,S,qa_engineer,unt_qa,internal,false,test_playwright:4;qa_test_design:4,other:2026-12-11:2026-12-11
+emp_abs09,P,backend_engineer,unt_core,internal,false,lang_go:5;db_postgresql:5;api_rest:5,vacation:2026-12-21:2026-12-25

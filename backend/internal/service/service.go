@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/teamopt/backend/internal/domain"
@@ -97,6 +98,7 @@ func (s *EmployeeService) Create(ctx context.Context, input domain.EmployeeCreat
 
 	emp := domain.Employee{
 		EmployeeID:      input.EmployeeID,
+		DisplayName:     strings.TrimSpace(input.DisplayName),
 		Grade:           input.Grade,
 		RoleProfileID:   input.RoleProfileID,
 		UnitID:          input.UnitID,
@@ -147,7 +149,10 @@ func (s *EmployeeService) Update(ctx context.Context, id string, input domain.Em
 	}
 
 	// Build before state for audit.
-	before, _ := json.Marshal(existing)
+	before := employeeAuditJSON(existing)
+	if input.DisplayName != nil {
+		existing.DisplayName = strings.TrimSpace(*input.DisplayName)
+	}
 
 	// Apply updates.
 	if input.Grade != nil {
@@ -179,7 +184,7 @@ func (s *EmployeeService) Update(ctx context.Context, id string, input domain.Em
 	}
 
 	// Audit log.
-	after, _ := json.Marshal(existing)
+	after := employeeAuditJSON(existing)
 	details, _ := json.Marshal(map[string]json.RawMessage{"before": before, "after": after})
 	s.writeAuditDetailed(ctx, "employee_updated", "employee", id, requestID,
 		fmt.Sprintf("Employee %s updated", id), details)
@@ -292,19 +297,6 @@ type EmployeeImportResponse struct {
 type importWeekKey struct {
 	employeeID string
 	week       string
-}
-
-// importPendingHours aggregates every assignment of the payload per employee-week. A
-// per-row check would let two rows for the same employee-week each fit the free capacity
-// while their sum overloads it.
-func importPendingHours(input domain.EmployeeImportRequest) map[importWeekKey]float64 {
-	out := make(map[importWeekKey]float64)
-	for _, item := range input.Employees {
-		for _, a := range item.Assignments {
-			out[importWeekKey{item.EmployeeID, a.Week}] += a.Hours
-		}
-	}
-	return out
 }
 
 func buildImportAssignments(item domain.EmployeeImportItem) []domain.Assignment {
@@ -441,7 +433,6 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 		mode = "upsert"
 	}
 	validateOnly := input.ValidateOnly != nil && *input.ValidateOnly
-	pendingHours := importPendingHours(input)
 
 	var results []EmployeeImportResult
 	var validationErrors []domain.EmployeeImportValidationError
@@ -563,6 +554,9 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 			CostCoefficient: cost,
 			Active:          true,
 		}
+		if item.DisplayName != nil {
+			emp.DisplayName = strings.TrimSpace(*item.DisplayName)
+		}
 
 		if isNew {
 			// Create new employee.
@@ -605,9 +599,13 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 			totals.Created++
 		} else {
 			// Update existing employee.
-			before, _ := json.Marshal(existingEmp)
+			before := employeeAuditJSON(existingEmp)
 
 			changed := false
+			if item.DisplayName != nil && existingEmp.DisplayName != emp.DisplayName {
+				existingEmp.DisplayName = emp.DisplayName
+				changed = true
+			}
 			warnings := []string{}
 
 			if existingEmp.Grade != emp.Grade {
@@ -655,7 +653,7 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 					continue
 				}
 
-				after, _ := json.Marshal(existingEmp)
+				after := employeeAuditJSON(existingEmp)
 				details, _ := json.Marshal(map[string]json.RawMessage{"before": before, "after": after})
 				s.writeAuditDetailed(ctx, "employee_updated", "employee", item.EmployeeID, requestID,
 					fmt.Sprintf("Employee %s updated", item.EmployeeID), details)
@@ -711,30 +709,44 @@ func (s *EmployeeService) ImportEmployees(ctx context.Context, input domain.Empl
 		// Create assignments.
 		if len(item.Assignments) > 0 {
 			assignments := buildImportAssignments(item)
-			violationFound := false
-			if s.CapacitySvc != nil {
-				checkedWeeks := make(map[string]bool, len(assignments))
-				for _, a := range assignments {
-					if checkedWeeks[a.Week] {
-						continue
-					}
-					checkedWeeks[a.Week] = true
-					minutes := int(math.Round(pendingHours[importWeekKey{item.EmployeeID, a.Week}] * 60))
-					if violation := s.checkImportAssignmentWeek(ctx, item.EmployeeID, a.Week, minutes, payloadAbsences); violation != nil {
-						result.Status = "error"
-						result.Error = violation.Detail
-						validationErrors = append(validationErrors, *violation)
-						violationFound = true
-						break
+			var validationFailure *domain.EmployeeImportValidationError
+			write := func(ctx context.Context) error {
+				if repo, ok := s.AsgRepo.(assignmentTransactions); ok {
+					if err := repo.LockWeeks(ctx, importAssignmentKeys(assignments)); err != nil {
+						return err
 					}
 				}
+				if s.CapacitySvc != nil {
+					checkedWeeks := make(map[string]bool, len(assignments))
+					for _, a := range assignments {
+						if checkedWeeks[a.Week] {
+							continue
+						}
+						checkedWeeks[a.Week] = true
+						minutes := assignmentImportMinutes(assignments, a.Week)
+						if violation := s.checkImportAssignmentWeek(ctx, item.EmployeeID, a.Week, minutes, payloadAbsences); violation != nil {
+							validationFailure = violation
+							return nil
+						}
+					}
+				}
+				return s.AsgRepo.CreateBatch(ctx, assignments)
 			}
-			if violationFound {
+			var err error
+			if repo, ok := s.AsgRepo.(assignmentTransactions); ok {
+				err = repo.WithTransaction(ctx, write)
+			} else {
+				err = write(ctx)
+			}
+			if validationFailure != nil && err == nil {
+				result.Status = "error"
+				result.Error = validationFailure.Detail
+				validationErrors = append(validationErrors, *validationFailure)
 				totals.Errors++
 				results = append(results, result)
 				continue
 			}
-			if err := s.AsgRepo.CreateBatch(ctx, assignments); err != nil {
+			if err != nil {
 				if errors.Is(err, repository.ErrConflict) {
 					result.Status = "error"
 					result.Error = "duplicate assignment in payload or conflict with existing"
@@ -927,7 +939,7 @@ func (s *ProjectService) Create(ctx context.Context, input domain.ProjectCreate,
 	s.writeAudit(ctx, "project_created", "project", prj.ProjectID, requestID,
 		fmt.Sprintf("Project %s (%s) created", prj.ProjectID, prj.Code))
 
-	return prj, nil
+	return prj.WithEffectiveStatus(time.Now()), nil
 }
 
 func (s *ProjectService) Update(ctx context.Context, id string, input domain.ProjectCreate, requestID string) (domain.Project, error) {
@@ -970,7 +982,7 @@ func (s *ProjectService) Update(ctx context.Context, id string, input domain.Pro
 	s.writeAudit(ctx, "project_updated", "project", id, requestID,
 		fmt.Sprintf("Project %s updated", id))
 
-	return updated, nil
+	return updated.WithEffectiveStatus(time.Now()), nil
 }
 
 func (s *ProjectService) Delete(ctx context.Context, id string, requestID string) error {
@@ -1007,7 +1019,39 @@ func (s *AssignmentService) ListByProject(ctx context.Context, projectID string,
 	return assignments, nil
 }
 
+type assignmentTransactions interface {
+	WithTransaction(context.Context, func(context.Context) error) error
+	LockWeeks(context.Context, []domain.AssignmentCreate) error
+}
+
+type approvedAssignmentRepo interface {
+	PrepareApprovedPlan(context.Context, string, string) ([]domain.AssignmentCreate, error)
+	ReplaceApprovedPlanStart(context.Context, string, []domain.AssignmentCreate) ([]domain.Assignment, error)
+	CreateApproved(context.Context, domain.Assignment) error
+}
+
 func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, batch domain.AssignmentCreateBatch, requestID string) ([]domain.Assignment, error) {
+	var results []domain.Assignment
+	work := func(ctx context.Context) error {
+		var err error
+		results, err = s.createBatch(ctx, projectID, batch, requestID)
+		return err
+	}
+	var err error
+	if repo, ok := s.AssignmentRepo.(assignmentTransactions); ok {
+		err = repo.WithTransaction(ctx, work)
+	} else {
+		err = work(ctx)
+	}
+	if err != nil {
+		return nil, err
+	}
+	s.writeAudit(ctx, "assignment_created", "assignment", projectID, requestID,
+		fmt.Sprintf("%d assignments saved on project %s", len(results), projectID))
+	return results, nil
+}
+
+func (s *AssignmentService) createBatch(ctx context.Context, projectID string, batch domain.AssignmentCreateBatch, requestID string) ([]domain.Assignment, error) {
 	// Check project exists.
 	if _, err := s.ProjectRepo.Get(ctx, projectID); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
@@ -1017,13 +1061,33 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 		return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to get project", requestID, nil)
 	}
 
-	if len(batch.Assignments) == 0 {
+	approved := batch.ApprovedRunID != ""
+	var approvedRepo approvedAssignmentRepo
+	if approved {
+		if batch.Assignments != nil || batch.OverloadOverride != nil {
+			return nil, domain.NewProblem(422, "VALIDATION_FAILED", "send only approved_run_id for plan synchronization", requestID, nil)
+		}
+		var ok bool
+		approvedRepo, ok = s.AssignmentRepo.(approvedAssignmentRepo)
+		if !ok {
+			return nil, domain.NewProblem(500, "INTERNAL_ERROR", "approved plan store unavailable", requestID, nil)
+		}
+		assignments, err := approvedRepo.PrepareApprovedPlan(ctx, projectID, batch.ApprovedRunID)
+		if errors.Is(err, repository.ErrConflict) {
+			return nil, domain.NewProblem(409, "CONFLICT_APPROVED_PLAN", "only the latest approved run for this project can be synchronized", requestID, nil)
+		}
+		if err != nil {
+			return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to load approved plan", requestID, nil)
+		}
+		batch.Assignments = assignments
+	}
+	if !approved && len(batch.Assignments) == 0 {
 		p := domain.NewProblem(422, "VALIDATION_FAILED", "assignments array must not be empty",
 			requestID, []string{"VALIDATION_FAILED"})
 		p.Errors = []domain.FieldError{{Field: "assignments", Code: "EMPTY_ARRAY", Detail: "at least 1 assignment required"}}
 		return nil, p
 	}
-	if len(batch.Assignments) > 500 {
+	if !approved && len(batch.Assignments) > 500 {
 		p := domain.NewProblem(422, "VALIDATION_FAILED", "maximum 500 assignments per batch",
 			requestID, []string{"VALIDATION_FAILED"})
 		p.Errors = []domain.FieldError{{Field: "assignments", Code: "TOO_MANY_ITEMS", Detail: "max 500"}}
@@ -1047,10 +1111,24 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 			fmt.Sprintf("%d field(s) failed validation", len(errs)), requestID, errs)
 	}
 
+	if approved {
+		existing, err := approvedRepo.ReplaceApprovedPlanStart(ctx, projectID, batch.Assignments)
+		if err != nil {
+			return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to replace approved plan", requestID, nil)
+		}
+		if existing != nil {
+			return existing, nil
+		}
+	} else if repo, ok := s.AssignmentRepo.(assignmentTransactions); ok {
+		if err := repo.LockWeeks(ctx, batch.Assignments); err != nil {
+			return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to lock assignment weeks", requestID, nil)
+		}
+	}
+
 	// Check every row against the repository state and the hours of earlier rows before
 	// writing any of them: a per-row check would let two rows overload the same week.
 	checked := make([]domain.Assignment, 0, len(batch.Assignments))
-	pendingHours := make(map[importWeekKey]float64, len(batch.Assignments))
+	pendingHours := make(map[importWeekKey]int, len(batch.Assignments))
 	for i, ac := range batch.Assignments {
 		// Check employee exists and get capacity profile.
 		emp, err := s.EmployeeRepo.Get(ctx, ac.EmployeeID)
@@ -1071,7 +1149,8 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 		// G1 + G2 enforcement via CapacityService (preferred) or legacy inline checks.
 		pendingKey := importWeekKey{ac.EmployeeID, ac.Week}
 		pending := pendingHours[pendingKey]
-		requestedMinutes := int(math.Round((ac.Hours + pending) * 60))
+		minutes := max(1, int(math.Round(ac.Hours*60)))
+		requestedMinutes := minutes + pending
 		if s.CapacitySvc != nil {
 			if err := s.CapacitySvc.CheckAvailability(ctx, ac.EmployeeID, ac.Week, requestedMinutes); err != nil {
 				var p domain.Problem
@@ -1117,7 +1196,7 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 				return nil, domain.NewProblem(500, "INTERNAL_ERROR", "failed to check capacity", requestID, nil)
 			}
 			maxHours := emp.CapacityProfile.WeeklyHoursNorm * (1 - emp.CapacityProfile.ReserveRatio)
-			newTotal := existingHours + ac.Hours + pending
+			newTotal := existingHours + float64(requestedMinutes)/60
 			if newTotal > maxHours && batch.OverloadOverride == nil {
 				p := domain.NewProblem(409, "CONFLICT_OVERLOAD",
 					fmt.Sprintf("%s would reach %.0f%% in %s",
@@ -1133,21 +1212,25 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 				return nil, p
 			}
 		}
-		pendingHours[pendingKey] = pending + ac.Hours
+		pendingHours[pendingKey] = requestedMinutes
 		checked = append(checked, domain.Assignment{
 			AssignmentID: domain.GenerateID("asg_", 6),
 			ProjectID:    projectID,
 			EmployeeID:   ac.EmployeeID,
 			RoleID:       ac.RoleID,
 			Week:         ac.Week,
-			Hours:        ac.Hours,
+			Hours:        float64(minutes) / 60,
 			Source:       "plan",
 		})
 	}
 
-	var results []domain.Assignment
+	create := s.AssignmentRepo.Create
+	if approved {
+		create = approvedRepo.CreateApproved
+	}
+	results := make([]domain.Assignment, 0, len(checked))
 	for _, a := range checked {
-		if err := s.AssignmentRepo.Create(ctx, a); err != nil {
+		if err := create(ctx, a); err != nil {
 			if errors.Is(err, repository.ErrConflict) {
 				p := domain.NewProblem(409, "CONFLICT_DUPLICATE",
 					fmt.Sprintf("duplicate assignment for %s in %s on project %s",
@@ -1158,10 +1241,6 @@ func (s *AssignmentService) CreateBatch(ctx context.Context, projectID string, b
 		}
 		results = append(results, a)
 	}
-
-	// Audit.
-	s.writeAudit(ctx, "assignment_created", "assignment", projectID, requestID,
-		fmt.Sprintf("%d assignments created on project %s", len(results), projectID))
 
 	return results, nil
 }
@@ -1357,4 +1436,28 @@ func gradeToCost(grade string) float64 {
 	default:
 		return 1.0
 	}
+}
+
+func employeeAuditJSON(employee domain.Employee) []byte {
+	employee.DisplayName = ""
+	payload, _ := json.Marshal(employee)
+	return payload
+}
+
+func importAssignmentKeys(assignments []domain.Assignment) []domain.AssignmentCreate {
+	keys := make([]domain.AssignmentCreate, 0, len(assignments))
+	for _, a := range assignments {
+		keys = append(keys, domain.AssignmentCreate{EmployeeID: a.EmployeeID, Week: a.Week})
+	}
+	return keys
+}
+
+func assignmentImportMinutes(assignments []domain.Assignment, week string) int {
+	total := 0
+	for _, a := range assignments {
+		if a.Week == week {
+			total += max(1, int(math.Round(a.Hours*60)))
+		}
+	}
+	return total
 }

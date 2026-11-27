@@ -57,7 +57,7 @@ func (r *PgCapacityRepo) GetWeeklyCapacity(ctx context.Context, employeeID, star
 
 	// 2. Get employee profile.
 	var p empProfile
-	err = r.Pool.QueryRow(ctx,
+	err = assignmentConnection(ctx, r.Pool).QueryRow(ctx,
 		`SELECT employee_id, weekly_hours_norm::integer, reserve_ratio::double precision,
 		        max_utilization_ratio::double precision
 		 FROM employee WHERE employee_id = $1 AND active = true`, employeeID,
@@ -145,7 +145,7 @@ func (r *PgCapacityRepo) GetCapacityMatrix(ctx context.Context, employeeIDs []st
 // ---------- candidate search ----------
 
 func (r *PgCapacityRepo) FindCandidatesByCompetency(ctx context.Context, competencyID string, minLevel int) ([]string, error) {
-	rows, err := r.Pool.Query(ctx,
+	rows, err := assignmentConnection(ctx, r.Pool).Query(ctx,
 		`SELECT DISTINCT e.employee_id
 		 FROM employee e
 		 JOIN employee_competency ec ON ec.employee_id = e.employee_id
@@ -176,7 +176,7 @@ func (r *PgCapacityRepo) getProfiles(ctx context.Context, employeeIDs []string) 
 	query := `SELECT employee_id, weekly_hours_norm::integer, reserve_ratio::double precision,
 	                 max_utilization_ratio::double precision
 	          FROM employee WHERE active = true AND employee_id = ANY($1)`
-	rows, err := r.Pool.Query(ctx, query, employeeIDs)
+	rows, err := assignmentConnection(ctx, r.Pool).Query(ctx, query, employeeIDs)
 	if err != nil {
 		return nil, fmt.Errorf("batch profiles: %w", err)
 	}
@@ -202,7 +202,7 @@ func (r *PgCapacityRepo) getAssignedMinutes(ctx context.Context, employeeIDs []s
 	          FROM assignment
 	          WHERE employee_id = ANY($1) AND week >= $2 AND week <= $3
 	          GROUP BY employee_id, week`
-	rows, err := r.Pool.Query(ctx, query, employeeIDs, startWeek, endWeek)
+	rows, err := assignmentConnection(ctx, r.Pool).Query(ctx, query, employeeIDs, startWeek, endWeek)
 	if err != nil {
 		return nil, fmt.Errorf("batch assigned minutes: %w", err)
 	}
@@ -233,7 +233,7 @@ func (r *PgCapacityRepo) getAbsences(ctx context.Context, employeeIDs []string, 
 	          FROM absence
 	          WHERE employee_id = ANY($1) AND deleted_at IS NULL AND approved = true
 	            AND end_date >= $2 AND start_date <= $3`
-	rows, err := r.Pool.Query(ctx, query, employeeIDs, rangeStart, rangeEnd)
+	rows, err := assignmentConnection(ctx, r.Pool).Query(ctx, query, employeeIDs, rangeStart, rangeEnd)
 	if err != nil {
 		return nil, fmt.Errorf("batch absences: %w", err)
 	}

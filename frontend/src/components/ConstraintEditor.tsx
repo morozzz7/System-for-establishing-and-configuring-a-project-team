@@ -1,3 +1,4 @@
+import { useEmployeeNames } from '../hooks';
 /**
  * Constraint editor for recalculation (task 4.4).
  *
@@ -10,7 +11,6 @@
 import { useMemo, useState } from 'react';
 import {
   Alert,
-  AutoComplete,
   Button,
   Divider,
   Drawer,
@@ -90,13 +90,14 @@ export default function ConstraintEditor({
   const listIssues = useMemo(() => validateOverrides(overrides, context), [overrides, context]);
   const blocked = hasBlockingIssues(listIssues);
 
+  const employeeName = useEmployeeNames();
   const employeeOptions = useMemo(
     () =>
       (inputs?.candidates ?? []).map((candidate) => ({
         value: candidate.employee_id,
-        label: `${candidate.employee_id} · ${candidate.grade}`,
+        label: `${employeeName(candidate.employee_id)} · ${candidate.grade}`,
       })),
-    [inputs],
+    [inputs, employeeName],
   );
 
   const fields = draftFieldsForType(draft.type);
@@ -203,7 +204,7 @@ export default function ConstraintEditor({
               {currentRows.map((row) => (
                 <Space key={row.key} wrap>
                   <Tag>{row.label}</Tag>
-                  <Text>{row.value}</Text>
+                  <Text>{row.value.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}</Text>
                 </Space>
               ))}
             </Space>
@@ -234,29 +235,29 @@ export default function ConstraintEditor({
           </Space>
 
           {fields.employee && (
-            <AutoComplete
+            <Select
+              showSearch
+              optionFilterProp="label"
+              virtual={false}
               aria-label="Сотрудник"
               value={draft.employee_id}
               onChange={(value) => updateDraft({ employee_id: value })}
               options={employeeOptions}
-              placeholder="emp_0001"
+              placeholder="Выберите сотрудника"
               style={{ width: '100%' }}
-              filterOption={(input, option) =>
-                String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())
-              }
             />
           )}
 
           {fields.employeeList && (
             <Select
               aria-label="Закрепляемые сотрудники"
-              mode="tags"
+              mode="multiple"
+              optionFilterProp="label"
               value={draft.employee_ids}
               onChange={(value: string[]) => updateDraft({ employee_ids: value })}
               options={employeeOptions}
-              placeholder="emp_0001, emp_0002"
+              placeholder="Выберите сотрудников"
               style={{ width: '100%' }}
-              tokenSeparators={[',', ' ']}
             />
           )}
 
@@ -313,7 +314,7 @@ export default function ConstraintEditor({
               description={
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {formIssues.map((issue) => (
-                    <li key={`${issue.index}-${issue.field}-${issue.message}`}>{issue.message}</li>
+                    <li key={`${issue.index}-${issue.field}-${issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}`}>{issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}</li>
                   ))}
                 </ul>
               }
@@ -342,7 +343,7 @@ export default function ConstraintEditor({
                   ]}
                 >
                   <List.Item.Meta
-                    title={<Text>{`${index + 1}. ${describeOverride(override)}`}</Text>}
+                    title={<Text>{`${index + 1}. ${describeOverride(override).replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}`}</Text>}
                     description={
                       <Space direction="vertical" size={0}>
                         <Text type="secondary" style={{ fontSize: 12 }}>
@@ -367,8 +368,8 @@ export default function ConstraintEditor({
                   {listIssues
                     .filter((issue) => issue.blocking)
                     .map((issue) => (
-                      <li key={`${issue.index}-${issue.field}-${issue.message}`}>
-                        {`Ограничение ${issue.index + 1}: ${issue.message}`}
+                      <li key={`${issue.index}-${issue.field}-${issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}`}>
+                        {`Ограничение ${issue.index + 1}: ${issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}`}
                       </li>
                     ))}
                 </ul>
@@ -383,7 +384,7 @@ export default function ConstraintEditor({
               description={
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {listIssues.map((issue) => (
-                    <li key={`${issue.index}-${issue.field}-${issue.message}`}>{issue.message}</li>
+                    <li key={`${issue.index}-${issue.field}-${issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}`}>{issue.message.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}</li>
                   ))}
                 </ul>
               }

@@ -1,3 +1,4 @@
+import { useEmployeeNames } from '../hooks';
 /**
  * "Почему этот состав" — explanation for the selected variant (task 4.4/4.3).
  *
@@ -19,6 +20,7 @@ function FactorList({
   factors: ExplanationFactor[];
   localeEmpty: string;
 }) {
+  const employeeName = useEmployeeNames();
   if (factors.length === 0) {
     return <Text type="secondary">{localeEmpty}</Text>;
   }
@@ -30,10 +32,10 @@ function FactorList({
         <List.Item>
           <Space direction="vertical" size={2} style={{ width: '100%' }}>
             <Space wrap size={[6, 2]}>
-              {factor.employee_id && <Tag color="default">{factor.employee_id}</Tag>}
+              {factor.employee_id && <Tag color="default">{employeeName(factor.employee_id)}</Tag>}
               {factor.competency_id && <Tag color="cyan">{factor.competency_id}</Tag>}
             </Space>
-            <Text>{factor.text}</Text>
+            <Text>{factor.text.replace(/\bemp_[a-z0-9]{4,12}\b/g, employeeName)}</Text>
             <Space wrap size={[4, 4]}>
               {(factor.reason_codes ?? []).map((code) => (
                 <Tag key={code} color="blue">

@@ -1,3 +1,5 @@
+import { demoBriefs, demoRequirements } from "../mocks/briefs";
+import { effectiveProject, plannedAssignments, projectFromRun } from '../utils/project';
 /**
  * API client layer for the core service (contracts/openapi.yaml).
  *
@@ -66,8 +68,8 @@ import {
   resetMockRuns,
 } from '../mocks/runs';
 
-const mockBriefs: Brief[] = [];
-const mockRequirements: Record<string, Requirement[]> = {};
+const mockBriefs: Brief[] = [...demoBriefs];
+const mockRequirements: Record<string, Requirement[]> = { ...demoRequirements };
 const mockCreatedProjects: Project[] = [];
 const mockDeletedProjectIds = new Set<string>();
 const mockAddedAbsences: Absence[] = [];
@@ -315,6 +317,45 @@ export async function recalculateRun(runId: string, request: RecalculateRequest)
  * Record human manager decision on chosen variant (ADR-007 §4).
  * Calls POST /runs/{runId}/decision.
  */
+const mockDecisions = new Map<string, DecisionResponse>();
+const mockApprovedPlans = new Map<string, Assignment[]>();
+
+export async function getDecision(runId: string): Promise<DecisionResponse | null> {
+  if (!API_BASE) return mockDecisions.get(runId) ?? null;
+  try {
+    return await backend<DecisionResponse>(`/runs/${runId}/decision`);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
+export async function synchronizeApprovedPlan(projectId: string, runId: string): Promise<Assignment[]> {
+  if (API_BASE) {
+    return backend<Assignment[]>(`/projects/${encodeURIComponent(projectId)}/assignments`, {
+      method: 'POST',
+      body: JSON.stringify({ approved_run_id: runId }),
+    });
+  }
+  const decision = mockDecisions.get(runId);
+  const run = getMockRun(runId);
+  const variant = decision && getMockVariant(runId, decision.variant_id);
+  if (!run || !variant || projectFromRun(run, null).project_id !== projectId) {
+    throw new ApiError({ status: 409, code: 'CONFLICT_APPROVED_PLAN', detail: 'Утверждённый вариант не найден' });
+  }
+  const next = plannedAssignments(variant, projectId).filter((row) => row.hours > 0);
+  const previous = new Set(mockApprovedPlans.get(projectId)?.map((row) => row.assignment_id));
+  const manual = mockAssignments.filter((row) => row.project_id === projectId && !previous.has(row.assignment_id));
+  if (next.some((row) => manual.some((item) => item.employee_id === row.employee_id && item.week === row.week))) {
+    throw new ApiError({ status: 409, code: 'CONFLICT_DUPLICATE', detail: 'На эту неделю уже есть ручное назначение' });
+  }
+  const stored = next.map((row) => ({ ...row, assignment_id: mockId('asg') }));
+  mockAssignments.splice(0, mockAssignments.length,
+    ...mockAssignments.filter((row) => !previous.has(row.assignment_id)), ...stored);
+  mockApprovedPlans.set(projectId, stored);
+  return stored;
+}
+
 export async function recordDecision(runId: string, request: DecisionRequest): Promise<DecisionResponse> {
   if (API_BASE) {
     return backend<DecisionResponse>(`/runs/${runId}/decision`, {
@@ -323,7 +364,7 @@ export async function recordDecision(runId: string, request: DecisionRequest): P
     });
   }
   await delay();
-  return {
+  const result = {
     run_id: runId,
     variant_id: request.variant_id,
     decided_at: new Date().toISOString(),
@@ -331,24 +372,40 @@ export async function recordDecision(runId: string, request: DecisionRequest): P
     edits_count: request.edits_applied?.length ?? 0,
     audit_event_id: `aud_${Date.now().toString(36)}`,
   };
+  mockDecisions.set(runId, result);
+  return result;
 }
 
 /** Test-only hook: clears the in-memory mock run store. */
 export function resetMockState(): void {
   resetMockRuns();
+  mockDecisions.clear();
+  for (const rows of mockApprovedPlans.values()) {
+    for (const row of rows) {
+      const index = mockAssignments.indexOf(row);
+      if (index >= 0) mockAssignments.splice(index, 1);
+    }
+  }
+  mockApprovedPlans.clear();
   mockCreatedProjects.length = 0;
 }
 
 // ──── employees ────
 
-export async function listEmployees(_params?: {
-  role_id?: string;
-  grade?: string;
-  bench_only?: boolean;
-}): Promise<Employee[]> {
-  if (API_BASE) return (await backend<{ items: Employee[] }>('/employees?limit=200')).items;
-  await delay();
-  return [...mockEmployees];
+let employeeDirectory: Promise<Employee[]> | undefined;
+
+export function invalidateEmployees() {
+  employeeDirectory = undefined;
+}
+
+export function listEmployees(): Promise<Employee[]> {
+  if (employeeDirectory) return employeeDirectory;
+  const request = API_BASE ? fetchAllPages<Employee>('/employees') : Promise.resolve([...mockEmployees]);
+  employeeDirectory = request;
+  void request.catch(() => {
+    if (employeeDirectory === request) invalidateEmployees();
+  });
+  return request;
 }
 
 export interface EmployeeImportPayload {
@@ -367,10 +424,12 @@ export interface EmployeeImportResponse {
 
 export async function importEmployees(payload: EmployeeImportPayload): Promise<EmployeeImportResponse> {
   if (API_BASE) {
-    return backend<EmployeeImportResponse>('/employees', {
+    const result = await backend<EmployeeImportResponse>('/employees', {
       method: 'PUT',
       body: JSON.stringify({ ...payload, mode: payload.mode ?? 'upsert' }),
     });
+    if (!payload.validate_only) invalidateEmployees();
+    return result;
   }
   await delay();
   const total = payload.employees.length;
@@ -384,6 +443,30 @@ export async function importEmployees(payload: EmployeeImportPayload): Promise<E
   const validCount = total - invalid.length;
   if (!payload.validate_only) {
     for (const employee of payload.employees) {
+      if (invalid.includes(employee)) continue;
+      const employeeId = String(employee.employee_id);
+      const existing = mockEmployees.find((item) => item.employee_id === employeeId);
+      const grade = String(employee.grade) as Employee['grade'];
+      const profile: Employee = {
+        employee_id: employeeId,
+        grade,
+        role_profile_id: String(employee.role_profile_id),
+        unit_id: String(employee.unit_id ?? existing?.unit_id ?? 'unt_default'),
+        employment_type: (employee.employment_type ?? existing?.employment_type ?? 'internal') as Employee['employment_type'],
+        bench_flag: Boolean(employee.bench_flag ?? existing?.bench_flag),
+        capacity_profile: (employee.capacity_profile ?? existing?.capacity_profile ?? {
+          weekly_hours_norm: 40, reserve_ratio: 0.2, max_utilization_ratio: 0.95,
+        }) as Employee['capacity_profile'],
+        active: existing?.active ?? true,
+        cost_coefficient: mockGrades.find((item) => item.grade === grade)?.cost_coefficient ?? 1,
+        display_name: typeof employee.display_name === 'string' ? employee.display_name.trim() : existing?.display_name,
+      };
+      if (existing) Object.assign(existing, profile);
+      else mockEmployees.push(profile);
+      if (Array.isArray(employee.competencies)) {
+        mockEmployeeCompetencies[employeeId] = employee.competencies as EmployeeCompetency[];
+      }
+
       const rawAbsences = employee.absences;
       if (!Array.isArray(rawAbsences)) continue;
       for (const raw of rawAbsences) {
@@ -401,6 +484,7 @@ export async function importEmployees(payload: EmployeeImportPayload): Promise<E
       }
     }
   }
+  if (!payload.validate_only) invalidateEmployees();
   return {
     request_id: `req_mock_${Date.now()}`,
     mode: payload.mode ?? 'upsert',
@@ -429,10 +513,11 @@ export async function getEmployee(employeeId: string): Promise<Employee | null> 
 
 export async function createEmployee(emp: Employee): Promise<Employee> {
   if (API_BASE) {
-    return backend<Employee>('/employees', {
+    const created = await backend<Employee>('/employees', {
       method: 'POST',
       body: JSON.stringify({
         employee_id: emp.employee_id,
+        display_name: emp.display_name,
         grade: emp.grade,
         role_profile_id: emp.role_profile_id,
         unit_id: emp.unit_id,
@@ -441,8 +526,12 @@ export async function createEmployee(emp: Employee): Promise<Employee> {
         capacity_profile: emp.capacity_profile,
       }),
     });
+    invalidateEmployees();
+    return created;
   }
   await delay();
+  mockEmployees.push(emp);
+  invalidateEmployees();
   return emp;
 }
 
@@ -452,19 +541,23 @@ export async function patchEmployee(
 ): Promise<Employee> {
   if (API_BASE) {
     const body = Object.fromEntries(
-      (['grade', 'role_profile_id', 'unit_id', 'employment_type', 'bench_flag', 'capacity_profile', 'active'] as const)
+      (['display_name', 'grade', 'role_profile_id', 'unit_id', 'employment_type', 'bench_flag', 'capacity_profile', 'active'] as const)
         .filter((key) => patch[key] !== undefined)
         .map((key) => [key, patch[key]]),
     );
-    return backend<Employee>(`/employees/${encodeURIComponent(employeeId)}`, {
+    const updated = await backend<Employee>(`/employees/${encodeURIComponent(employeeId)}`, {
       method: 'PATCH',
       body: JSON.stringify(body),
     });
+    invalidateEmployees();
+    return updated;
   }
   await delay();
   const existing = mockEmployees.find((e) => e.employee_id === employeeId);
   if (!existing) throw new ApiError({ status: 404, code: 'NOT_FOUND', detail: 'Сотрудник не найден', reasonCodes: [] });
-  return { ...existing, ...patch };
+  Object.assign(existing, patch);
+  invalidateEmployees();
+  return existing;
 }
 
 export async function listEmployeeCompetencies(
@@ -544,19 +637,27 @@ export async function listProjects(params?: {
   await delay();
   const projects = [...mockCreatedProjects, ...mockProjects].filter(
     (p) => !mockDeletedProjectIds.has(p.project_id),
-  );
+  ).map((project) => effectiveProject(project));
   return params?.status ? projects.filter((p) => p.status === params.status) : projects;
 }
 
 export async function getProject(projectId: string): Promise<Project | null> {
-  if (API_BASE) return backend<Project>(`/projects/${encodeURIComponent(projectId)}`);
+  if (API_BASE) {
+    try {
+      return await backend<Project>(`/projects/${encodeURIComponent(projectId)}`);
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) return null;
+      throw error;
+    }
+  }
   await delay();
   if (mockDeletedProjectIds.has(projectId)) return null;
-  return (
+  const project = (
     mockCreatedProjects.find((p) => p.project_id === projectId) ??
     mockProjects.find((p) => p.project_id === projectId) ??
     null
   );
+  return project && effectiveProject(project);
 }
 
 export async function createProject(prj: Project): Promise<Project> {
@@ -581,7 +682,7 @@ export async function createProject(prj: Project): Promise<Project> {
   if (existing >= 0) mockCreatedProjects.splice(existing, 1, prj);
   else mockCreatedProjects.unshift(prj);
   mockDeletedProjectIds.delete(prj.project_id);
-  return prj;
+  return effectiveProject(prj);
 }
 
 export async function deleteProject(projectId: string): Promise<void> {

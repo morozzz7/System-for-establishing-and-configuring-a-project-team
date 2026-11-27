@@ -3,8 +3,9 @@
  * Uses the API client (currently returning mocks).
  * Swap to real API by changing only src/api/client.ts.
  */
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import * as api from '../api/client';
+import type { Employee } from '../types';
 
 interface AsyncState<T> {
   data: T | null;
@@ -33,7 +34,28 @@ function useAsync<T>(fetcher: () => Promise<T>, deps: unknown[] = []): AsyncStat
 // ──── Employees ────
 
 export function useEmployees() {
-  return useAsync(() => api.listEmployees(), []);
+  const state = useAsync(api.listEmployees, []);
+  return { ...state, refetch: () => { api.invalidateEmployees(); state.refetch(); } };
+}
+
+export function useEmployeeNames() {
+  return useEmployeeNameFormatter(useEmployees().data);
+}
+
+export function useEmployeeNameFormatter(data: Employee[] | null) {
+  const names = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const employee of data ?? []) {
+      const name = employee.display_name?.trim().toLocaleLowerCase('ru');
+      if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+    }
+    return new Map(data?.map((employee) => {
+      const name = employee.display_name?.trim();
+      const duplicate = name && (counts.get(name.toLocaleLowerCase('ru')) ?? 0) > 1;
+      return [employee.employee_id, name ? (duplicate ? `${name} · ${employee.employee_id}` : name) : employee.employee_id];
+    }));
+  }, [data]);
+  return useCallback((id: string) => names.get(id) ?? id, [names]);
 }
 
 export function useEmployee(employeeId: string) {

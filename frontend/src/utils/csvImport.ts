@@ -10,6 +10,7 @@ export interface ParsedEmployeeRow {
   key: string;
   index: number;
   employee_id: string;
+  display_name?: string;
   grade: string;
   role_profile_id: string;
   employment_type: string;
@@ -137,6 +138,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
 
   const getCol = (names: string[]): number => headers.findIndex((h) => names.includes(h));
   const colId = getCol(['employee_id', 'id', 'ид']);
+  const colName = getCol(['display_name', 'имя']);
   const colGrade = getCol(['grade', 'грейд']);
   const colRole = getCol(['role_profile_id', 'role', 'роль']);
   const colUnit = getCol(['unit_id', 'unit', 'отдел', 'юнит', 'team', 'подразделение', 'department']);
@@ -152,6 +154,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
     if (parts.length === 0 || parts.every((p) => !p)) continue;
 
     const empId = colId >= 0 && parts[colId] ? parts[colId] : '';
+    const displayName = colName >= 0 ? parts[colName] : undefined;
     const grade = colGrade >= 0 && parts[colGrade] ? parts[colGrade].toUpperCase() : '';
     const roleId = colRole >= 0 && parts[colRole] ? parts[colRole] : '';
     const unitId = colUnit >= 0 && parts[colUnit] ? parts[colUnit] : 'unt_default';
@@ -203,6 +206,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
 
     const raw: Record<string, unknown> = {
       employee_id: empId,
+      ...(displayName !== undefined ? { display_name: displayName } : {}),
       grade,
       role_profile_id: roleId,
       unit_id: unitId,
@@ -216,6 +220,7 @@ export function parseCsvToEmployees(csvText: string): ParsedEmployeeRow[] {
       key: empId || `row_${i}`,
       index: i,
       employee_id: empId,
+      ...(displayName !== undefined ? { display_name: displayName } : {}),
       grade,
       role_profile_id: roleId,
       employment_type: empType,
@@ -242,6 +247,7 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
   return list.map((item, idx) => {
     const obj = item as Record<string, unknown>;
     const empId = String(obj.employee_id || '');
+    const displayName = typeof obj.display_name === 'string' ? obj.display_name.trim() : undefined;
     const grade = String(obj.grade || '').toUpperCase();
     const roleId = String(obj.role_profile_id || '');
     const empType = normalizeEmploymentType(String(obj.employment_type || 'internal'));
@@ -267,6 +273,7 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
 
     const raw: Record<string, unknown> = {
       employee_id: empId,
+      ...(displayName !== undefined ? { display_name: displayName } : {}),
       grade,
       role_profile_id: roleId,
       unit_id: String(obj.unit_id || 'unt_default'),
@@ -282,6 +289,7 @@ export function parseJsonToEmployees(jsonData: unknown): ParsedEmployeeRow[] {
       key: empId || `json_${idx + 1}`,
       index: idx + 1,
       employee_id: empId,
+      ...(displayName !== undefined ? { display_name: displayName } : {}),
       grade,
       role_profile_id: roleId,
       employment_type: empType,

@@ -77,10 +77,10 @@ describe('ExplanationPanel', () => {
     expect(screen.getAllByText(reasonCodeLabel('VARIANT_BALANCED')).length).toBeGreaterThan(0);
   });
 
-  it('renders included/excluded/deficit factors and their reason tags', () => {
+  it('renders included/excluded/deficit factors and their reason tags', async () => {
     renderPanel();
-    expect(screen.getAllByText(/Бэкенд-разработчик emp_0001/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/emp_0029: недоступен/).length).toBeGreaterThan(0);
+    expect((await screen.findAllByText(/Бэкенд-разработчик Артём Ветров/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Ксения Рябова: недоступен/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Недостаточно «Go»/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(reasonCodeLabel('INCLUDE_HIGH_COMPETENCE')).length).toBeGreaterThan(0);
     expect(screen.getAllByText(reasonCodeLabel('EXCLUDE_ABSENT')).length).toBeGreaterThan(0);

@@ -1,3 +1,4 @@
+import { mockEmployees } from '../mocks/reference';
 /**
  * ConstraintEditor wiring: draft → contract override → POST recalculate → result callback.
  * The mock backend is used, so this also proves the editor is contract-compatible end to end.
@@ -20,11 +21,15 @@ async function prepare(): Promise<{ run: TeamRun; inputs: RunInputs; memberId: s
   return { run, inputs, memberId: variant.members[0].employee_id };
 }
 
+function employeeName(id: string): string {
+  return mockEmployees.find((employee) => employee.employee_id === id)?.display_name ?? 'Имя не указано';
+}
+
 async function selectEmployee(value: string): Promise<void> {
   const input = screen.getByRole('combobox', { name: 'Сотрудник' });
-  await act(async () => {
-    fireEvent.change(input, { target: { value } });
-  });
+  fireEvent.mouseDown(input);
+  fireEvent.change(input, { target: { value: employeeName(value) } });
+  fireEvent.click(await screen.findByRole('option', { name: new RegExp(employeeName(value)) }));
 }
 
 async function clickButton(name: string): Promise<void> {
@@ -62,7 +67,7 @@ describe('ConstraintEditor', () => {
     await selectEmployee(memberId);
     await clickButton('Добавить ограничение');
 
-    expect(await screen.findByText(new RegExp(`Исключить ${memberId}`), {}, { timeout: UI_TIMEOUT })).toBeDefined();
+    expect(await screen.findByText(new RegExp(`Исключить ${employeeName(memberId)}`), {}, { timeout: UI_TIMEOUT })).toBeDefined();
 
     await clickButton('Пересчитать');
 
@@ -93,7 +98,7 @@ describe('ConstraintEditor', () => {
 
     await selectEmployee(memberId);
     await clickButton('Добавить ограничение');
-    await screen.findByText(new RegExp(`Исключить ${memberId}`), {}, { timeout: UI_TIMEOUT });
+    await screen.findByText(new RegExp(`Исключить ${employeeName(memberId)}`), {}, { timeout: UI_TIMEOUT });
 
     // A second override of the same employee is a duplicate: the action must stay disabled.
     await selectEmployee(memberId);

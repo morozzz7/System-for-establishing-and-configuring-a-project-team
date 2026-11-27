@@ -194,7 +194,7 @@ func TestIntegration_EmployeeCRUD(t *testing.T) {
 
 	// 4. Update employee (PATCH).
 	resp = env.doPatch("/employees/emp_test0001", map[string]interface{}{
-		"grade":     "L",
+		"grade":      "L",
 		"bench_flag": true,
 	})
 	assert.Equal(t, 200, resp.StatusCode)
@@ -463,3 +463,143 @@ func mustParseDate(s string) time.Time {
 }
 
 func boolPtr(b bool) *bool { return &b }
+
+func TestIntegration_ConcurrentAssignmentsShareWeeklyCapacity(t *testing.T) {
+	env := setupIntTest(t)
+	employeeID := "emp_asg00002"
+	resp := env.doPost("/employees", domain.EmployeeCreate{
+		EmployeeID: employeeID, Grade: "S", RoleProfileID: "backend_engineer",
+		UnitID: "unt_core", EmploymentType: "internal",
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
+
+	projects := []string{"prj_asg00002", "prj_asg00003"}
+	for _, id := range projects {
+		resp = env.doPost("/projects", domain.ProjectCreate{
+			ProjectID: id, Code: id, Name: "Synthetic project", Status: "active",
+			Priority: 1, Criticality: "normal", StartWeek: "2026-W01", EndWeekPlanned: "2026-W20",
+		})
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		require.NoError(t, resp.Body.Close())
+	}
+
+	batch := domain.AssignmentCreateBatch{Assignments: []domain.AssignmentCreate{
+		{EmployeeID: employeeID, RoleID: "backend_engineer", Week: "2026-W03", Hours: 20},
+	}}
+	encoded, err := json.Marshal(batch)
+	require.NoError(t, err)
+	type result struct {
+		status int
+		err    error
+	}
+	results := make(chan result, 2)
+	start := make(chan struct{})
+	for _, id := range projects {
+		go func() {
+			<-start
+			resp, err := http.Post(env.url("/projects/"+id+"/assignments"), "application/json", bytes.NewReader(encoded))
+			if err != nil {
+				results <- result{err: err}
+				return
+			}
+			_ = resp.Body.Close()
+			results <- result{status: resp.StatusCode}
+		}()
+	}
+	close(start)
+	first, second := <-results, <-results
+	require.NoError(t, first.err)
+	require.NoError(t, second.err)
+	require.ElementsMatch(t, []int{http.StatusCreated, http.StatusConflict}, []int{first.status, second.status})
+
+	repo := repository.NewPgAssignmentRepo(env.pool)
+	hours, err := repo.TotalAssignedHours(context.Background(), employeeID, "2026-W03")
+	require.NoError(t, err)
+	require.Equal(t, 20.0, hours)
+}
+
+func TestIntegration_SynchronizeApprovedPlan(t *testing.T) {
+	env := setupIntTest(t)
+	ctx := context.Background()
+	projectID := "prj_sync01"
+	for _, id := range []string{"emp_sync01", "emp_sync02"} {
+		resp := env.doPost("/employees", domain.EmployeeCreate{
+			EmployeeID: id, Grade: "S", RoleProfileID: "backend_engineer",
+			UnitID: "unt_core", EmploymentType: "internal",
+		})
+		require.Equal(t, http.StatusCreated, resp.StatusCode)
+		require.NoError(t, resp.Body.Close())
+	}
+	resp := env.doPost("/projects", domain.ProjectCreate{
+		ProjectID: projectID, Code: "SYNC", Name: "Synthetic project", Status: "planned",
+		Priority: 1, Criticality: "normal", StartWeek: "2026-W10", EndWeekPlanned: "2026-W13",
+	})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	require.NoError(t, resp.Body.Close())
+
+	path := "/projects/" + projectID + "/assignments"
+	resp = env.doPost(path, domain.AssignmentCreateBatch{Assignments: []domain.AssignmentCreate{
+		{EmployeeID: "emp_sync01", RoleID: "backend_engineer", Week: "2026-W12", Hours: 8},
+	}})
+	require.Equal(t, http.StatusCreated, resp.StatusCode)
+	var manual []domain.Assignment
+	decodeJSON(t, resp, &manual)
+
+	exec := func(query string, args ...any) {
+		t.Helper()
+		_, err := env.pool.Exec(ctx, query, args...)
+		require.NoError(t, err)
+	}
+	exec(`INSERT INTO brief (brief_id, title, source_type, language, status, text, text_sha256)
+	      VALUES ('brf_sync01','Synthetic','text','ru','confirmed','Synthetic',repeat('0',64))`)
+	approve := func(suffix string, at time.Time, hoursByRow []domain.AssignmentCreate) string {
+		runID, variantID, publicVariantID := "run_"+suffix, "var_row"+suffix, "var_"+suffix
+		exec(`INSERT INTO team_run (run_id, brief_id, status, preset, k, seed, time_limit_ms, start_week, end_week, weights)
+		      VALUES ($1,'brf_sync01','succeeded','balanced',1,42,1000,'2026-W10','2026-W13','{}')`, runID)
+		exec(`INSERT INTO team_variant (variant_id,run_id,label,gate_pass,score,team_size,cost_units,duration,metric_values,payload_jsonb)
+		      VALUES ($1,$2,'Synthetic',true,1,2,1,'{}','{}',jsonb_build_object('variant_id',$3::text))`, variantID, runID, publicVariantID)
+		for _, row := range hoursByRow {
+			exec(`INSERT INTO variant_member (variant_id,employee_id,role_id,grade,allocated_hours_minutes,assignment_share,competence_fit,reason_codes)
+			      VALUES ($1,$2,'backend_engineer','S',1200,1,1,'{}') ON CONFLICT DO NOTHING`, variantID, row.EmployeeID)
+			exec(`INSERT INTO variant_weekly_assignment (variant_id,employee_id,requirement_id,week,hours_minutes,share)
+			      VALUES ($1,$2,'req_sync01',$3,$4,1)`, variantID, row.EmployeeID, row.Week, int(row.Hours*60))
+		}
+		exec(`INSERT INTO decision (run_id,variant_id,decided_at,decided_by,audit_event_id)
+		      VALUES ($1,$2,$3,'system','aud_sync01')`, runID, publicVariantID, at)
+		return runID
+	}
+	first := approve("sync01", time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC), []domain.AssignmentCreate{
+		{EmployeeID: "emp_sync01", Week: "2026-W10", Hours: 20},
+		{EmployeeID: "emp_sync01", Week: "2026-W11", Hours: 14},
+	})
+	sync := func(runID string, expected int) []byte {
+		t.Helper()
+		resp := env.doPost(path, domain.AssignmentCreateBatch{ApprovedRunID: runID})
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		require.NoError(t, err)
+		require.Equal(t, expected, resp.StatusCode, "%s", body)
+		return body
+	}
+	sync(first, http.StatusCreated)
+	second := approve("sync02", time.Date(2026, 3, 2, 0, 0, 0, 0, time.UTC), []domain.AssignmentCreate{
+		{EmployeeID: "emp_sync01", Week: "2026-W10", Hours: 22},
+		{EmployeeID: "emp_sync02", Week: "2026-W11", Hours: 12},
+	})
+	saved := sync(second, http.StatusCreated)
+	require.JSONEq(t, string(saved), string(sync(second, http.StatusCreated)))
+	sync(first, http.StatusConflict)
+
+	third := approve("sync03", time.Date(2026, 3, 3, 0, 0, 0, 0, time.UTC), []domain.AssignmentCreate{
+		{EmployeeID: "emp_sync01", Week: "2026-W10", Hours: 18},
+		{EmployeeID: "emp_sync01", Week: "2026-W12", Hours: 10},
+	})
+	sync(third, http.StatusConflict)
+	var rows []domain.Assignment
+	decodeJSON(t, env.doGet(path), &rows)
+	require.Len(t, rows, 3)
+	require.Equal(t, 22.0, rows[0].Hours)
+	require.Equal(t, "emp_sync02", rows[1].EmployeeID)
+	require.Equal(t, manual[0], rows[2])
+}

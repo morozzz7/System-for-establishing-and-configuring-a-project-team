@@ -1,3 +1,5 @@
+import { useEmployeeNames } from '../hooks';
+import { formatDate, formatWeekDate } from '../utils/date';
 /**
  * Team variants screen: compares variants, exposes the constraint editor and shows the
  * recalculation result (applied / rejected overrides + measured facts).
@@ -40,7 +42,9 @@ import type {
 } from '../types';
 import { ApiError, reasonCodeLabel, toApiError } from '../api/errors';
 import {
-  createAssignments,
+  synchronizeApprovedPlan,
+  getDecision,
+  getProject,
   createProject,
   createRun,
   getBrief,
@@ -48,8 +52,6 @@ import {
   getRunInputs,
   getVariant,
   getVariantExplanation,
-  listAssignments,
-  listProjects,
   listRoles,
   recordDecision,
 } from '../api/client';
@@ -57,7 +59,7 @@ import ConstraintEditor from '../components/ConstraintEditor';
 import ExplanationPanel, { ExplanationLoading } from '../components/ExplanationPanel';
 import { GradeTag } from '../components/shared';
 import { formatDeficits, formatRatio, formatUnits, formatWeeks, factNumber, KEY_METRICS } from '../utils/metrics';
-import { chunkAssignments, plannedAssignments, projectFromRun } from '../utils/project';
+import { projectFromRun } from '../utils/project';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -106,7 +108,7 @@ function VariantCard({
           <Tag color={variant.deficit_count > 0 ? 'orange' : 'default'}>{formatDeficits(variant.deficit_count)}</Tag>
           {variant.duration.deadline_week && (
             <Tag color="purple">
-              срок {variant.duration.deadline_week} · P(в срок) {formatRatio(variant.duration.p_on_time)}
+              срок {formatWeekDate(variant.duration.deadline_week, true)} · P(в срок) {formatRatio(variant.duration.p_on_time)}
             </Tag>
           )}
         </Space>
@@ -224,6 +226,7 @@ function VariantDetailCard({
   variant: Variant;
   roleNames: Record<string, string>;
 }) {
+  const employeeName = useEmployeeNames();
   return (
     <Card size="small" title={`Состав варианта: ${variant.label}`}>
       <Space direction="vertical" size="small" style={{ width: '100%' }}>
@@ -234,7 +237,7 @@ function VariantDetailCard({
           renderItem={(member) => (
             <List.Item data-testid="variant-member">
               <Space wrap>
-                <Text strong data-testid="variant-member-id">{member.employee_id}</Text>
+                <Text strong data-testid="variant-member-id">{employeeName(member.employee_id)}</Text>
                 <Tag>{roleNames[member.role_id] ?? member.role_id}</Tag>
                 <GradeTag grade={member.grade} />
                 <Text type="secondary">{member.allocated_hours} ч</Text>
@@ -283,7 +286,7 @@ function VariantDetailCard({
 
 export default function RunPage() {
   const { briefId = '' } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const requestedRunId = searchParams.get('run');
 
   const [run, setRun] = useState<TeamRun | null>(null);
@@ -308,8 +311,25 @@ export default function RunPage() {
   const [createdProject, setCreatedProject] = useState<Project | null>(null);
   const [projectError, setProjectError] = useState<ApiError | null>(null);
   const [assignmentWarning, setAssignmentWarning] = useState<string | null>(null);
+  const [savingPlan, setSavingPlan] = useState(false);
+  const [checkingDecision, setCheckingDecision] = useState(false);
 
   const runId = run?.run_id;
+
+  useEffect(() => {
+    if (!runId) return;
+    let cancelled = false;
+    setDecision(null);
+    setCreatedProject(null);
+    setProjectError(null);
+    setAssignmentWarning(null);
+    setCheckingDecision(true);
+    getDecision(runId)
+      .then((stored) => { if (!cancelled) setDecision(stored); })
+      .catch((error: unknown) => { if (!cancelled) setPageError(toApiError(error)); })
+      .finally(() => { if (!cancelled) setCheckingDecision(false); });
+    return () => { cancelled = true; };
+  }, [runId]);
 
   // Deep link: /runs/new/:briefId?run=<runId> (e.g. the parent of a recalculation run).
   useEffect(() => {
@@ -419,6 +439,7 @@ export default function RunPage() {
     try {
       const created = await createRun(briefId);
       setRun(created);
+      setSearchParams({ run: created.run_id }, { replace: true });
       setSelectedVariantId(created.variants[0]?.variant_id);
       message.success('Расчёт завершён: варианты готовы к сравнению');
     } catch (error) {
@@ -446,6 +467,7 @@ export default function RunPage() {
     setRecalcResult(response);
     setRecalcError(null);
     setRun(newRun);
+    setSearchParams({ run: newRun.run_id }, { replace: true });
     setSelectedVariantId(newRun.variants[0]?.variant_id);
     setEditorOpen(false);
     if (response.reason_codes.includes('RECALC_APPLIED')) {
@@ -458,36 +480,36 @@ export default function RunPage() {
     setRecalcResult(null);
   };
 
-  const saveProjectToPortfolio = async (): Promise<Project | null> => {
-    if (!run) return null;
+  const saveApprovedPlan = async (approval: DecisionResponse) => {
+    if (!run || approval.run_id !== run.run_id) return;
+    setSavingPlan(true);
     setProjectError(null);
+    setAssignmentWarning(null);
     try {
       const brief = await getBrief(run.brief_id);
       const candidate = projectFromRun(run, brief);
-      const existing = await listProjects();
-      const project =
-        existing.find((p) => p.project_id === candidate.project_id) ??
-        (await createProject(candidate));
-      setCreatedProject(project);
-      message.success(`Проект «${project.name}» добавлен в раздел «Проекты»`);
-      return project;
-    } catch (err) {
-      setProjectError(toApiError(err));
-      return null;
+      let project = await getProject(candidate.project_id);
+      if (!project) {
+        try {
+          project = await createProject(candidate);
+        } catch (error) {
+          if (toApiError(error).status !== 409) throw error;
+          project = await getProject(candidate.project_id);
+          if (!project) throw error;
+        }
+      }
+      try {
+        await synchronizeApprovedPlan(project.project_id, approval.run_id);
+        setCreatedProject(project);
+        message.success('Назначения утверждённого состава сохранены');
+      } catch (error) {
+        setAssignmentWarning(toApiError(error).detail);
+      }
+    } catch (error) {
+      setProjectError(toApiError(error));
+    } finally {
+      setSavingPlan(false);
     }
-  };
-
-  const persistPlannedAssignments = async (project: Project, variantId: string): Promise<number> => {
-    if (!run) return 0;
-    const variant = await getVariant(run.run_id, variantId);
-    if (!variant) return 0;
-    const existing = await listAssignments(project.project_id);
-    const existingKeys = new Set(existing.map((item) => `${item.employee_id}|${item.week}`));
-    const missing = plannedAssignments(variant, project.project_id).filter(
-      (item) => !existingKeys.has(`${item.employee_id}|${item.week}`),
-    );
-    for (const batch of chunkAssignments(missing, 500)) await createAssignments(batch);
-    return missing.length;
   };
 
   const handleRecordDecision = async () => {
@@ -502,18 +524,22 @@ export default function RunPage() {
       setDecision(resp);
       setDecisionModalOpen(false);
       message.success('Решение утверждено и сохранено в аудите');
-      setAssignmentWarning(null);
-      const project = await saveProjectToPortfolio();
-      if (project) {
+      await saveApprovedPlan(resp);
+    } catch (err) {
+      const error = toApiError(err);
+      if (error.status === 409) {
         try {
-          const created = await persistPlannedAssignments(project, selectedVariantId);
-          if (created > 0) message.success(`Создано плановых назначений: ${created}`);
-        } catch (err) {
-          setAssignmentWarning(toApiError(err).detail);
+          const stored = await getDecision(run.run_id);
+          if (stored) {
+            setDecision(stored);
+            setDecisionModalOpen(false);
+            return;
+          }
+        } catch {
+          setPageError(error);
         }
       }
-    } catch (err) {
-      setDecisionError(toApiError(err));
+      setDecisionError(error);
     } finally {
       setDeciding(false);
     }
@@ -542,7 +568,7 @@ export default function RunPage() {
           type="primary"
           style={decision ? { background: '#059669', borderColor: '#059669' } : { background: '#10b981', borderColor: '#10b981' }}
           onClick={() => setDecisionModalOpen(true)}
-          disabled={!run || !selectedVariantId || !!decision}
+          disabled={!run || !selectedVariantId || checkingDecision || !!decision}
         >
           {decision ? 'Вариант утверждён' : 'Утвердить состав'}
         </Button>
@@ -558,7 +584,12 @@ export default function RunPage() {
           description={
             <Space direction="vertical" size={0}>
               <Text>Утверждён вариант: <Text strong>{decision.variant_id}</Text></Text>
-              <Text type="secondary">Дата решения: {new Date(decision.decided_at).toLocaleString('ru-RU')}</Text>
+              <Text type="secondary">Дата решения: {formatDate(decision.decided_at)}</Text>
+              {!createdProject && (
+                <Button loading={savingPlan} onClick={() => void saveApprovedPlan(decision)}>
+                  Сохранить план назначений
+                </Button>
+              )}
               {createdProject && (
                 <Text>
                   Проект <Text strong>{createdProject.code}</Text> добавлен в портфель.{' '}
@@ -655,7 +686,7 @@ export default function RunPage() {
               <Text strong>Запуск {run.run_id}</Text>
               <Tag color={STATUS_COLORS[run.status] ?? 'default'}>{run.status}</Tag>
               <Tag>{run.preset}</Tag>
-              <Tag>{`${run.horizon.start_week}–${run.horizon.end_week}`}</Tag>
+              <Tag>{`${formatWeekDate(run.horizon.start_week)} — ${formatWeekDate(run.horizon.end_week, true)}`}</Tag>
               {run.snapshot_id && <Tag>снимок {run.snapshot_id}</Tag>}
             </Space>
           }

@@ -140,6 +140,7 @@ export interface CapacityProfile {
 }
 
 export interface Employee {
+  display_name?: string;
   employee_id: string;
   grade: Grade;
   role_profile_id: string;

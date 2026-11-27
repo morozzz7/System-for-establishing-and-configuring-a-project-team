@@ -73,6 +73,10 @@ func NewValidationProblem(detail, requestID string, errors []FieldError) Problem
 // ---------- Validation helpers ----------
 
 func ValidateEmployeeCreate(e EmployeeCreate, requestID string) *Problem {
+	if len([]rune(e.DisplayName)) > 120 {
+		p := NewProblem(422, "VALIDATION_FAILED", "display_name exceeds 120 characters", requestID, nil)
+		return &p
+	}
 	var errs []FieldError
 	if !EmployeeIDRe.MatchString(e.EmployeeID) {
 		errs = append(errs, FieldError{"employee_id", "PATTERN_MISMATCH", "must match emp_[a-z0-9]{4,12}"})
@@ -106,6 +110,10 @@ func ValidateEmployeeCreate(e EmployeeCreate, requestID string) *Problem {
 }
 
 func ValidateEmployeeUpdate(e EmployeeUpdate, requestID string) *Problem {
+	if e.DisplayName != nil && len([]rune(*e.DisplayName)) > 120 {
+		p := NewProblem(422, "VALIDATION_FAILED", "display_name exceeds 120 characters", requestID, nil)
+		return &p
+	}
 	var errs []FieldError
 	if e.Grade != nil && !Grades[*e.Grade] {
 		errs = append(errs, FieldError{"grade", "INVALID_ENUM", "must be one of J, M, S, L, P"})
@@ -287,6 +295,9 @@ func ParseDate(s string) (time.Time, error) {
 
 func ValidateEmployeeImportItem(item EmployeeImportItem, idx int) []FieldError {
 	var errs []FieldError
+	if item.DisplayName != nil && len([]rune(*item.DisplayName)) > 120 {
+		errs = append(errs, FieldError{Field: fmt.Sprintf("employees[%d].display_name", idx), Code: "MAX_LENGTH_EXCEEDED", Detail: "display_name exceeds 120 characters"})
+	}
 	prefix := fmt.Sprintf("employees[%d]", idx)
 
 	if !EmployeeIDRe.MatchString(item.EmployeeID) {

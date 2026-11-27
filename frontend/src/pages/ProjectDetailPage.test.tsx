@@ -75,6 +75,7 @@ vi.mock('../hooks', () => ({
     loading: false,
     error: null,
   }),
+  useEmployeeNames: () => (id: string) => id === 'emp_dev01' ? 'Анна Лескова' : 'Максим Озеров',
   useAbsences: () => ({ data: absences, loading: false, error: null }),
   useRoles: () => ({ data: roles, loading: false, error: null }),
 }));
@@ -98,11 +99,11 @@ describe('ProjectDetailPage', () => {
 
     expect(await screen.findByText('Миграция портала')).toBeDefined();
     expect(screen.getByText('PRJ-PORTAL01')).toBeDefined();
-    expect(screen.getAllByText('emp_dev01').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Анна Лескова').length).toBeGreaterThan(0);
     expect(screen.getByText('Бэкенд-разработчик')).toBeDefined();
     expect(screen.getAllByText('20 ч').length).toBeGreaterThan(0);
     expect(screen.getByText('Отпуск')).toBeDefined();
-    expect(screen.queryByText('emp_other1')).toBeNull();
+    expect(screen.queryByText('Максим Озеров')).toBeNull();
   });
 
   it('deletes the project from the detail page and returns to the list', async () => {

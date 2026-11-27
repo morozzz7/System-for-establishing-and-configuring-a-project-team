@@ -1,3 +1,5 @@
+import { formatWeekRange } from '../utils/date';
+import { useEmployeeNames } from '../hooks';
 /**
  * Assignments page — table of current assignments.
  */
@@ -11,6 +13,7 @@ import { Loading, Empty, ErrorDisplay } from '../components/shared';
 const { Title } = Typography;
 
 export default function AssignmentsPage() {
+  const employeeName = useEmployeeNames();
   const assignments = useAssignments();
   const roles = useRoles();
   const roleNames = useMemo(
@@ -32,8 +35,8 @@ export default function AssignmentsPage() {
       title: 'Сотрудник',
       dataIndex: 'employee_id',
       key: 'employee_id',
-      render: (id) => <Tag>{id}</Tag>,
-      sorter: (a, b) => a.employee_id.localeCompare(b.employee_id),
+      render: employeeName,
+      sorter: (a, b) => employeeName(a.employee_id).localeCompare(employeeName(b.employee_id), 'ru'),
     },
     {
       title: 'Проект',
@@ -51,6 +54,7 @@ export default function AssignmentsPage() {
       title: 'Неделя',
       dataIndex: 'week',
       key: 'week',
+      render: formatWeekRange,
       sorter: (a, b) => a.week.localeCompare(b.week),
     },
     {

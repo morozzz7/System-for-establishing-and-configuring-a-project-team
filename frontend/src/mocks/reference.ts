@@ -4226,6 +4226,7 @@ export const mockPlanningParams: PlanningParams = {
 export const mockEmployees: Employee[] = [
   {
     employee_id: 'emp_0001',
+    display_name: 'Артём Ветров',
     grade: 'S',
     role_profile_id: 'backend_engineer',
     unit_id: 'unt_core',
@@ -4237,6 +4238,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0002',
+    display_name: 'Ирина Соколова',
     grade: 'M',
     role_profile_id: 'backend_engineer',
     unit_id: 'unt_core',
@@ -4248,6 +4250,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0003',
+    display_name: 'Максим Озеров',
     grade: 'J',
     role_profile_id: 'backend_engineer',
     unit_id: 'unt_core',
@@ -4259,6 +4262,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0004',
+    display_name: 'Анна Лескова',
     grade: 'S',
     role_profile_id: 'frontend_engineer',
     unit_id: 'unt_web',
@@ -4270,6 +4274,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0005',
+    display_name: 'Денис Чернов',
     grade: 'M',
     role_profile_id: 'frontend_engineer',
     unit_id: 'unt_web',
@@ -4281,6 +4286,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0006',
+    display_name: 'Вера Лучина',
     grade: 'S',
     role_profile_id: 'qa_engineer',
     unit_id: 'unt_qa',
@@ -4292,6 +4298,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0007',
+    display_name: 'Павел Степанов',
     grade: 'M',
     role_profile_id: 'qa_engineer',
     unit_id: 'unt_qa',
@@ -4303,6 +4310,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0008',
+    display_name: 'Тимур Волков',
     grade: 'S',
     role_profile_id: 'devops_engineer',
     unit_id: 'unt_infra',
@@ -4314,6 +4322,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0009',
+    display_name: 'Алиса Ярова',
     grade: 'M',
     role_profile_id: 'devops_engineer',
     unit_id: 'unt_infra',
@@ -4325,6 +4334,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0010',
+    display_name: 'Лев Синицын',
     grade: 'S',
     role_profile_id: 'data_engineer',
     unit_id: 'unt_data',
@@ -4336,6 +4346,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0011',
+    display_name: 'Мария Зорина',
     grade: 'M',
     role_profile_id: 'data_engineer',
     unit_id: 'unt_data',
@@ -4347,6 +4358,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0012',
+    display_name: 'Роман Полянский',
     grade: 'S',
     role_profile_id: 'ml_engineer',
     unit_id: 'unt_ml',
@@ -4358,6 +4370,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0013',
+    display_name: 'Виктория Светлова',
     grade: 'M',
     role_profile_id: 'business_analyst',
     unit_id: 'unt_analysis',
@@ -4369,6 +4382,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0014',
+    display_name: 'Егор Рощин',
     grade: 'S',
     role_profile_id: 'business_analyst',
     unit_id: 'unt_analysis',
@@ -4380,6 +4394,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0015',
+    display_name: 'Наталья Седова',
     grade: 'M',
     role_profile_id: 'system_analyst',
     unit_id: 'unt_analysis',
@@ -4391,6 +4406,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0016',
+    display_name: 'Глеб Серов',
     grade: 'L',
     role_profile_id: 'project_manager',
     unit_id: 'unt_mgmt',
@@ -4402,6 +4418,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0017',
+    display_name: 'Дарья Тихонова',
     grade: 'S',
     role_profile_id: 'project_manager',
     unit_id: 'unt_mgmt',
@@ -4413,6 +4430,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0018',
+    display_name: 'Кирилл Ланской',
     grade: 'S',
     role_profile_id: 'product_manager',
     unit_id: 'unt_product',
@@ -4424,6 +4442,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0019',
+    display_name: 'Софья Мурина',
     grade: 'M',
     role_profile_id: 'ui_designer',
     unit_id: 'unt_design',
@@ -4435,6 +4454,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0020',
+    display_name: 'Никита Горин',
     grade: 'S',
     role_profile_id: 'ui_designer',
     unit_id: 'unt_design',
@@ -4446,6 +4466,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0021',
+    display_name: 'Лидия Березина',
     grade: 'M',
     role_profile_id: 'security_engineer',
     unit_id: 'unt_security',
@@ -4457,6 +4478,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0022',
+    display_name: 'Андрей Лавров',
     grade: 'J',
     role_profile_id: 'frontend_engineer',
     unit_id: 'unt_web',
@@ -4468,6 +4490,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0023',
+    display_name: 'Полина Орлова',
     grade: 'J',
     role_profile_id: 'qa_engineer',
     unit_id: 'unt_qa',
@@ -4479,6 +4502,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0024',
+    display_name: 'Илья Малинин',
     grade: 'J',
     role_profile_id: 'backend_engineer',
     unit_id: 'unt_core',
@@ -4490,6 +4514,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0025',
+    display_name: 'Ольга Мельникова',
     grade: 'L',
     role_profile_id: 'backend_engineer',
     unit_id: 'unt_core',
@@ -4501,6 +4526,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0026',
+    display_name: 'Матвей Дубов',
     grade: 'M',
     role_profile_id: 'ml_engineer',
     unit_id: 'unt_ml',
@@ -4512,6 +4538,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0027',
+    display_name: 'Юлия Ракова',
     grade: 'S',
     role_profile_id: 'devops_engineer',
     unit_id: 'unt_infra',
@@ -4523,6 +4550,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0028',
+    display_name: 'Сергей Лужин',
     grade: 'M',
     role_profile_id: 'frontend_engineer',
     unit_id: 'unt_web',
@@ -4534,6 +4562,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0029',
+    display_name: 'Ксения Рябова',
     grade: 'J',
     role_profile_id: 'data_engineer',
     unit_id: 'unt_data',
@@ -4545,6 +4574,7 @@ export const mockEmployees: Employee[] = [
   },
   {
     employee_id: 'emp_0030',
+    display_name: 'Михаил Белов',
     grade: 'M',
     role_profile_id: 'business_analyst',
     unit_id: 'unt_analysis',

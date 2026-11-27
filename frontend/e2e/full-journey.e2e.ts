@@ -8,7 +8,9 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   const runtimeErrors: string[] = [];
   page.on('pageerror', (error) => runtimeErrors.push(error.message));
   page.on('console', (message) => {
-    if (message.type() === 'error' && !message.text().includes('favicon')) {
+    const expectedLookupMiss = message.text().includes('404') &&
+      /\/api\/v1\/(runs\/[^/]+\/decision|projects\/[^/]+)$/.test(message.location().url);
+    if (message.type() === 'error' && !message.text().includes('favicon') && !expectedLookupMiss) {
       runtimeErrors.push(message.text());
     }
   });
@@ -24,7 +26,7 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await page.getByRole('button', { name: /Импортировать \(8\)/ }).click();
   await expect(page.getByText(/отсутствий 2/)).toBeVisible();
   await expect(page.locator('.ant-modal-wrap').first()).toBeHidden();
-  await expect(page.getByText('emp_e2e01').first()).toBeVisible();
+  await expect(page.getByText('Иван Тестов').first()).toBeVisible();
 
   // 2. Upload a brief; the ML service extracts requirements via the recorded LLM response.
   await page.getByRole('button', { name: 'Новое ТЗ' }).click();
@@ -68,15 +70,15 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await expect(page.locator('[data-testid="variant-member-id"]').first()).toBeVisible({
     timeout: 30_000,
   });
-  const memberId = (
+  const memberName = (
     await page.locator('[data-testid="variant-member-id"]').first().textContent()
   )?.trim();
-  expect(memberId).toMatch(/^emp_[a-z0-9]{4,12}$/);
+  expect(memberName).toMatch(/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/);
 
   // 6. Apply a hard constraint and recalculate into a new child run.
   await page.getByRole('button', { name: 'Ограничения' }).click();
-  // The editor defaults to force_exclude, so only the employee id is needed.
-  await page.getByRole('combobox', { name: 'Сотрудник' }).fill(memberId!);
+  await page.getByRole('combobox', { name: 'Сотрудник' }).fill(memberName!);
+  await page.getByRole('option', { name: new RegExp(memberName!) }).click();
   await page.getByRole('button', { name: 'Добавить ограничение' }).click();
   await expect(page.getByText('Добавленные ограничения (1)')).toBeVisible();
   await page.getByRole('button', { name: 'Пересчитать' }).click();
@@ -102,9 +104,17 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await page.getByRole('button', { name: 'Утвердить состав' }).click();
   await page.getByRole('button', { name: 'Подтвердить решение' }).click();
   await projectCreated;
-  await assignmentsCreated;
+  expect(await (await assignmentsCreated).json()).not.toHaveLength(0);
   await expect(page.locator('[data-testid="decision-success"]')).toBeVisible({ timeout: 30_000 });
   await expect(page.getByText(/Состав команды утверждён \(аудит /)).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByTestId('decision-success')).toBeVisible();
+  const planRetry = page.waitForResponse((response) =>
+    response.url().endsWith('/assignments') && response.request().method() === 'POST');
+  await page.getByRole('button', { name: 'Сохранить план назначений' }).click();
+  expect((await planRetry).status()).toBe(201);
+
 
   // 8. The approved plan becomes a portfolio project with real assignments.
   await page.goto('/projects');
@@ -113,17 +123,17 @@ test('full journey: import pool -> brief -> run -> compare -> recalc -> decide',
   await expect(page).toHaveURL(/\/projects\/prj_/);
   await expect(page.getByTestId('project-detail')).toBeVisible();
   await expect(page.getByText('Команда и назначения')).toBeVisible();
-  await expect(page.getByText(/^emp_[a-z0-9]{4,12}$/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/).first()).toBeVisible({ timeout: 30_000 });
 
   await page.goto('/assignments');
   await expect(page.getByRole('heading', { name: 'Назначения' })).toBeVisible();
-  await expect(page.getByText(/^emp_[a-z0-9]{4,12}$/).first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText(/^[А-ЯЁ][а-яё]+ [А-ЯЁ][а-яё]+$/).first()).toBeVisible({ timeout: 30_000 });
 
   // 10. Absences imported with the pool are visible globally and on the project card,
   // and the project can be deleted together with its planned assignments.
   await page.goto('/absences');
   await expect(page.getByRole('heading', { name: 'Отсутствия' })).toBeVisible();
-  await expect(page.getByText('emp_e2e01').first()).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByText('Иван Тестов').first()).toBeVisible({ timeout: 30_000 });
 
   await page.goto('/projects');
   await page.getByRole('link', { name: /^PRJ-/ }).first().click();

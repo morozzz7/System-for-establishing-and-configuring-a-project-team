@@ -2,12 +2,13 @@
  * RunPage: variants are rendered after the run is created and the constraint editor opens.
  * Kept lightweight (no drawer form interaction) — validation logic is covered by utils/constraints.
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ConfigProvider } from 'antd';
 import ruRU from 'antd/locale/ru_RU';
 import RunPage from './RunPage';
+import * as api from '../api/client';
 import { listProjects, resetMockState } from '../api/client';
 
 const UI_TIMEOUT = 10000;
@@ -52,6 +53,8 @@ describe('RunPage', () => {
     expect(screen.getAllByText(/M1 · Покрытие компетенций/).length).toBeGreaterThan(0);
   }, 15000);
 
+  afterEach(() => vi.restoreAllMocks());
+
   it('adds the approved team to the projects portfolio', async () => {
     renderPage();
     await clickButton('Рассчитать варианты');
@@ -67,6 +70,24 @@ describe('RunPage', () => {
       const projects = await listProjects();
       expect(projects.map((p) => p.project_id)).toContain('prj_test');
     }, { timeout: UI_TIMEOUT, interval: 100 });
+  }, 15000);
+
+  it('retries a failed plan write without recording a second decision', async () => {
+    const approve = vi.spyOn(api, 'recordDecision');
+    const synchronize = vi.spyOn(api, 'synchronizeApprovedPlan')
+      .mockRejectedValueOnce(new Error('Capacity changed'));
+    renderPage();
+    await clickButton('Рассчитать варианты');
+    await screen.findByText(/Запуск run_/, {}, { timeout: UI_TIMEOUT });
+    await clickButton('Утвердить состав');
+    await clickButton('Подтвердить решение');
+
+    await screen.findByText('Назначения утверждённого варианта не созданы', {}, { timeout: UI_TIMEOUT });
+    await clickButton('Сохранить план назначений');
+    await screen.findByText('Открыть раздел «Проекты»', {}, { timeout: UI_TIMEOUT });
+    expect(approve).toHaveBeenCalledTimes(1);
+    expect(synchronize).toHaveBeenCalledTimes(2);
+    expect(synchronize.mock.calls[0]).toEqual(synchronize.mock.calls[1]);
   }, 15000);
 
   it('opens the constraint editor with the snapshot hint and a disabled recalculation', async () => {

@@ -1,3 +1,4 @@
+import { formatWeekDate } from '../utils/date';
 /**
  * Projects page — list with status filter. Projects are created when a manager approves a team
  * variant on the run screen, so there is no manual create action here.
@@ -80,11 +81,13 @@ export default function ProjectsPage() {
       title: 'Начало',
       dataIndex: 'start_week',
       key: 'start_week',
+      render: (value: string) => formatWeekDate(value),
     },
     {
       title: 'План. окончание',
       dataIndex: 'end_week_planned',
       key: 'end_week_planned',
+      render: (value: string) => formatWeekDate(value, true),
     },
     {
       title: '',

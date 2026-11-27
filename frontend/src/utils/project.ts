@@ -5,6 +5,7 @@
  * recalculation run reuses the existing project instead of creating a duplicate.
  */
 import type { Assignment, Brief, Project, TeamRun, Variant } from '../types';
+import { parseWeek, weekStart } from "./week";
 
 const MAX_ID_SUFFIX = 12;
 const MIN_ID_SUFFIX = 4;
@@ -61,4 +62,11 @@ export function chunkAssignments<T>(items: T[], size: number): T[][] {
   const chunks: T[][] = [];
   for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
   return chunks;
+}
+
+export function effectiveProject(project: Project, now = new Date()): Project {
+  const week = parseWeek(project.start_week);
+  if (project.status !== 'planned' || !week) return project;
+  const startsAt = weekStart(week.year, week.week).getTime() - 3 * 60 * 60 * 1000;
+  return now.getTime() >= startsAt ? { ...project, status: 'active' } : project;
 }

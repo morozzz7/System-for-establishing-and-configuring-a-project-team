@@ -142,6 +142,7 @@ export const mockAbsences: Absence[] = [
   { absence_id: 'abs_0013', employee_id: 'emp_0025', type: 'vacation', start_date: '2026-02-02', end_date: '2026-02-13', hours_per_day: 8, approved: true, source: 'hr_import' },
   { absence_id: 'abs_0014', employee_id: 'emp_0027', type: 'business_trip', start_date: '2026-03-04', end_date: '2026-03-06', hours_per_day: 8, approved: true, source: 'manual' },
   { absence_id: 'abs_0015', employee_id: 'emp_0018', type: 'other', start_date: '2026-02-14', end_date: '2026-02-14', hours_per_day: 4, approved: true, source: 'manual' },
+  { absence_id: 'abs_0017', employee_id: 'emp_0004', type: 'vacation', start_date: '2026-12-07', end_date: '2026-12-11', hours_per_day: 8, approved: true, source: 'hr_import' },
   // Covers the whole mock planning horizon (2026-W07..2026-W17): fully unavailable, G1 demo case.
   { absence_id: 'abs_0016', employee_id: 'emp_0029', type: 'parental_leave', start_date: '2026-01-12', end_date: '2026-04-30', hours_per_day: 8, approved: true, source: 'hr_import' },
 ];

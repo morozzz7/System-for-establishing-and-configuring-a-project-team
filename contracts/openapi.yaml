@@ -1798,8 +1798,8 @@ paths:
     post:
       tags: [Projects]
       operationId: createAssignments
-      description: Create or update weekly assignments (bulk).
-      summary: Create or update weekly assignments (bulk).
+      description: Create weekly assignments or synchronize the latest approved plan atomically. Manual rows are preserved.
+      summary: Save weekly assignments or synchronize the approved plan.
       parameters:
         - $ref: '#/components/parameters/RequestIdHeader'
       requestBody:
@@ -1843,7 +1843,7 @@ paths:
                   hours: 20
                   source: plan
         '409':
-          description: Capacity would be exceeded (G2 guard on write).
+          description: Capacity conflict, duplicate assignment, or stale approval.
           content:
             application/json:
               schema:
@@ -3467,6 +3467,10 @@ components:
         Pseudonymized profile. There are deliberately no name/e-mail/phone/salary fields;
         the only identity is `employee_id` (`emp_*`), which maps to HR data outside this system.
       properties:
+        display_name:
+          type: string
+          maxLength: 120
+          description: Fictional label for display only. Employee operations use the pseudonymous identifier.
         employee_id:
           type: string
           pattern: '^emp_[a-z0-9]{4,12}$'
@@ -3497,6 +3501,10 @@ components:
       additionalProperties: false
       required: [employee_id, grade, role_profile_id, unit_id, employment_type]
       properties:
+        display_name:
+          type: string
+          maxLength: 120
+          description: Fictional label for display only. Employee operations use the pseudonymous identifier.
         employee_id:
           type: string
           pattern: '^emp_[a-z0-9]{4,12}$'
@@ -3519,6 +3527,10 @@ components:
       additionalProperties: false
       minProperties: 1
       properties:
+        display_name:
+          type: string
+          maxLength: 120
+          description: Fictional label for display only. Employee operations use the pseudonymous identifier.
         grade:
           $ref: '#/components/schemas/Grade'
         role_profile_id:
@@ -3550,6 +3562,10 @@ components:
       additionalProperties: false
       required: [employee_id, grade, role_profile_id, unit_id, employment_type]
       properties:
+        display_name:
+          type: string
+          maxLength: 120
+          description: Fictional label for display only. Employee operations use the pseudonymous identifier.
         employee_id:
           type: string
           pattern: '^emp_[a-z0-9]{4,12}$'
@@ -3775,6 +3791,7 @@ components:
 
     # -------------------------------------------------------------- projects
     ProjectStatus:
+      description: A planned project is returned as active from Monday of its start week in Moscow time.
       type: string
       enum: [planned, active, paused, done, cancelled]
     ProjectCriticality:
@@ -3901,8 +3918,20 @@ components:
     AssignmentCreateBatch:
       type: object
       additionalProperties: false
-      required: [assignments]
+      oneOf:
+        - required: [assignments]
+          not:
+            required: [approved_run_id]
+        - required: [approved_run_id]
+          not:
+            anyOf:
+              - required: [assignments]
+              - required: [overload_override]
       properties:
+        approved_run_id:
+          type: string
+          pattern: '^run_[A-Za-z0-9]{4,16}$'
+          description: Synchronize the latest approved variant for this project. Omit assignments and overload_override.
         assignments:
           type: array
           minItems: 1

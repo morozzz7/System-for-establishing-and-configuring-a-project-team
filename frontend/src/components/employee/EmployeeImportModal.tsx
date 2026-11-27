@@ -185,13 +185,13 @@ export default function EmployeeImportModal({ open, onClose, onSuccess }: Employ
       render: (idx: number) => <Text style={{ color: '#64748b' }}>{idx}</Text>,
     },
     {
-      title: 'ID',
-      dataIndex: 'employee_id',
+      title: 'Имя',
+      dataIndex: 'display_name',
       key: 'employee_id',
       render: (id: string, record: ParsedEmployeeRow) => (
         <Space direction="horizontal" size="small">
           <Text strong style={{ color: record.has_error ? '#ef4444' : '#f8fafc' }}>
-            {id || '—'}
+            {id || record.employee_id || 'Имя не указано'}
           </Text>
         </Space>
       ),

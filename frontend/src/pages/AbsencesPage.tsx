@@ -1,3 +1,5 @@
+import { formatDate } from '../utils/date';
+import { useEmployeeNameFormatter } from '../hooks';
 /**
  * Absences page — table/calendar of absences.
  */
@@ -24,6 +26,7 @@ const ABSENCE_TYPE_LABELS: Record<string, string> = {
 export default function AbsencesPage() {
   const absences = useAbsences();
   const employees = useEmployees();
+  const employeeName = useEmployeeNameFormatter(employees.data);
   const [form] = Form.useForm();
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -83,8 +86,8 @@ export default function AbsencesPage() {
       title: 'Сотрудник',
       dataIndex: 'employee_id',
       key: 'employee_id',
-      render: (id) => <Tag>{id}</Tag>,
-      sorter: (a, b) => a.employee_id.localeCompare(b.employee_id),
+      render: employeeName,
+      sorter: (a, b) => employeeName(a.employee_id).localeCompare(employeeName(b.employee_id), 'ru'),
     },
     {
       title: 'Тип',
@@ -97,13 +100,13 @@ export default function AbsencesPage() {
     {
       title: 'Начало',
       dataIndex: 'start_date',
-      key: 'start_date',
+      key: 'start_date', render: formatDate,
       sorter: (a, b) => a.start_date.localeCompare(b.start_date),
     },
     {
       title: 'Окончание',
       dataIndex: 'end_date',
-      key: 'end_date',
+      key: 'end_date', render: formatDate,
     },
     {
       title: 'Часов/день',
@@ -180,13 +183,13 @@ export default function AbsencesPage() {
           >
             <Select
               showSearch
-              placeholder="emp_xxxx"
+              placeholder="Выберите сотрудника"
               loading={employees.loading}
               options={(employees.data ?? []).map((emp) => ({
                 value: emp.employee_id,
-                label: `${emp.employee_id} · ${emp.grade}`,
+                label: `${employeeName(emp.employee_id)} · ${emp.grade}`,
               }))}
-              filterOption={(input, option) => String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())}
+              filterOption={(input, option) => String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
             />
           </Form.Item>
           <Form.Item name="type" label="Тип" rules={[{ required: true }]}>

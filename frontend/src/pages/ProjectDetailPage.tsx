@@ -1,3 +1,5 @@
+import { formatDate, formatWeekDate, formatWeekRange } from '../utils/date';
+import { useEmployeeNames } from '../hooks';
 /**
  * Project detail — the approved team as a plan: weekly assignments, their staffing summary and
  * absences of the people assigned to this project. All values come from the API.
@@ -12,7 +14,7 @@ import { useAssignments, useAbsences, useProject, useRoles } from '../hooks';
 import { deleteProject } from '../api/client';
 import { Empty, ErrorDisplay, Loading, StatusTag } from '../components/shared';
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const ABSENCE_TYPE_LABELS: Record<string, string> = {
   vacation: 'Отпуск',
@@ -37,6 +39,7 @@ const CRITICALITY_LABELS: Record<string, string> = {
 };
 
 export default function ProjectDetailPage() {
+  const employeeName = useEmployeeNames();
   const { projectId = '' } = useParams();
   const navigate = useNavigate();
   const [deleting, setDeleting] = useState(false);
@@ -81,8 +84,8 @@ export default function ProjectDetailPage() {
       title: 'Сотрудник',
       dataIndex: 'employee_id',
       key: 'employee_id',
-      sorter: (a, b) => a.employee_id.localeCompare(b.employee_id),
-      render: (id: string) => <Text code>{id}</Text>,
+      render: employeeName,
+      sorter: (a, b) => employeeName(a.employee_id).localeCompare(employeeName(b.employee_id), 'ru'),
     },
     {
       title: 'Роль',
@@ -94,6 +97,7 @@ export default function ProjectDetailPage() {
       title: 'Неделя',
       dataIndex: 'week',
       key: 'week',
+      render: formatWeekRange,
       sorter: (a, b) => a.week.localeCompare(b.week),
     },
     {
@@ -116,8 +120,8 @@ export default function ProjectDetailPage() {
       title: 'Сотрудник',
       dataIndex: 'employee_id',
       key: 'employee_id',
-      sorter: (a, b) => a.employee_id.localeCompare(b.employee_id),
-      render: (id: string) => <Text code>{id}</Text>,
+      render: employeeName,
+      sorter: (a, b) => employeeName(a.employee_id).localeCompare(employeeName(b.employee_id), 'ru'),
     },
     {
       title: 'Тип',
@@ -125,8 +129,8 @@ export default function ProjectDetailPage() {
       key: 'type',
       render: (type: string) => ABSENCE_TYPE_LABELS[type] ?? type,
     },
-    { title: 'Начало', dataIndex: 'start_date', key: 'start_date' },
-    { title: 'Окончание', dataIndex: 'end_date', key: 'end_date' },
+    { title: 'Начало', dataIndex: 'start_date', key: 'start_date', render: formatDate },
+    { title: 'Окончание', dataIndex: 'end_date', key: 'end_date', render: formatDate },
     {
       title: 'Часов/день',
       dataIndex: 'hours_per_day',
@@ -172,10 +176,10 @@ export default function ProjectDetailPage() {
           <Descriptions.Item label="Критичность">
             {CRITICALITY_LABELS[prj.criticality] ?? prj.criticality}
           </Descriptions.Item>
-          <Descriptions.Item label="Начало">{prj.start_week}</Descriptions.Item>
-          <Descriptions.Item label="План. окончание">{prj.end_week_planned}</Descriptions.Item>
+          <Descriptions.Item label="Начало">{formatWeekDate(prj.start_week)}</Descriptions.Item>
+          <Descriptions.Item label="План. окончание">{formatWeekDate(prj.end_week_planned, true)}</Descriptions.Item>
           {prj.end_week_forecast && (
-            <Descriptions.Item label="Прогноз">{prj.end_week_forecast}</Descriptions.Item>
+            <Descriptions.Item label="Прогноз">{formatWeekDate(prj.end_week_forecast, true)}</Descriptions.Item>
           )}
         </Descriptions>
       </Card>

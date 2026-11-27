@@ -12,16 +12,16 @@ import (
 // ---------- Regex patterns ----------
 
 var (
-	EmployeeIDRe = regexp.MustCompile(`^emp_[a-z0-9]{4,12}$`)
-	ProjectIDRe  = regexp.MustCompile(`^prj_[a-z0-9]{4,12}$`)
+	EmployeeIDRe   = regexp.MustCompile(`^emp_[a-z0-9]{4,12}$`)
+	ProjectIDRe    = regexp.MustCompile(`^prj_[a-z0-9]{4,12}$`)
 	AssignmentIDRe = regexp.MustCompile(`^asg_[a-z0-9]{4,12}$`)
-	AbsenceIDRe  = regexp.MustCompile(`^abs_[a-z0-9]{4,12}$`)
-	UnitIDRe     = regexp.MustCompile(`^unt_[a-z0-9]{2,12}$`)
-	AuditIDRe    = regexp.MustCompile(`^aud_[a-z0-9]{4,12}$`)
-	WeekKeyRe    = regexp.MustCompile(`^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$`)
-	RoleIDRe     = regexp.MustCompile(`^[a-z][a-z0-9_]{2,39}$`)
+	AbsenceIDRe    = regexp.MustCompile(`^abs_[a-z0-9]{4,12}$`)
+	UnitIDRe       = regexp.MustCompile(`^unt_[a-z0-9]{2,12}$`)
+	AuditIDRe      = regexp.MustCompile(`^aud_[a-z0-9]{4,12}$`)
+	WeekKeyRe      = regexp.MustCompile(`^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$`)
+	RoleIDRe       = regexp.MustCompile(`^[a-z][a-z0-9_]{2,39}$`)
 	CompetencyIDRe = regexp.MustCompile(`^[a-z][a-z0-9_]{2,39}$`)
-	RequestIDRe  = regexp.MustCompile(`^req_[A-Za-z0-9-]{6,32}$`)
+	RequestIDRe    = regexp.MustCompile(`^req_[A-Za-z0-9-]{6,32}$`)
 )
 
 // ---------- Problem (RFC 9457) ----------
@@ -53,39 +53,41 @@ func (p Problem) Error() string {
 // ---------- Enums ----------
 
 var (
-	Grades         = map[string]bool{"J": true, "M": true, "S": true, "L": true, "P": true}
-	EmploymentTypes = map[string]bool{"internal": true, "contractor": true, "external_partner": true}
-	ProjectStatuses = map[string]bool{"planned": true, "active": true, "paused": true, "done": true, "cancelled": true}
+	Grades               = map[string]bool{"J": true, "M": true, "S": true, "L": true, "P": true}
+	EmploymentTypes      = map[string]bool{"internal": true, "contractor": true, "external_partner": true}
+	ProjectStatuses      = map[string]bool{"planned": true, "active": true, "paused": true, "done": true, "cancelled": true}
 	ProjectCriticalities = map[string]bool{"critical": true, "high": true, "normal": true, "low": true}
-	AbsenceTypes   = map[string]bool{"vacation": true, "sick_leave": true, "training": true, "business_trip": true, "parental_leave": true, "other": true}
-	AbsenceSources = map[string]bool{"manual": true, "hr_import": true, "calendar_import": true}
-	AssignmentSources = map[string]bool{"plan": true, "actual": true, "forecast": true}
-	CompSources    = map[string]bool{"self_assessment": true, "manager_review": true, "project_history": true, "certification": true, "hr_import": true}
+	AbsenceTypes         = map[string]bool{"vacation": true, "sick_leave": true, "training": true, "business_trip": true, "parental_leave": true, "other": true}
+	AbsenceSources       = map[string]bool{"manual": true, "hr_import": true, "calendar_import": true}
+	AssignmentSources    = map[string]bool{"plan": true, "actual": true, "forecast": true}
+	CompSources          = map[string]bool{"self_assessment": true, "manager_review": true, "project_history": true, "certification": true, "hr_import": true}
 )
 
 // ---------- Capacity Profile ----------
 
 type CapacityProfile struct {
-	WeeklyHoursNorm    float64 `json:"weekly_hours_norm"`
-	ReserveRatio       float64 `json:"reserve_ratio"`
+	WeeklyHoursNorm     float64 `json:"weekly_hours_norm"`
+	ReserveRatio        float64 `json:"reserve_ratio"`
 	MaxUtilizationRatio float64 `json:"max_utilization_ratio"`
 }
 
 // ---------- Employee ----------
 
 type Employee struct {
-	EmployeeID     string          `json:"employee_id"`
-	Grade          string          `json:"grade"`
-	RoleProfileID  string          `json:"role_profile_id"`
-	UnitID         string          `json:"unit_id"`
-	EmploymentType string          `json:"employment_type"`
-	BenchFlag      bool            `json:"bench_flag"`
+	DisplayName     string          `json:"display_name,omitempty"`
+	EmployeeID      string          `json:"employee_id"`
+	Grade           string          `json:"grade"`
+	RoleProfileID   string          `json:"role_profile_id"`
+	UnitID          string          `json:"unit_id"`
+	EmploymentType  string          `json:"employment_type"`
+	BenchFlag       bool            `json:"bench_flag"`
 	CapacityProfile CapacityProfile `json:"capacity_profile"`
-	CostCoefficient float64        `json:"cost_coefficient"`
-	Active         bool            `json:"active"`
+	CostCoefficient float64         `json:"cost_coefficient"`
+	Active          bool            `json:"active"`
 }
 
 type EmployeeCreate struct {
+	DisplayName     string           `json:"display_name,omitempty"`
 	EmployeeID      string           `json:"employee_id"`
 	Grade           string           `json:"grade"`
 	RoleProfileID   string           `json:"role_profile_id"`
@@ -97,6 +99,7 @@ type EmployeeCreate struct {
 }
 
 type EmployeeUpdate struct {
+	DisplayName     *string          `json:"display_name,omitempty"`
 	Grade           *string          `json:"grade"`
 	RoleProfileID   *string          `json:"role_profile_id"`
 	UnitID          *string          `json:"unit_id"`
@@ -109,11 +112,11 @@ type EmployeeUpdate struct {
 // ---------- Employee Competency ----------
 
 type EmployeeCompetency struct {
-	CompetencyID string      `json:"competency_id"`
-	Level        int         `json:"level"`
-	Confidence   float64     `json:"confidence"`
-	LastUsed     *time.Time  `json:"last_used,omitempty"`
-	Source       string      `json:"source"`
+	CompetencyID string     `json:"competency_id"`
+	Level        int        `json:"level"`
+	Confidence   float64    `json:"confidence"`
+	LastUsed     *time.Time `json:"last_used,omitempty"`
+	Source       string     `json:"source"`
 }
 
 type EmployeeCompetencyUpsert struct {
@@ -127,6 +130,10 @@ type EmployeeCompetencyUpsert struct {
 // ---------- Employee List Filters ----------
 
 type EmployeeFilter struct {
+	ActiveOnly   bool
+	InternalOnly bool
+	ExcludeBench bool
+	RoleIDs      []string
 	RoleID       string
 	CompetencyID string
 	MinLevel     int
@@ -189,8 +196,9 @@ type AssignmentCreate struct {
 }
 
 type AssignmentCreateBatch struct {
-	Assignments       []AssignmentCreate `json:"assignments"`
-	OverloadOverride  *OverloadOverride  `json:"overload_override,omitempty"`
+	ApprovedRunID    string             `json:"approved_run_id,omitempty"`
+	Assignments      []AssignmentCreate `json:"assignments"`
+	OverloadOverride *OverloadOverride  `json:"overload_override,omitempty"`
 }
 
 type OverloadOverride struct {
@@ -198,23 +206,24 @@ type OverloadOverride struct {
 }
 
 type AssignmentFilter struct {
-	ProjectID  string
-	EmployeeID string
-	FromWeek   string
-	ToWeek     string
+	EmployeeIDs []string
+	ProjectID   string
+	EmployeeID  string
+	FromWeek    string
+	ToWeek      string
 }
 
 // ---------- Absence ----------
 
 type Absence struct {
-	AbsenceID    string     `json:"absence_id"`
-	EmployeeID   string     `json:"employee_id"`
-	Type         string     `json:"type"`
-	StartDate    time.Time  `json:"start_date"`
-	EndDate      time.Time  `json:"end_date"`
-	HoursPerDay  float64    `json:"hours_per_day"`
-	Approved     bool       `json:"approved"`
-	Source       string     `json:"source"`
+	AbsenceID   string    `json:"absence_id"`
+	EmployeeID  string    `json:"employee_id"`
+	Type        string    `json:"type"`
+	StartDate   time.Time `json:"start_date"`
+	EndDate     time.Time `json:"end_date"`
+	HoursPerDay float64   `json:"hours_per_day"`
+	Approved    bool      `json:"approved"`
+	Source      string    `json:"source"`
 }
 
 type AbsenceCreate struct {
@@ -252,40 +261,41 @@ type AuditEntry struct {
 // ---------- Employee Import ----------
 
 type EmployeeImportItem struct {
-	EmployeeID      string                    `json:"employee_id"`
-	Grade           string                    `json:"grade"`
-	RoleProfileID   string                    `json:"role_profile_id"`
-	UnitID          string                    `json:"unit_id"`
-	EmploymentType  string                    `json:"employment_type"`
-	BenchFlag       *bool                     `json:"bench_flag"`
-	CapacityProfile *CapacityProfile          `json:"capacity_profile"`
+	DisplayName     *string                    `json:"display_name,omitempty"`
+	EmployeeID      string                     `json:"employee_id"`
+	Grade           string                     `json:"grade"`
+	RoleProfileID   string                     `json:"role_profile_id"`
+	UnitID          string                     `json:"unit_id"`
+	EmploymentType  string                     `json:"employment_type"`
+	BenchFlag       *bool                      `json:"bench_flag"`
+	CapacityProfile *CapacityProfile           `json:"capacity_profile"`
 	Competencies    []EmployeeCompetencyUpsert `json:"competencies"`
-	Assignments     []AssignmentCreate        `json:"assignments"`
-	Absences        []AbsenceCreate           `json:"absences"`
+	Assignments     []AssignmentCreate         `json:"assignments"`
+	Absences        []AbsenceCreate            `json:"absences"`
 }
 
 type EmployeeImportRequest struct {
-	Mode          string                  `json:"mode"`
-	Employees     []EmployeeImportItem    `json:"employees"`
-	ValidateOnly  *bool                   `json:"validate_only"`
+	Mode         string               `json:"mode"`
+	Employees    []EmployeeImportItem `json:"employees"`
+	ValidateOnly *bool                `json:"validate_only"`
 }
 
 type EmployeeImportResultItem struct {
-	EmployeeID         string   `json:"employee_id"`
-	Status             string   `json:"status"`
-	CompetenciesUpserted int     `json:"competencies_upserted"`
-	AssignmentsCreated int     `json:"assignments_created"`
-	AbsencesCreated    int     `json:"absences_created"`
-	Warnings           []string `json:"warnings"`
-	Error              string   `json:"error,omitempty"`
+	EmployeeID           string   `json:"employee_id"`
+	Status               string   `json:"status"`
+	CompetenciesUpserted int      `json:"competencies_upserted"`
+	AssignmentsCreated   int      `json:"assignments_created"`
+	AbsencesCreated      int      `json:"absences_created"`
+	Warnings             []string `json:"warnings"`
+	Error                string   `json:"error,omitempty"`
 }
 
 type EmployeeImportTotals struct {
-	Received int `json:"received"`
-	Created  int `json:"created"`
-	Updated  int `json:"updated"`
+	Received  int `json:"received"`
+	Created   int `json:"created"`
+	Updated   int `json:"updated"`
 	Unchanged int `json:"unchanged"`
-	Errors   int `json:"errors"`
+	Errors    int `json:"errors"`
 }
 
 type EmployeeImportValidationError struct {
@@ -296,10 +306,10 @@ type EmployeeImportValidationError struct {
 }
 
 type EmployeeImportResponse struct {
-	RequestID       string                      `json:"request_id"`
-	Mode            string                      `json:"mode"`
-	Totals          EmployeeImportTotals        `json:"totals"`
-	Employees       []EmployeeImportResultItem  `json:"employees"`
+	RequestID        string                          `json:"request_id"`
+	Mode             string                          `json:"mode"`
+	Totals           EmployeeImportTotals            `json:"totals"`
+	Employees        []EmployeeImportResultItem      `json:"employees"`
 	ValidationErrors []EmployeeImportValidationError `json:"validation_errors"`
 }
 
@@ -309,4 +319,12 @@ type PageMeta struct {
 	Limit  int `json:"limit"`
 	Offset int `json:"offset"`
 	Total  int `json:"total"`
+}
+
+func (p Project) WithEffectiveStatus(at time.Time) Project {
+	year, week := at.In(time.FixedZone("MSK", 3*60*60)).ISOWeek()
+	if p.Status == "planned" && p.StartWeek <= fmt.Sprintf("%04d-W%02d", year, week) {
+		p.Status = "active"
+	}
+	return p
 }

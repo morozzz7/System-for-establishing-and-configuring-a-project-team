@@ -55,7 +55,8 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
    (`contracts/calendar-ru-YYYY.yaml`, embedded in `internal/domain/data/`); a year without calendar
    data is a G5 hard failure, never an implicit five-day week. The candidate pool comes from
    active employees, their competency levels and current assignments (`internal/service/candidates.go`),
-   filtered by `CandidateFilter`; the in-memory stand-ins remain only for tests. Bulk import
+   filtered by `CandidateFilter`; profile eligibility is filtered in SQL and competency levels are
+   loaded in batches before the matching candidate limit. The in-memory stand-ins remain only for tests. Bulk import
    (`PUT /api/v1/employees`) applies the same G1/G2 checks before writing assignments and absences.
 5. Go -> ML `POST /v1/optimize` (candidates, requirements, constraints, weights, k) -> variants.
 6. Go: validator -> schedule engine (duration, P50/P80) -> deficits -> portfolio impact -> metrics.
@@ -66,11 +67,15 @@ OR-Tools CP-SAT has no supported Go API, so the optimizer lives in the ML servic
 7. Explainer: reasons from structured facts (reason codes).
 8. UI: compare variants, explanations, constraint editor -> `POST /api/v1/runs/{id}/recalculate`.
    Approving a variant records the decision, registers the derived project (`POST /api/v1/projects`)
-   and writes its `weekly_assignments` as planned assignments (`POST /projects/{id}/assignments`,
-   idempotent). They become part of the capacity baseline for later runs. The Projects table links
+   and synchronizes planned assignments through `POST /projects/{id}/assignments` with
+   `approved_run_id`. The server reads the latest approved variant and replaces approval-managed
+   rows in one transaction. The UI can retry synchronization using the stored decision after reload.
+   Assignment writes lock employee-week keys before rechecking capacity. Approved assignments
+   become part of the capacity baseline for later runs. The Projects table links
    to `/projects/{projectId}` (`GET /projects/{projectId}`), which shows the project card, staffing
    summary, assigned team and absences of that team. `DELETE /projects/{projectId}` removes a project
-   and cascades its planned assignments; both project pages expose the action. Absences enter the
+   and cascades its planned assignments; both project pages expose the action. A planned project
+   is returned and filtered as active from Monday of its ISO start week in Moscow time. Absences enter the
    system through bulk import (`absences[]` in the employee payload, also parsed from CSV) or the
    Absences page create form; the contract's date-only `YYYY-MM-DD` form is the wire format.
 
@@ -85,7 +90,7 @@ db/migrations/    goose migrations; seed data is loaded by backend/cmd/seed (`ma
 contracts/        openapi.yaml (UI<->Go), ml-openapi.yaml (Go<->ML), taxonomy.yaml, reference.yaml,
                   calendar-ru-YYYY.yaml, spectral.yaml, json-schema/: single source of truth
 .github/workflows/ ci.yml: contracts, backend, ML, frontend and full-stack E2E; deploy.yml: GHCR build, SSH deploy, smoke test, rollback
-eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports
+eval/             gold briefs, synthetic generator, benchmark/metric scripts, reports, local demo data
 deploy/           docker-compose.yml (+ override), docker-compose.e2e.yml (+ e2e/llm_stub.py), prod/docker-compose.yml, Dockerfile.{backend,ml,frontend}, nginx gateway
 README.md / README_RU.md  bilingual README pair (shields.io `for-the-badge` badges, two rows, language switch)
 docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screenshots/ (tracked UI captures), assets/badges/ (legacy SVG tiles, unused by README)
@@ -113,6 +118,10 @@ docs/             PLAN.md (task status), ADR/, METRICS.md, DEPLOYMENT.md, screen
   variants and both explanation locales in a single transaction, so a mid-write failure cannot leave
   an orphan run. The HS256 token provider in `platform/auth` derives the acting principal; every
   decision/audit actor is server-side and client identity assertions are ignored.
+  Migration `00013` adds an optional fictional employee display name. Employee CRUD and imports
+  use the pseudonymous ID. Display names stay out of audit details, run snapshots and ML payloads.
+  Migration `00014` distinguishes newly synchronized approval-managed assignments. Existing
+  rows have no reliable approval provenance and remain unmanaged.
   M8 attributes pulled hours only to portfolio projects that
   share staff with the proposed team (`employee_ids`). The in-memory maps in `WorkflowService` remain
   the no-DB fallback for unit tests. M8 portfolio inputs are derived from active projects and

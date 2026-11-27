@@ -1,3 +1,4 @@
+import { formatWeekRange } from '../utils/date';
 /**
  * Employees page — list with filters + detail page.
  */
@@ -18,7 +19,7 @@ import {
 import { EyeOutlined, UploadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Employee } from '../types';
-import { useEmployees, useEmployee, useEmployeeCompetencies, useEmployeeCapacity } from '../hooks';
+import { useEmployeeNameFormatter, useEmployees, useEmployee, useEmployeeCompetencies, useEmployeeCapacity } from '../hooks';
 import { Loading, Empty, ErrorDisplay, GradeTag, LevelBar } from '../components/shared';
 import { mockRoles } from '../mocks/reference';
 import EmployeeImportModal from '../components/employee/EmployeeImportModal';
@@ -27,6 +28,7 @@ const { Title, Text } = Typography;
 
 export default function EmployeesPage() {
   const employees = useEmployees();
+  const employeeName = useEmployeeNameFormatter(employees.data);
   const [search, setSearch] = useState('');
   const [gradeFilter, setGradeFilter] = useState<string | undefined>();
   const [roleFilter, setRoleFilter] = useState<string | undefined>();
@@ -41,7 +43,7 @@ export default function EmployeesPage() {
   let filtered = employees.data;
   if (search) {
     const q = search.toLowerCase();
-    filtered = filtered.filter((e) => e.employee_id.toLowerCase().includes(q));
+    filtered = filtered.filter((e) => employeeName(e.employee_id).toLowerCase().includes(q));
   }
   if (gradeFilter) filtered = filtered.filter((e) => e.grade === gradeFilter);
   if (roleFilter) filtered = filtered.filter((e) => e.role_profile_id === roleFilter);
@@ -49,10 +51,11 @@ export default function EmployeesPage() {
 
   const columns: ColumnsType<Employee> = [
     {
-      title: 'ID',
-      dataIndex: 'employee_id',
+      title: 'Имя',
+      dataIndex: 'display_name',
       key: 'employee_id',
-      sorter: (a, b) => a.employee_id.localeCompare(b.employee_id),
+      render: (_, employee) => employeeName(employee.employee_id),
+      sorter: (a, b) => employeeName(a.employee_id).localeCompare(employeeName(b.employee_id), 'ru'),
     },
     {
       title: 'Грейд',
@@ -116,7 +119,7 @@ export default function EmployeesPage() {
       <Card bodyStyle={{ padding: 16 }}>
         <Space wrap size="middle">
           <Input.Search
-            placeholder="Поиск по ID сотрудника"
+            placeholder="Поиск по имени сотрудника"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             style={{ width: 220 }}
@@ -195,9 +198,8 @@ function EmployeeDetailDrawer({
   const role = mockRoles.find((r) => r.role_id === emp.role_profile_id);
 
   return (
-    <Drawer title={`Сотрудник: ${emp.employee_id}`} open onClose={onClose} width={600}>
+    <Drawer title={`Сотрудник: ${emp.display_name || emp.employee_id}`} open onClose={onClose} width={600}>
       <Descriptions column={1} bordered size="small">
-        <Descriptions.Item label="ID">{emp.employee_id}</Descriptions.Item>
         <Descriptions.Item label="Грейд">
           <GradeTag grade={emp.grade} />
         </Descriptions.Item>
@@ -257,7 +259,7 @@ function EmployeeDetailDrawer({
           size="small"
           pagination={false}
           columns={[
-            { title: 'Неделя', dataIndex: 'week', key: 'week' },
+            { title: 'Неделя', dataIndex: 'week', key: 'week', render: formatWeekRange },
             { title: 'Рабочих дней', dataIndex: 'working_days', key: 'working_days' },
             { title: 'Норма', dataIndex: 'norm_hours', key: 'norm_hours' },
             { title: 'Назначено', dataIndex: 'assigned_hours', key: 'assigned_hours' },
