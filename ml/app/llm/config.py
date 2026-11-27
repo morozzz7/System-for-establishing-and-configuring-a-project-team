@@ -3,7 +3,7 @@
 Environment variables (prefix LLM_):
   LLM_BASE_URL          — OpenAI-compatible base URL (default: https://openrouter.ai/api/v1)
   LLM_API_KEY           — API key; empty/missing → LLM unavailable
-  LLM_MODEL             — model name (default: qwen/qwen-2.5-72b-instruct)
+  LLM_MODEL             — model name (blank falls back to qwen/qwen-2.5-72b-instruct)
   LLM_TIMEOUT_MS        — request timeout in milliseconds per HTTP call (default: 180000)
   LLM_MAX_RETRIES       — repair-retry attempts on JSON parse failure (default: 2)
   LLM_ENSEMBLE_RUNS     — number of parallel extraction calls in union ensemble (default: 3)
@@ -21,7 +21,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -36,6 +36,9 @@ def _find_env_files() -> tuple[str, ...]:
     )
 
 
+DEFAULT_MODEL = "qwen/qwen-2.5-72b-instruct"
+
+
 class LLMSettings(BaseSettings):
     """LLM service configuration loaded from environment and .env files."""
 
@@ -48,12 +51,19 @@ class LLMSettings(BaseSettings):
 
     base_url: str = "https://openrouter.ai/api/v1"
     api_key: str = ""
-    model: str = "qwen/qwen-2.5-72b-instruct"
+    model: str = DEFAULT_MODEL
     timeout_ms: int = 180000
     max_retries: int = Field(default=2, ge=0, le=10)
     ensemble_runs: int = Field(default=3, ge=1, le=10)
     verify_candidates: bool = True
     role_safety_net: bool = True
+
+    @field_validator("model")
+    @classmethod
+    def default_blank_model(cls, value: str) -> str:
+        # An empty LLM_MODEL in .env overrides the field default and makes providers
+        # reject chat completions with "No models provided".
+        return value.strip() or DEFAULT_MODEL
 
     @property
     def is_available(self) -> bool:

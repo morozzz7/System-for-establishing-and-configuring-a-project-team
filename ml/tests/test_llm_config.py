@@ -73,6 +73,15 @@ class TestLLMSettingsEnvOverride:
         assert s.model == "custom/model"
         assert s.timeout_ms == 5000
 
+    def test_blank_model_env_falls_back_to_default(self):
+        os.environ["LLM_MODEL"] = ""
+        s = LLMSettings()
+        assert s.model == "qwen/qwen-2.5-72b-instruct"
+
+    def test_blank_model_argument_falls_back_to_default(self):
+        s = LLMSettings(model="  ")
+        assert s.model == "qwen/qwen-2.5-72b-instruct"
+
     def test_get_settings_cached(self):
         os.environ["LLM_API_KEY"] = "cached-key"
         clear_settings_cache()

@@ -54,7 +54,7 @@ synthetic accounts only (privacy rule: no names, salaries or real personal data)
 | `AUTH_TOKEN_TTL_MINUTES` | `60` | JWT lifetime |
 | `GHCR_USER` | `morozzz7` | Registry user for the optional PAT login (defaults to the actor) |
 | `LLM_BASE_URL` | *(empty)* | Override the OpenAI-compatible endpoint on the server |
-| `LLM_MODEL` | `deepseek-flash` | Model name supported by that endpoint (`deepseek-v4-pro` is the other known option); without it ML uses `qwen/qwen-2.5-72b-instruct` and extraction fails on providers that do not serve it |
+| `LLM_MODEL` | `deepseek-flash` | Model name supported by that endpoint (`deepseek-v4-pro` is the other known option); unset or blank falls back to `qwen/qwen-2.5-72b-instruct`, which fails on providers that do not serve it |
 
 ### Secrets
 

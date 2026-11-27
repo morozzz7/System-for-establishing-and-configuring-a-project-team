@@ -173,6 +173,9 @@ jobs:
             $compose up -d --wait postgres
             $compose run --rm --entrypoint /usr/local/bin/seed backend
             $compose up -d --remove-orphans --wait --wait-timeout 120
+            # A bind-mounted nginx.conf change does not recreate the gateway container.
+            $compose exec -T gateway nginx -t
+            $compose exec -T gateway nginx -s reload
 
             probe() {
               for attempt in $(seq 1 30); do
